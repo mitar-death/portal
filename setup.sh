@@ -60,9 +60,9 @@ if ! command -v poetry &> /dev/null; then
   pip3 install poetry
 fi
 
-# Configure Poetry settings
-echo "Configuring Poetry..."
-poetry config virtualenvs.create false
+# # Configure Poetry settings
+# echo "Configuring Poetry..."
+# poetry config virtualenvs.create false
 
 # Install dependencies using Poetry
 echo "Installing dependencies with Poetry..."
