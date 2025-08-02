@@ -1,0 +1,5 @@
+[2025-08-01 21:53:32] New message: 14 in chat -1002229830090 - Hello
+[2025-08-01 21:54:23] New message: 416036 in chat -1002073177832 - [@Iyke19844](tg://user?id=5255966570) [`5255966570`] has sent a 🔗 Link without authorization. 
+**Action:** Muted 🔇 until 01/08/2025 23:24.
+[2025-08-01 21:59:11] New message: 15 in 'Sapientia Capital' (-1002229830090) from Max None - Hello
+[2025-08-01 22:05:51] New message: 16 in 'Sapientia Capital' (-1002229830090) from Max None - Hello
