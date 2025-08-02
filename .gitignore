@@ -84,4 +84,4 @@ Thumbs.db
 # Storage folders 
 storage/sessions/
 node_modules/
-storage/logs/
+storage/logs/app.log
