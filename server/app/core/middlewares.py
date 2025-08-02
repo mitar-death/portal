@@ -57,7 +57,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     user_id = int(token.split("token_")[1])
                     async with AsyncSessionLocal() as session:
                         result = await session.execute(
-                            select(User).where(User.id == user_id)
+                            select(User).where(User.telegram_id == str(user_id))
                         )
                         user = result.scalars().first()
                         if not user:

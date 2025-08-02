@@ -8,9 +8,9 @@ from server.app.models.models import ActiveSession
 from server.app.models.models import SelectedGroup, User,Keywords
 from server.app.core.config import settings
 from server.app.core.logging import logger
-
-from server.app.services.monitor import keywords, start_monitoring
-
+from server.app.services.monitor import stop_monitoring
+from server.app.services.monitor import keywords, start_monitoring,start_health_check_task
+from server.app.services.monitor import set_active_user_id
 
 from typing import Dict, Any, List
 from sqlalchemy import select
@@ -125,7 +125,7 @@ async def verify_code(phone_number: str, code: str, phone_code_hash: str) -> Dic
         if not user:
             # Create a new user
             user = User(
-                telegram_id=tg_id,  # In production, get from Telegram
+                telegram_id=tg_id,  
                 username=response.username if response.username else None,
                 first_name=response.first_name if response.first_name else "User",
                 last_name=response.last_name if response.last_name else None,
@@ -146,8 +146,18 @@ async def verify_code(phone_number: str, code: str, phone_code_hash: str) -> Dic
         }
         
         # Set this user as the active user for the monitoring service
-        from server.app.services.monitor import set_active_user_id
         await set_active_user_id(user.id)
+        
+        monitoring_started = await start_monitoring()
+        if monitoring_started:
+            logger.info("Telegram message monitoring started successfully")
+        else:
+            logger.warning("Failed to start Telegram message monitoring. Login may be required.")
+        
+        # Start the health check task for real-time diagnostics
+        await start_health_check_task()
+        logger.info("Health check monitoring task started")
+    
         logger.info(f"Set active user ID to {user.id} during login")
            
         return {
@@ -346,12 +356,6 @@ async def monitor_groups(request,selected_groups: Dict[str, Any]) -> List[Dict[s
     except Exception as e:
         logger.error(f"Failed to add selected groups: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to add selected groups: {str(e)}")
-    finally:
-        # Ensure the client is disconnected after operation
-        if client.is_connected():
-            await client.disconnect()
-        logger.info("Disconnected Telegram client")
-
 
 async def get_keywords_controller(request: Request) -> Dict[str, Any]:
     """
@@ -433,6 +437,16 @@ async def add_keywords_controller(request: Request) -> Dict[str, Any]:
         # Refresh the keywords from the database to ensure we're returning the latest data
         await db.refresh(user_keywords)
         
+        monitoring_started = await start_monitoring()
+        if monitoring_started:
+            logger.info("Telegram message monitoring started successfully")
+        else:
+            logger.warning("Failed to start Telegram message monitoring. Login may be required.")
+        
+        # Start the health check task for real-time diagnostics
+        await start_health_check_task()
+        logger.info("Health check monitoring task started")
+    
         return {
             "message": f"{added_count} keywords added successfully", 
             "success": True,
@@ -467,7 +481,6 @@ async def logout_telegram(request) -> Dict[str, Any]:
     
     try:
         # Reset the active user ID in the monitor service
-        from server.app.services.monitor import stop_monitoring
         await stop_monitoring()
         logger.info(f"Stopped monitoring for user {user.id}")
         

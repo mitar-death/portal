@@ -46,6 +46,7 @@ class ActiveSession(Base):
     phone_number = Column(String, index=True)
     user_id = Column(BIGINT, ForeignKey("users.id"))
     code_requested = Column(Boolean, default=False)
+    phone_code_hash = Column(String, nullable=True)  # Store phone code hash for login
     verified = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
