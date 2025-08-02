@@ -43,7 +43,8 @@ async def check_auth_status(request: Request):
                 
                 db = db_context.get()
                 # Check if user already exists
-                stmt = select(User).where(User.telegram_id == str(me.id))
+                tg_id = str(me.id)
+                stmt = select(User).where(User.telegram_id == tg_id)
                 result = await db.execute(stmt)
                 user = result.scalars().first()
                 

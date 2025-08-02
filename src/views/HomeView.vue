@@ -50,12 +50,25 @@ const isAuthenticated = computed(() => store.getters["auth/isAuthenticated"]);
 // Check authentication on component mount
 onMounted(async () => {
   try {
-    const authStatus = await store.dispatch("auth/checkAuthStatus");
-    if (isAuthenticated.value) {
-      loadGroups();
-    } else {
-      // If not authenticated, redirect to login page without triggering another check
-      router.push({ name: 'login', query: { redirect: 'home' } });
+    // First check if we've been redirected from a failed auth check to avoid loops
+    const isRedirectBack = router.currentRoute.value.query.authChecked === 'true';
+    
+    // Only check auth status if we haven't been redirected from a failed check
+    if (!isRedirectBack) {
+      const authStatus = await store.dispatch("auth/checkAuthStatus");
+      if (isAuthenticated.value) {
+        loadGroups();
+      } else {
+        // If not authenticated, redirect to login page with a flag to prevent loop
+        router.push({ 
+          name: 'login', 
+          query: { 
+            redirect: 'home',
+            from: router.currentRoute.value.fullPath,
+            authChecked: 'true'
+          } 
+        });
+      }
     }
   } catch (error) {
     console.error("Error checking auth status:", error);
@@ -96,7 +109,20 @@ const loadGroups = async () => {
           text: "Session expired. Please login again.",
           color: "warning",
         });
-        router.push("/login");
+        
+        // Clear auth state since we're unauthorized
+        await store.dispatch("auth/logout");
+        
+        // Redirect to login with flags to prevent infinite loops
+        router.push({ 
+          name: 'login', 
+          query: { 
+            redirect: 'home',
+            from: router.currentRoute.value.fullPath,
+            authChecked: 'true',
+            sessionExpired: 'true'
+          } 
+        });
       }
     }
   } catch (error) {

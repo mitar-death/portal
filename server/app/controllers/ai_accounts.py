@@ -73,6 +73,35 @@ async def create_ai_account(request: Request):
                 "details": "Please provide name, phone_number, api_id, and api_hash."
             }
         
+        # Validate that API ID is a valid integer and clean up inputs
+        try:
+            # Clean up inputs
+            api_id = api_id.strip() if isinstance(api_id, str) else api_id
+            api_hash = api_hash.strip() if isinstance(api_hash, str) else api_hash
+            phone_number = phone_number.strip() if isinstance(phone_number, str) else phone_number
+            
+            # Validate API ID can be converted to int
+            int(api_id)  # Just validate it can be converted to int
+            
+            # API hash should be a 32-character hexadecimal string
+            if not isinstance(api_hash, str) or len(api_hash) != 32 or not all(c in '0123456789abcdef' for c in api_hash.lower()):
+                return {
+                    "success": False,
+                    "error": "Invalid API Hash",
+                    "details": "API Hash must be a 32-character hexadecimal string."
+                }
+                
+        except (ValueError, TypeError):
+            return {
+                "success": False,
+                "error": "Invalid API ID",
+                "details": f"API ID must be a valid integer. Got: {api_id} (type: {type(api_id)})"
+            }
+        
+        # Format phone number
+        if not phone_number.startswith('+'):
+            phone_number = f"+{phone_number}"
+        
         # Create a new AI account
        
         new_account = AIAccount(
@@ -277,10 +306,24 @@ async def test_ai_account(request: Request):
         session_path = os.path.join(sessions_dir, f"ai_account_{account.id}")
         
         # Try to connect to Telegram
+        # Convert api_id to integer since the TelegramClient requires it as an integer
+        try:
+            # Make sure to strip any whitespace that might be present
+            api_id_str = account.api_id.strip() if isinstance(account.api_id, str) else account.api_id
+            api_id_int = int(api_id_str)
+            logger.info(f"[test_ai_account] Converted API ID from '{api_id_str}' (type: {type(api_id_str)}) to {api_id_int} (type: {type(api_id_int)})")
+        except (ValueError, TypeError, AttributeError) as e:
+            logger.error(f"[test_ai_account] Invalid API ID format: {account.api_id} (type: {type(account.api_id)}). Error: {e}")
+            return {
+                "success": False,
+                "error": "Invalid API ID format",
+                "details": f"API ID must be a numeric value. Got: {account.api_id} (type: {type(account.api_id)})"
+            }
+            
         client = TelegramClient(
             session_path, 
-            api_id=account.api_id, 
-            api_hash=account.api_hash
+            api_id=api_id_int, 
+            api_hash=account.api_hash.strip() if isinstance(account.api_hash, str) else account.api_hash
         )
         
         try:
@@ -362,11 +405,17 @@ async def login_ai_account(request: Request):
         session_path = os.path.join(sessions_dir, f"ai_account_{account.id}")
 
         logger.info(f"{account.name} Telegram credentials : {account.phone_number}, API ID: {account.api_id}, API Hash: {account.api_hash}")
-        # Create a Telegram client
+        
+        api_id = account.api_id.strip() if isinstance(account.api_id, str) else account.api_id
+        logger.info(f"Using API ID: {api_id}... for account {account.id}")
+        
+        api_hash = account.api_hash.strip() if isinstance(account.api_hash, str) else account.api_hash
+        logger.info(f"Using API Hash: {api_hash[:5]}... for account {account.id}")
+        
         client = TelegramClient(
-            session_path, 
-            api_id=account.api_id, 
-            api_hash=account.api_hash
+            session_path,
+            api_id=api_id,
+            api_hash=api_hash
         )
         
         await client.connect()
@@ -382,32 +431,38 @@ async def login_ai_account(request: Request):
         
         if action == "request_code":
             # Request verification code
-            try:
-                phone_number = account.phone_number
-                if not phone_number.startswith('+'):
-                    phone_number = f"+{phone_number}"
-                    
-                phone_code_hash = await client.send_code_request(phone_number)
-                
-                # Store the phone_code_hash in the account for later use
-                account.phone_code_hash = phone_code_hash.phone_code_hash
-                await db.commit()
-                
-                await client.disconnect()
-                
-                return {
-                    "success": True,
-                    "action": "code_requested",
-                    "message": f"Verification code sent to {phone_number}. Please check your Telegram app."
-                }
-            except Exception as e:
-                logger.error(f"Error requesting code: {e}")
-                await client.disconnect()
-                return {
-                    "success": False,
-                    "error": "Failed to request verification code",
-                    "details": str(e)
-                }
+            # try:
+            phone_number = account.phone_number
+            # Clean up phone number
+            phone_number = phone_number.strip() if isinstance(phone_number, str) else phone_number
+            
+            # Ensure phone number starts with '+'
+            if not phone_number.startswith('+'):
+                phone_number = f"+{phone_number}"
+            
+            logger.info(f"Sending code request to phone: {phone_number} with API ID: {api_id} and API Hash: {account.api_hash[:5]}...")
+            
+            phone_code_hash = await client.send_code_request(phone=phone_number)
+            
+            # Store the phone_code_hash in the account for later use
+            account.phone_code_hash = phone_code_hash.phone_code_hash
+            await db.commit()
+            
+            await client.disconnect()
+            
+            return {
+                "success": True,
+                "action": "code_requested",
+                "message": f"Verification code sent to {phone_number}. Please check your Telegram app."
+            }
+            # except Exception as e:
+            #     logger.error(f"Error requesting code: {e}")
+            #     await client.disconnect()
+            #     return {
+            #         "success": False,
+            #         "error": "Failed to request verification code",
+            #         "details": str(e)
+            #     }
         
         elif action == "verify_code":
             # Verify code and complete login

@@ -310,7 +310,7 @@ async def monitor_groups(request,selected_groups: Dict[str, Any]) -> List[Dict[s
             if not selected_group:
                 selected_group = SelectedGroup(
                     user_id=user.id,
-                    group_id=group_id
+                    group_id=str(group_id)  # Explicitly convert to string to match model definition
                 )
                 db.add(selected_group)
                 await db.commit()

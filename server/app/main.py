@@ -32,6 +32,10 @@ async def lifespan(app: FastAPI):
     if not client.is_connected():
         await client.connect()
     
+    # Validate all API credentials in the database
+    logger.info("Validating API credentials...")
+
+    
     # Check if a user is already authorized
     is_authorized = await client.is_user_authorized()
     if is_authorized:

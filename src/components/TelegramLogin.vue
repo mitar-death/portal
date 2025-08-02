@@ -96,6 +96,21 @@ const currentUser = computed(() => store.getters["auth/currentUser"]);
 async function checkAuthStatus() {
   loading.value = true;
   try {
+    const currentRoute = router.currentRoute.value;
+    
+    // Skip actual API check if we have flags indicating auth issues
+    if (currentRoute.query.authChecked === 'true' || 
+        currentRoute.query.sessionExpired === 'true') {
+      console.log("Skipping API auth check due to redirect flags");
+      // Just check local state
+      if (store.getters["auth/isAuthenticated"]) {
+        step.value = "authenticated";
+      } else {
+        step.value = "phone";
+      }
+      return;
+    }
+    
     const isAuthenticated = await store.dispatch("auth/checkAuthStatus");
     if (isAuthenticated) {
       step.value = "authenticated";
@@ -110,7 +125,19 @@ async function checkAuthStatus() {
 
 // Redirect to home page
 function redirectToHome() {
-  router.push("/");
+  const currentRoute = router.currentRoute.value;
+  const fromPath = currentRoute.query.from;
+  
+  // Clear any auth flags when successfully navigating
+  if (fromPath) {
+    // Navigate to the original path but remove any auth flags to prevent future loops
+    router.push({
+      path: fromPath,
+      query: { ...currentRoute.query, authChecked: undefined, sessionExpired: undefined }
+    });
+  } else {
+    router.push("/");
+  }
 }
 
 // Logout function

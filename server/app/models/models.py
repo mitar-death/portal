@@ -9,7 +9,7 @@ from init_db import logger
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(BIGINT, primary_key=True, index=True)
     telegram_id = Column(String, unique=True, index=True)
     username = Column(String, nullable=True)
     first_name = Column(String, nullable=True)
@@ -24,13 +24,15 @@ class User(Base):
     keywords    = relationship("Keywords", back_populates="user")
     ai_accounts = relationship("AIAccount", back_populates="user")
     groups = relationship("Group", back_populates="user")
+    
+    
 
 class SelectedGroup(Base):
     __tablename__ = "selected_groups"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    group_id = Column(BIGINT)
+    user_id = Column(BIGINT, ForeignKey("users.id"))
+    group_id = Column(String)  # Changed from BIGINT to String to match how it's used in code
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -42,7 +44,7 @@ class ActiveSession(Base):
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(String, unique=True, index=True)
     phone_number = Column(String, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(BIGINT, ForeignKey("users.id"))
     code_requested = Column(Boolean, default=False)
     verified = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -54,7 +56,7 @@ class Keywords(Base):
     __tablename__ = "keywords"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(BIGINT, ForeignKey("users.id"))
     keywords = Column(MutableList.as_mutable(JSON), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -96,9 +98,9 @@ class Keywords(Base):
 
 class AIAccount(Base):
     __tablename__ = "ai_accounts"
-    
+
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(BIGINT, ForeignKey("users.id"))
     name = Column(String, nullable=False)  # Name to identify this AI account
     phone_number = Column(String, nullable=False)
     api_id = Column(String, nullable=False)
@@ -117,7 +119,7 @@ class Group(Base):
     __tablename__ = "groups"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(BIGINT, ForeignKey("users.id"))
     telegram_id = Column(BIGINT, index=True)  # The actual Telegram group ID
     title = Column(String, nullable=False)
     username = Column(String, nullable=True)
@@ -136,8 +138,8 @@ class GroupAIAccount(Base):
     __tablename__ = "group_ai_accounts"
     
     id = Column(Integer, primary_key=True, index=True)
-    group_id = Column(Integer, ForeignKey("groups.id"))
-    ai_account_id = Column(Integer, ForeignKey("ai_accounts.id"))
+    group_id = Column(BIGINT, ForeignKey("groups.id"))
+    ai_account_id = Column(BIGINT, ForeignKey("ai_accounts.id"))
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

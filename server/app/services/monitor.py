@@ -52,6 +52,16 @@ async def set_active_user_id(user_id):
         user_id: The ID of the authenticated user.
     """
     global active_user_id
+    
+    # Ensure user_id is properly converted to integer
+    try:
+        if isinstance(user_id, str) and user_id.isdigit():
+            user_id = int(user_id)
+        elif not isinstance(user_id, int):
+            logger.warning(f"Invalid user_id type: {type(user_id)}. Value: {user_id}")
+    except Exception as e:
+        logger.error(f"Error converting user_id to int: {e}. Original value: {user_id}")
+    
     if active_user_id != user_id:
         logger.info(f"Setting active user ID from {active_user_id} to {user_id}")
         active_user_id = user_id

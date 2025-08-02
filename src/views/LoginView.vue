@@ -20,12 +20,20 @@ const router = useRouter();
 // Check if user is already authenticated when the login page loads
 onMounted(async () => {
   try {
-    // Skip the auth check if we were redirected here due to being not authenticated
-    if (router.currentRoute.value.query.redirect !== 'home') {
-      const isAuthenticated = await store.dispatch("auth/checkAuthStatus");
-      if (isAuthenticated) {
-        redirectToHome();
-      }
+    const currentRoute = router.currentRoute.value;
+    
+    // Skip the auth check if we were redirected due to authentication issues
+    // This prevents infinite loops between login and home pages
+    if (currentRoute.query.authChecked === 'true' || 
+        currentRoute.query.sessionExpired === 'true' ||
+        currentRoute.query.redirect === 'home') {
+      console.log("Skipping auth check due to redirect flags");
+      return;
+    }
+    
+    const isAuthenticated = await store.dispatch("auth/checkAuthStatus");
+    if (isAuthenticated) {
+      redirectToHome();
     }
   } catch (error) {
     console.error("Error checking auth status on login page:", error);
@@ -34,9 +42,16 @@ onMounted(async () => {
 
 function redirectToHome() {
   // Check if there's a 'from' in the query, and redirect there if it exists
-  const fromPath = router.currentRoute.value.query.from;
+  const currentRoute = router.currentRoute.value;
+  const fromPath = currentRoute.query.from;
+  
+  // Clear any auth flags when successfully navigating
   if (fromPath) {
-    router.push(fromPath);
+    // Navigate to the original path but remove any auth flags to prevent future loops
+    router.push({
+      path: fromPath,
+      query: { ...currentRoute.query, authChecked: undefined, sessionExpired: undefined }
+    });
   } else {
     router.push("/");
   }
