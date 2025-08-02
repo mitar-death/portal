@@ -79,5 +79,9 @@ Thumbs.db
 # vscode
 .vscode/PythonImportHelper-v2-Completion.json
 
-/.tgportal_sessions
-node_modules
+.tgportal_sessions/
+
+# Storage folders 
+storage/sessions/
+node_modules/
+storage/logs/
