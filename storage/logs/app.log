@@ -15245,3 +15245,23 @@ TypeError: ConversationManager.add_user_message() got an unexpected keyword argu
 2025-08-02 at 06:33:45 | WARNING | AI messenger is not initialized during health check
 2025-08-02 at 06:33:45 | WARNING | AI messenger is not initialized during health check
 2025-08-02 at 06:33:46 | INFO | New message received: 875167 in -1001232960120
+2025-08-02 at 06:34:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:34:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:34:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:34:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:34:46 | INFO | New message received: 875168 in -1001232960120
+2025-08-02 at 06:35:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:35:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:35:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:35:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:36:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:36:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:36:15 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:36:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:36:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:36:45 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:36:46 | INFO | New message received: 875170 in -1001232960120
+2025-08-02 at 06:36:46 | INFO | New message received: 875169 in -1001232960120
+2025-08-02 at 06:36:48 | INFO | Successfully analyzed message with Gemini
+2025-08-02 at 06:36:48 | INFO | Message from Jump Jack in Entrepreneurial journey (EJ) matched keywords: ['yo']
+2025-08-02 at 06:36:48 | WARNING | No AI account mapped to group -1001232960120, cannot respond
