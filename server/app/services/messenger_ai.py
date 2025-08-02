@@ -7,8 +7,8 @@ from server.app.core.databases import db_context, AsyncSessionLocal
 from server.app.models.models import AIAccount, Group, GroupAIAccount
 from sqlalchemy import select, and_
 from server.app.services.ai_engine import generate_response, analyze_message
-from server.app.services.db_helpers import get_user_selected_groups
-from server.app.services.group_helpers import get_group_ai_mappings
+from server.app.utils.db_helpers import get_user_selected_groups
+from server.app.utils.group_helpers import get_group_ai_mappings
 from server.app.services.message_analyzer import MessageAnalyzer
 from server.app.services.conversation_manager import ConversationManager
 from server.app.services.websocket_manager import websocket_manager
@@ -69,7 +69,7 @@ class MessengerAI:
             self.conversation_manager = ConversationManager()
             
             # Load user's keywords
-            from server.app.services.db_helpers import get_user_keywords
+            from server.app.utils.db_helpers import get_user_keywords
             keywords = await get_user_keywords(user_id)
             self.message_analyzer.set_keywords(keywords)
             

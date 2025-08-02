@@ -6,7 +6,7 @@ from server.app.services.telegram import get_client
 from server.app.core.logging import logger
 from server.app.utils.helpers import write_message_to_file
 from server.app.services.messenger_ai import MessengerAI
-from server.app.services.db_helpers import get_user_keywords, get_user_selected_groups
+from server.app.utils.db_helpers import get_user_keywords, get_user_selected_groups
 from server.app.models.models import SelectedGroup
 from sqlalchemy import select
 from server.app.services.messenger_ai import get_messenger_ai
