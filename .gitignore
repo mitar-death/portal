@@ -11,6 +11,13 @@ assets/qr_*.png
 __pycache__/
 *.py[cod]
 *$py.class
+**/__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*/*/*/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
 
 # Distribution / packaging
 .Python
@@ -61,6 +68,14 @@ htmlcov/
 # Logs and databases
 *.log
 *.sqlite3
+storage/logs/
+**/logs/
+*.log.*
+log/
+/logs/
+**/*.log
+**/app.log
+storage/logs/app.log
 
 # Environment variables
 .env
@@ -83,27 +98,18 @@ Thumbs.db
 
 # Storage folders 
 storage/sessions/
+storage/sessions/*
 node_modules/
-storage/logs/app.log
+storage/logs/
 
-# Additional ignore patterns
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*/__pycache__/
-*/*/__pycache__/
-*/*/*/__pycache__/
-
-# Session files
-**/sessions/
+# Telegram session files
 *.session
-sessions/
-*.session
+**/*.session
 *session*
-
-# Log files
-logs/
-**/logs/
-*.log.*
-log/
+.tgportal_sessions/
+**/sessions/
+sessions/
+**/*sessions/
+**/storage/sessions/
+**/storage/sessions/ai_accounts/
+storage/sessions/ai_accounts/
