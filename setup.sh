@@ -61,12 +61,59 @@ if ! command -v poetry &> /dev/null; then
 fi
 
 # Configure Poetry settings
-echo "Configuring Poetry..."
-poetry config virtualenvs.create false
+echo "Configuring Poetry to use virtual environments..."
+poetry config virtualenvs.create true
+poetry config virtualenvs.in-project true
+
+# Create and activate the virtual environment
+echo "Creating Poetry virtual environment..."
+cd "$APP_DIR"
+poetry env use python3
+VENV_PATH=$(poetry env info --path)
+echo "Virtual environment created at: $VENV_PATH"
+
+# Activate the virtual environment
+echo "Activating virtual environment..."
+source "$VENV_PATH/bin/activate" || {
+  echo "Failed to activate virtual environment. Trying alternative approach..."
+  if [ -f "$VENV_PATH/bin/activate" ]; then
+    . "$VENV_PATH/bin/activate"
+  else
+    echo "ERROR: Could not activate virtual environment. Will continue with system Python."
+  fi
+}
+
 
 # Install dependencies using Poetry
 echo "Installing dependencies with Poetry..."
-poetry install --no-interaction 
+poetry install --no-interaction || {
+  echo "Poetry install failed. Trying with explicit installation..."
+  # Check if pyproject.toml exists
+  if [ -f "pyproject.toml" ]; then
+    echo "Installing from pyproject.toml..."
+    pip3 install .
+  else
+    echo "No pyproject.toml found. Trying requirements.txt..."
+    if [ -f "requirements.txt" ]; then
+      pip3 install -r requirements.txt
+    else
+      echo "Generating requirements.txt from pyproject.toml..."
+      poetry export -f requirements.txt --output requirements.txt --without-hashes
+      pip3 install -r requirements.txt
+    fi
+  fi
+}
+
+
+# Update supervisor configuration to use the virtual environment
+echo "Updating supervisor configuration to use Poetry virtual environment..."
+# First, backup the original config
+cp tgportal.conf tgportal.conf.bak
+
+# Update the command in the supervisor config to use the virtual environment
+sed -i "s|command=.*|command=$VENV_PATH/bin/poetry run app|" tgportal.conf
+# Also update the environment to include the virtual environment's path
+sed -i "s|environment=.*|environment=PYTHONPATH=\"$APP_DIR\",PATH=\"$VENV_PATH/bin:/home/$USER/.local/bin:/usr/local/bin:/usr/bin:/bin\",VIRTUAL_ENV=\"$VENV_PATH\"|" tgportal.conf
 
 # Copy environment file
 cp .env.prod .env
@@ -101,15 +148,20 @@ fi
 # Run migrations if needed
 echo "Running database migrations..."
 export PYTHONPATH="$APP_DIR"
-echo "Running migrations with Poetry..."
-poetry run alembic upgrade head || {
-  echo "WARNING: Poetry migration failed. Trying direct alembic command..."
-  if command -v alembic &> /dev/null; then
-    alembic upgrade head || echo "WARNING: Alembic migrations failed. You may need to run them manually."
-  else
-    echo "WARNING: Alembic not found. You may need to run migrations manually."
-  fi
-}
+echo "Running migrations with Poetry in virtual environment..."
+if [ -n "$VENV_PATH" ] && [ -f "$VENV_PATH/bin/alembic" ]; then
+  "$VENV_PATH/bin/alembic" upgrade head
+else
+  echo "Trying with Poetry run command..."
+  poetry run alembic upgrade head || {
+    echo "WARNING: Poetry migration failed. Trying direct alembic command..."
+    if command -v alembic &> /dev/null; then
+      alembic upgrade head || echo "WARNING: Alembic migrations failed. You may need to run them manually."
+    else
+      echo "WARNING: Alembic not found. You may need to run migrations manually."
+    fi
+  }
+fi
 
 echo "==============================================="
 echo "Setup completed successfully!"
