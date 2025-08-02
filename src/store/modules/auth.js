@@ -43,7 +43,12 @@ export default {
     },
 
     actions: {
-        async checkAuthStatus({ commit, dispatch }) {
+        async checkAuthStatus({ commit, dispatch, state }) {
+            // If we've already checked auth and have a valid token/user, avoid unnecessary checks
+            if (state.isAuthenticated && state.user && state.token) {
+                return true;
+            }
+
             try {
                 const response = await fetch('/api/auth/status', {
                     method: 'GET',
@@ -54,7 +59,16 @@ export default {
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to fetch auth status');
+                    // Clear auth state if server reports unauthorized
+                    if (response.status === 401) {
+                        // Only clear if we thought we were authenticated
+                        if (state.isAuthenticated) {
+                            commit('CLEAR_AUTH');
+                            localStorage.removeItem('tgportal_user');
+                            localStorage.removeItem('tgportal_token');
+                        }
+                    }
+                    return false;
                 }
 
                 const data = await response.json();
@@ -88,9 +102,15 @@ export default {
                     }
 
                     return true;
+                } else {
+                    // Server says we're not authorized, clear any local auth state
+                    if (state.isAuthenticated) {
+                        commit('CLEAR_AUTH');
+                        localStorage.removeItem('tgportal_user');
+                        localStorage.removeItem('tgportal_token');
+                    }
+                    return false;
                 }
-
-                return false;
             } catch (error) {
                 console.error('Error checking auth status:', error);
                 return false;

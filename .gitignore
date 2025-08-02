@@ -85,3 +85,24 @@ Thumbs.db
 storage/sessions/
 node_modules/
 storage/logs/app.log
+
+# Additional ignore patterns
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*/__pycache__/
+*/*/__pycache__/
+*/*/*/__pycache__/
+
+# Session files
+**/sessions/
+*.session
+sessions/
+*session*
+
+# Log files
+logs/
+**/logs/
+*.log.*
+log/

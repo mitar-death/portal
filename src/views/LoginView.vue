@@ -19,14 +19,27 @@ const router = useRouter();
 
 // Check if user is already authenticated when the login page loads
 onMounted(async () => {
-  const isAuthenticated = await store.dispatch("auth/checkAuthStatus");
-  if (isAuthenticated) {
-    redirectToHome();
+  try {
+    // Skip the auth check if we were redirected here due to being not authenticated
+    if (router.currentRoute.value.query.redirect !== 'home') {
+      const isAuthenticated = await store.dispatch("auth/checkAuthStatus");
+      if (isAuthenticated) {
+        redirectToHome();
+      }
+    }
+  } catch (error) {
+    console.error("Error checking auth status on login page:", error);
   }
 });
 
 function redirectToHome() {
-  router.push("/");
+  // Check if there's a 'from' in the query, and redirect there if it exists
+  const fromPath = router.currentRoute.value.query.from;
+  if (fromPath) {
+    router.push(fromPath);
+  } else {
+    router.push("/");
+  }
 }
 </script>
 

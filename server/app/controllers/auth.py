@@ -1,5 +1,6 @@
 from fastapi import HTTPException, Request
 from server.app.core.logging import logger
+from server.app.services.monitor import set_active_user_id
 from server.app.services.telegram import get_client
 
 
@@ -34,6 +35,22 @@ async def check_auth_status(request: Request):
                     "last_name": me.last_name,
                     "phone": me.phone
                 }
+                
+                # Find or create the user in the database
+                from server.app.core.databases import db_context
+                from server.app.models.models import User
+                from sqlalchemy import select
+                
+                db = db_context.get()
+                # Check if user already exists
+                stmt = select(User).where(User.telegram_id == str(me.id))
+                result = await db.execute(stmt)
+                user = result.scalars().first()
+                
+                if user:
+                    # Set this user as the active user for monitoring
+                    await set_active_user_id(user.id)
+                    logger.info(f"Set active user ID to {user.id} based on authenticated Telegram user")
         
         # Return the status
         return {

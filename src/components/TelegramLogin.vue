@@ -128,9 +128,12 @@ async function logout() {
   }
 }
 
-// Check authentication status when component mounts
+// Check authentication status when component mounts, but don't do this repeatedly
 onMounted(() => {
-  checkAuthStatus();
+  // Only check auth status if we're not in the authenticated step already
+  if (step.value !== "authenticated") {
+    checkAuthStatus();
+  }
 });
 
 async function requestCode() {

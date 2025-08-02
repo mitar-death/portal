@@ -32,8 +32,37 @@ async def lifespan(app: FastAPI):
     if not client.is_connected():
         await client.connect()
     
-    # Start monitoring in the background - don't pass user_id here
-    # User-specific monitoring will be initiated after login
+    # Check if a user is already authorized
+    is_authorized = await client.is_user_authorized()
+    if is_authorized:
+        # Try to get the user info
+        try:
+            me = await client.get_me()
+            if me:
+                logger.info(f"Found authorized Telegram user: {me.first_name} {me.last_name} (@{me.username})")
+                
+                # Find the user in the database
+                from server.app.core.databases import AsyncSessionLocal
+                from server.app.models.models import User
+                from sqlalchemy import select
+                
+                async with AsyncSessionLocal() as session:
+                    stmt = select(User).where(User.telegram_id == str(me.id))
+                    result = await session.execute(stmt)
+                    user = result.scalars().first()
+                    
+                    if user:
+                        # Set this user as the active user for monitoring
+                        from server.app.services.monitor import set_active_user_id
+                        await set_active_user_id(user.id)
+                        logger.info(f"Set active user ID to {user.id} during application startup")
+                    else:
+                        logger.warning(f"Found authorized Telegram user but no matching user in database: {me.id}")
+        except Exception as e:
+            logger.error(f"Error getting authorized user info during startup: {e}")
+    
+    # Start monitoring in the background but without a specific user ID
+    # The user ID will be set when a user logs in via the AuthMiddleware
     monitoring_started = await start_monitoring()
     if monitoring_started:
         logger.info("Telegram message monitoring started successfully")

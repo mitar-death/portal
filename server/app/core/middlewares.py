@@ -6,6 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy import select
 from starlette.middleware.base import BaseHTTPMiddleware
 from server.app.core.databases import AsyncSessionLocal, db_context
+from server.app.services.monitor import set_active_user_id
 from server.app.core.logging import logger
 from server.app.models.models import User
 from server.app.core.config import settings 
@@ -64,6 +65,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
                         logger.info(f"Authenticated user: {user.id}")
                         # Set the authenticated user in the request state
                         request.state.user = user
+                        
+                        # Update the active user ID in the monitor service
+                        await set_active_user_id(user.id)
                 except Exception as e:
                     logger.error(f"Authentication error: {str(e)}")
                     return Response(status_code=401, content="Unauthorized")

@@ -97,15 +97,22 @@ router.beforeEach((to, from, next) => {
   if (to.matched.some(record => record.meta.requiresAuth)) {
     // Check if user is authenticated
     if (!store.getters['auth/isAuthenticated']) {
-      // If not authenticated, redirect to login page
-      next({ name: 'login' })
+      // If not authenticated, redirect to login page with a redirect parameter
+      // This helps prevent endless redirects
+      next({
+        name: 'login',
+        query: {
+          redirect: 'home',
+          from: to.fullPath
+        }
+      });
     } else {
       // If authenticated, proceed
-      next()
+      next();
     }
   } else {
     // Route doesn't require auth, always proceed
-    next()
+    next();
   }
 })
 

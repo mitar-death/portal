@@ -49,12 +49,20 @@ const isAuthenticated = computed(() => store.getters["auth/isAuthenticated"]);
 
 // Check authentication on component mount
 onMounted(async () => {
-  const authStatus = await store.dispatch("auth/checkAuthStatus");
-  if (authStatus) {
-    loadGroups();
-  } else if (isAuthenticated.value === false) {
-    // If not authenticated, redirect to login page
-    router.push("/login");
+  try {
+    const authStatus = await store.dispatch("auth/checkAuthStatus");
+    if (isAuthenticated.value) {
+      loadGroups();
+    } else {
+      // If not authenticated, redirect to login page without triggering another check
+      router.push({ name: 'login', query: { redirect: 'home' } });
+    }
+  } catch (error) {
+    console.error("Error checking auth status:", error);
+    store.dispatch("ui/showSnackbar", {
+      text: "Error checking authentication status",
+      color: "error",
+    });
   }
 });
 

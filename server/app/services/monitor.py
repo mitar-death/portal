@@ -6,6 +6,7 @@ from server.app.services.telegram import get_client
 from server.app.core.logging import logger
 from server.app.utils.helpers import write_message_to_file
 from server.app.services.messenger_ai import MessengerAI
+from server.app.services.messenger_ai import initialize_messenger_ai, get_messenger_ai
 from server.app.utils.db_helpers import get_user_keywords, get_user_selected_groups
 from server.app.models.models import SelectedGroup
 from sqlalchemy import select
@@ -36,10 +37,70 @@ error_tracker = ErrorTracker()
 # Global variables
 client = get_client()
 monitoring_task = None
-active_user_id = 2
+active_user_id = None  # Initialize to None, will be set during authentication
 monitored_group_ids = set()  # Store group IDs to filter messages
 keywords = set()  # Store keywords to filter messages
 messenger_ai = None  # MessengerAI instance
+
+
+async def set_active_user_id(user_id):
+    """
+    Set the active user ID for monitoring.
+    This function is called by the AuthMiddleware when a user is authenticated.
+    
+    Args:
+        user_id: The ID of the authenticated user.
+    """
+    global active_user_id
+    if active_user_id != user_id:
+        logger.info(f"Setting active user ID from {active_user_id} to {user_id}")
+        active_user_id = user_id
+        
+        # Reload user-specific data
+        await load_user_keywords(user_id)
+        
+        # Reload monitored groups
+        monitored_ids = await get_user_selected_groups(user_id)
+        if monitored_ids:
+            global monitored_group_ids
+            monitored_group_ids = monitored_ids
+            logger.info(f"Updated monitored groups for user {user_id}: {monitored_group_ids}")
+            
+        # Reinitialize AI if needed
+        await ensure_messenger_ai_initialized()
+    return active_user_id
+
+
+async def ensure_messenger_ai_initialized():
+    """
+    Ensure that the messenger_ai is properly initialized for the current active user.
+    """
+    global messenger_ai, active_user_id
+    
+    if not active_user_id:
+        logger.warning("Cannot initialize messenger_ai: No active user ID set")
+        return False
+        
+    # Check if messenger_ai is already initialized
+    if messenger_ai is not None:
+        logger.debug(f"MessengerAI already initialized for user {active_user_id}")
+        return True
+        
+    # Initialize MessengerAI for this user
+    
+    try:
+        ai_initialized = await initialize_messenger_ai(active_user_id)
+        if ai_initialized:
+            messenger_ai = await get_messenger_ai()
+            logger.info(f"MessengerAI initialized for user {active_user_id}")
+            return True
+        else:
+            logger.warning(f"Failed to initialize MessengerAI for user {active_user_id}")
+            return False
+    except Exception as e:
+        logger.error(f"Error initializing MessengerAI: {e}")
+        error_tracker.add_error("Failed to initialize MessengerAI", str(e))
+        return False
 
 
 async def load_user_keywords(user_id):
@@ -72,11 +133,16 @@ async def handle_new_message(event):
         
         # If no active user is set, we can't process messages
         if not active_user_id:
-            logger.debug("No active user ID set, cannot process messages")
+            logger.warning(f"No active user ID set, cannot process messages. Current ID: {active_user_id}")
             return
             
         # Skip if message has no text
         if not hasattr(message, 'text') or not message.text:
+            return
+            
+        # Check if this group is being monitored
+        if monitored_group_ids and chat_id not in monitored_group_ids:
+            logger.debug(f"Skipping message from unmonitored group: {chat_id}")
             return
             
         # Try to get chat info
@@ -301,58 +367,22 @@ async def start_monitoring(user_id=None):
         if not isinstance(user_id, int) or user_id <= 0:
             logger.error(f"Invalid user_id provided to start_monitoring: {user_id}")
             return False
-        active_user_id = user_id
-        logger.info(f"Setting active_user_id to {active_user_id}")
+        await set_active_user_id(user_id)
+        logger.info(f"Active user ID set to {active_user_id} in start_monitoring")
     elif active_user_id is None:
-        logger.warning("No user_id provided and no active_user_id set. Using default user ID.")
-        # You might want to set a default user ID here if appropriate
+        logger.warning("No user_id provided and no active_user_id set. Monitoring will wait for user authentication.")
     
-    monitored_group_ids = set()
-    
-    if user_id:
-        # Load user's keywords
-        await load_user_keywords(user_id)
+    if active_user_id:
+        # Initialize AI and load user data using the helper function
+        await ensure_messenger_ai_initialized()
         
-        # Initialize MessengerAI for this user using the singleton
-        from server.app.services.messenger_ai import initialize_messenger_ai, get_messenger_ai
-        
-        ai_initialized = await initialize_messenger_ai(user_id)
-        logger.info(f"MessengerAI initialized: {ai_initialized}")
-        
-        if ai_initialized:
-            # Update our local reference to the global singleton
-            messenger_ai = await get_messenger_ai()
-            
-            logger.info(f"MessengerAI initialized for user {user_id}")
-            # Log diagnostic information
-            logger.debug(f"AI clients initialized: {list(messenger_ai.ai_clients.keys())}")
-            logger.debug(f"Group-AI mappings: {messenger_ai.group_ai_map}")
-            
-            # Validate the mappings - ensure group IDs are strings for comparison
-            if messenger_ai.group_ai_map:
-                for group_id, ai_id in list(messenger_ai.group_ai_map.items()):  # Use list to avoid modifying during iteration
-                    if not isinstance(group_id, str):
-                        logger.warning(f"Group ID {group_id} is not a string in group-AI mapping, converting to string")
-                        
-                        del messenger_ai.group_ai_map[group_id]
-                        messenger_ai.group_ai_map[str(group_id)] = ai_id
-            else:
-                logger.warning(f"No group-AI mappings found for user {user_id}. AI will not respond to any groups.")
-        else:
-            logger.warning(f"Failed to initialize MessengerAI for user {user_id}")
-            messenger_ai = None  # Set to None on failure
-            
-        # Double check that messenger_ai is properly initialized
-        if messenger_ai is None:
-            logger.error(f"MessengerAI is None after initialization attempt for user {user_id}")
-        else:
-            logger.info(f"MessengerAI is properly initialized and ready to handle messages")
-         # Fetch selected groups for the user
-        monitored_group_ids = await get_user_selected_groups(user_id)
+        # Fetch selected groups for the user if we don't have them yet
         if not monitored_group_ids:
-            logger.warning(f"No selected groups found for user {user_id}. No messages will be monitored.")
-        else:
-            logger.info(f"Found {len(monitored_group_ids)} groups to monitor for user {user_id}: {monitored_group_ids}")
+            monitored_group_ids = await get_user_selected_groups(active_user_id)
+            if not monitored_group_ids:
+                logger.warning(f"No selected groups found for user {active_user_id}. No messages will be monitored.")
+            else:
+                logger.info(f"Found {len(monitored_group_ids)} groups to monitor for user {active_user_id}: {monitored_group_ids}")
     
     logger.info("Starting message monitoring...")
     
@@ -384,15 +414,19 @@ async def stop_monitoring():
     logger.info("Stopping message monitoring...")
     
     # Clean up messenger AI if it exists
-    from server.app.services.messenger_ai import get_messenger_ai
-    messenger_ai = await get_messenger_ai()
     if messenger_ai:
-        await messenger_ai.cleanup()
+        try:
+            await messenger_ai.cleanup()
+        except Exception as e:
+            logger.error(f"Error cleaning up messenger_ai: {e}")
     
     # Reset user and groups
+    old_user_id = active_user_id
     active_user_id = None
     monitored_group_ids = set()
     keywords = set()
+    
+    logger.info(f"Cleared active user ID (was {old_user_id})")
     
     if monitoring_task and not monitoring_task.done():
         monitoring_task.cancel()
@@ -550,3 +584,13 @@ async def start_health_check_task():
     Start the background task for periodic health checks
     """
     asyncio.create_task(_periodic_health_check())
+
+async def get_active_user_id():
+    """
+    Get the currently active user ID.
+    
+    Returns:
+        int or None: The active user ID, or None if not set.
+    """
+    global active_user_id
+    return active_user_id

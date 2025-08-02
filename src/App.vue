@@ -46,12 +46,16 @@ const snackbar = computed(() => store.getters['ui/snackbar']);
 
 // Check authentication status on app startup
 onMounted(async () => {
-  // Check if backend is authenticated but frontend isn't
-  const authStatus = await store.dispatch('auth/checkAuthStatus');
-  
-  // If authenticated, fetch user's groups
-  if (isAuthenticated.value) {
-    store.dispatch('telegram/fetchTelegramGroups');
+  try {
+    // Check if backend is authenticated but frontend isn't
+    const authStatus = await store.dispatch('auth/checkAuthStatus');
+    
+    // If authenticated, fetch user's groups
+    if (isAuthenticated.value) {
+      store.dispatch('telegram/fetchTelegramGroups');
+    }
+  } catch (error) {
+    console.error('Error checking auth status on app startup:', error);
   }
 });
 </script>

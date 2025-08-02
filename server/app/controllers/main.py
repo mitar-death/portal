@@ -144,6 +144,11 @@ async def verify_code(phone_number: str, code: str, phone_code_hash: str) -> Dic
             "last_name": user.last_name,
             "phone_number": user.phone_number
         }
+        
+        # Set this user as the active user for the monitoring service
+        from server.app.services.monitor import set_active_user_id
+        await set_active_user_id(user.id)
+        logger.info(f"Set active user ID to {user.id} during login")
            
         return {
             "message": "Successfully logged in",
@@ -227,18 +232,23 @@ async def get_user_groups(request) -> List[Dict[str, Any]]:
                         # Also add a record with the -100 prefixed ID for compatibility
                         str_id = str(entity.id)
                         if not str_id.startswith('-100'):
-                            prefixed_id = f"-100{str_id}"
-                            logger.info(f"Storing additional group record with prefixed ID: {prefixed_id}")
-                            prefixed_group = Group(
-                                user_id=user.id,
-                                telegram_id=prefixed_id,
-                                title=f"{entity.title} (prefixed ID)",
-                                username=getattr(entity, 'username', None),
-                                description=getattr(entity, 'about', None),
-                                member_count=getattr(entity, 'participants_count', 0),
-                                is_channel=hasattr(entity, 'broadcast') and entity.broadcast
-                            )
-                            db.add(prefixed_group)
+                            try:
+                                # Try to convert the prefixed ID to an integer
+                                prefixed_str = f"-100{str_id}"
+                                prefixed_id = int(prefixed_str)
+                                logger.info(f"Storing additional group record with prefixed ID: {prefixed_id}")
+                                prefixed_group = Group(
+                                    user_id=user.id,
+                                    telegram_id=prefixed_id,
+                                    title=f"{entity.title} (prefixed ID)",
+                                    username=getattr(entity, 'username', None),
+                                    description=getattr(entity, 'about', None),
+                                    member_count=getattr(entity, 'participants_count', 0),
+                                    is_channel=hasattr(entity, 'broadcast') and entity.broadcast
+                                )
+                                db.add(prefixed_group)
+                            except ValueError as e:
+                                logger.error(f"Could not convert prefixed ID to integer: {e}")
                 
             # Commit all changes to the database
             if user:
@@ -249,6 +259,20 @@ async def get_user_groups(request) -> List[Dict[str, Any]]:
         
     except Exception as e:
         logger.error(f"Failed to fetch groups: {e}")
+        # Try to commit any partial changes that were successful
+        if user:
+            try:
+                await db.commit()
+            except Exception as commit_error:
+                logger.error(f"Error committing partial group data: {commit_error}")
+                await db.rollback()
+        
+        # Return any groups we were able to get from Telegram even if DB operations failed
+        if groups:
+            logger.info(f"Returning {len(groups)} groups despite database error")
+            return groups
+        
+        # If we couldn't get any groups, raise an exception
         raise HTTPException(status_code=500, detail=f"Failed to fetch groups: {str(e)}")
 
 
@@ -442,6 +466,11 @@ async def logout_telegram(request) -> Dict[str, Any]:
         await client.connect()
     
     try:
+        # Reset the active user ID in the monitor service
+        from server.app.services.monitor import stop_monitoring
+        await stop_monitoring()
+        logger.info(f"Stopped monitoring for user {user.id}")
+        
         # Log out from Telegram
         await client.log_out()
         logger.info(f"User {user.id} logged out successfully")
