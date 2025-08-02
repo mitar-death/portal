@@ -63,7 +63,6 @@ fi
 # Configure Poetry settings
 echo "Configuring Poetry..."
 poetry config virtualenvs.create false
-poetry config experimental.new-installer false
 
 # Install dependencies using Poetry
 echo "Installing dependencies with Poetry..."

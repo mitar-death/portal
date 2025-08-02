@@ -81,8 +81,7 @@ else
       apt-get update
       apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential
       apt-get install -y postgresql postgresql-contrib
-      apt-get install -y zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev
-
+      apt-get install -y zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev  rsync
     '
   
   echo -e "${GREEN}Instance created successfully.${NC}"
