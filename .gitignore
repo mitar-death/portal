@@ -1,0 +1,115 @@
+# App specific
+*.zip
+build/
+lambdas/*/lib
+.exports/
+
+# Generated gr code files
+assets/qr_*.png
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+**/__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*/*/*/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Poetry files
+.pypoetry/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE-specific files
+.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Logs and databases
+*.log
+*.sqlite3
+storage/logs/
+**/logs/
+*.log.*
+log/
+/logs/
+**/*.log
+**/app.log
+storage/logs/app.log
+
+# Environment variables
+.env
+.env.backend
+.env.local
+.env.development
+.env.test
+.env.production
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# vscode
+.vscode/PythonImportHelper-v2-Completion.json
+
+.tgportal_sessions/
+
+# Storage folders 
+storage/sessions/
+storage/sessions/*
+node_modules/
+storage/logs/
+
+# Telegram session files
+*.session
+**/*.session
+*session*
+.tgportal_sessions/
+**/sessions/
+sessions/
+**/*sessions/
+**/storage/sessions/
+**/storage/sessions/ai_accounts/
+storage/sessions/ai_accounts/

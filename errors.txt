@@ -1,0 +1,2 @@
+server.app.services.monitor:handle_new_message:95 - Error getting sender info: attempt to write a readonly database
+ERROR    | server.app.services.monitor:handle_new_message:83 - Error getting chat info: attempt to write a readonly database
