@@ -14484,3 +14484,764 @@ TypeError: ConversationManager.add_user_message() got an unexpected keyword argu
 2025-08-02 at 05:26:42 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
 2025-08-02 at 05:26:42 | INFO | Authenticated user: 2
 2025-08-02 at 05:27:47 | INFO | New message received: 875123 in -1001232960120
+2025-08-02 at 05:28:05 | INFO | Stopping message monitoring...
+2025-08-02 at 05:28:05 | INFO | AI messenger client for account 1 disconnected
+2025-08-02 at 05:28:05 | INFO | AI messenger client for account 2 disconnected
+2025-08-02 at 05:28:05 | INFO | Cleared all conversations
+2025-08-02 at 05:28:05 | INFO | Cleared all DM errors
+2025-08-02 at 05:28:05 | INFO | Monitoring task cancelled
+2025-08-02 at 05:28:08 | INFO | Starting message monitoring...
+2025-08-02 at 05:28:08 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:171>>
+2025-08-02 at 05:28:08 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 05:28:08 | INFO | Starting Telegram client event loop
+2025-08-02 at 05:31:42 | INFO | Initialized monitored groups for user 2: {'2395474558', '-1004592944834', '1764462918', '4592944834', '-1004724647570', '1232960120', '1156966846', '-1002395474558', '1704565413', '-1001704565413', '2073177832', '1997157548', '2171549335', '2377709132', '2229830090', '4724647570', '-1002229830090', '-1001156966846', '-1002171549335', '-1001997157548', '-1002377709132', '-1002073177832', '-1001764462918', '-1001671029930', '-1001232960120', '1671029930'}
+2025-08-02 at 05:31:42 | INFO | New message received: 74 in -1002229830090
+2025-08-02 at 05:31:42 | INFO | Initializing MessengerAI with user_id: 2
+2025-08-02 at 05:31:42 | INFO | Cleared all conversations
+2025-08-02 at 05:31:42 | INFO | Cleared all DM errors
+2025-08-02 at 05:31:43 | INFO | New message received: 416070 in -1002073177832
+2025-08-02 at 05:31:43 | INFO | Loaded 4 keywords for user 2: {'hello', 'yo', 'there yo', 'sup'}
+2025-08-02 at 05:31:43 | INFO | New message received: 875124 in -1001232960120
+2025-08-02 at 05:31:44 | INFO | AI account 1 initialized successfully
+2025-08-02 at 05:31:46 | INFO | AI account 2 initialized successfully
+2025-08-02 at 05:31:46 | INFO | Loaded 2 group-AI mappings for user 2
+2025-08-02 at 05:31:48 | INFO | Successfully analyzed message with Gemini
+2025-08-02 at 05:31:48 | INFO | Message from Max None in Sapientia Capital matched keywords: ['hello']
+2025-08-02 at 05:31:49 | INFO | Successfully analyzed message with Gemini
+2025-08-02 at 05:31:50 | INFO | Sent AI response via DM to Max None using account 2
+2025-08-02 at 05:31:59 | INFO | AI account 2 received DM reply from Max None (ID: 7989850612)
+2025-08-02 at 05:32:00 | INFO | Successfully analyzed message with Gemini
+2025-08-02 at 05:32:01 | INFO | Sent AI response to DM from Max None
+2025-08-02 at 05:32:09 | INFO | New message received: 875125 in -1001232960120
+2025-08-02 at 05:32:19 | INFO | AI account 2 received DM reply from Max None (ID: 7989850612)
+2025-08-02 at 05:32:20 | INFO | Successfully analyzed message with Gemini
+2025-08-02 at 05:32:21 | INFO | Sent AI response to DM from Max None
+2025-08-02 at 05:32:32 | INFO | AI account 2 received DM reply from Max None (ID: 7989850612)
+2025-08-02 at 05:32:33 | INFO | Successfully analyzed message with Gemini
+2025-08-02 at 05:32:34 | INFO | Stopping message monitoring...
+2025-08-02 at 05:32:34 | INFO | AI messenger client for account 1 disconnected
+2025-08-02 at 05:32:34 | INFO | AI messenger client for account 2 disconnected
+2025-08-02 at 05:32:34 | INFO | Cleared all conversations
+2025-08-02 at 05:32:34 | INFO | Cleared all DM errors
+2025-08-02 at 05:32:34 | INFO | Monitoring task cancelled
+2025-08-02 at 05:32:37 | INFO | Starting message monitoring...
+2025-08-02 at 05:32:37 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:171>>
+2025-08-02 at 05:32:37 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 05:32:37 | INFO | Starting Telegram client event loop
+2025-08-02 at 05:33:38 | INFO | Stopping message monitoring...
+2025-08-02 at 05:33:38 | INFO | Monitoring task cancelled
+2025-08-02 at 05:33:41 | INFO | Starting message monitoring...
+2025-08-02 at 05:33:41 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:171>>
+2025-08-02 at 05:33:41 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 05:33:41 | INFO | Starting Telegram client event loop
+2025-08-02 at 05:33:44 | INFO | Stopping message monitoring...
+2025-08-02 at 05:33:47 | INFO | Starting message monitoring...
+2025-08-02 at 05:33:47 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:171>>
+2025-08-02 at 05:33:47 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 05:33:47 | INFO | Starting Telegram client event loop
+2025-08-02 at 05:34:31 | INFO | Stopping message monitoring...
+2025-08-02 at 05:34:34 | INFO | Starting message monitoring...
+2025-08-02 at 05:34:34 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:171>>
+2025-08-02 at 05:34:34 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 05:34:34 | INFO | Starting Telegram client event loop
+2025-08-02 at 05:34:46 | INFO | Stopping message monitoring...
+2025-08-02 at 06:07:41 | INFO | Starting message monitoring...
+2025-08-02 at 06:07:41 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:07:41 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:07:41 | INFO | Health check monitoring task started
+2025-08-02 at 06:07:41 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:07:41 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:07:41 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:07:41 | INFO | Request path: /api/auth/status
+2025-08-02 at 06:07:41 | INFO | Request method: GET
+2025-08-02 at 06:07:41 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'content-type': 'application/json', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:41 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'content-type': 'application/json', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:41 | INFO | Request path: /api/telegram/groups
+2025-08-02 at 06:07:41 | INFO | Request method: GET
+2025-08-02 at 06:07:41 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:41 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:41 | INFO | Request path: /api/telegram/groups
+2025-08-02 at 06:07:41 | INFO | Request method: GET
+2025-08-02 at 06:07:41 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:41 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:41 | INFO | Request path: /api/auth/status
+2025-08-02 at 06:07:41 | INFO | Request method: GET
+2025-08-02 at 06:07:41 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'content-type': 'application/json', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:41 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'content-type': 'application/json', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:41 | INFO | Request path: /api/telegram/groups
+2025-08-02 at 06:07:41 | INFO | Request method: GET
+2025-08-02 at 06:07:41 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:41 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:41 | INFO | Request path: /api/telegram/groups
+2025-08-02 at 06:07:41 | INFO | Request method: GET
+2025-08-02 at 06:07:41 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:41 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:42 | INFO | Authenticated user: 2
+2025-08-02 at 06:07:42 | INFO | Authenticated user: 2
+2025-08-02 at 06:07:42 | INFO | Authenticated user: 2
+2025-08-02 at 06:07:42 | INFO | Authenticated user: 2
+2025-08-02 at 06:07:42 | INFO | Request path: /api/telegram/groups
+2025-08-02 at 06:07:42 | INFO | Request method: GET
+2025-08-02 at 06:07:42 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:42 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:42 | INFO | Authenticated user: 2
+2025-08-02 at 06:07:42 | INFO | Retrieved 14 groups for user 2
+2025-08-02 at 06:07:42 | INFO | Retrieved 14 groups for user 2
+2025-08-02 at 06:07:42 | INFO | Retrieved 14 groups for user 2
+2025-08-02 at 06:07:42 | INFO | Request path: /api/ai/accounts
+2025-08-02 at 06:07:42 | INFO | Request method: GET
+2025-08-02 at 06:07:42 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:42 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:42 | INFO | Authenticated user: 2
+2025-08-02 at 06:07:42 | INFO | Retrieved 14 groups for user 2
+2025-08-02 at 06:07:43 | INFO | Retrieved 14 groups for user 2
+2025-08-02 at 06:07:43 | INFO | Request path: /api/ai/accounts
+2025-08-02 at 06:07:43 | INFO | Request method: GET
+2025-08-02 at 06:07:43 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:43 | INFO | Request path: /api/ai/group-assignments
+2025-08-02 at 06:07:43 | INFO | Request method: GET
+2025-08-02 at 06:07:43 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:43 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:43 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:43 | INFO | Request path: /api/ai/group-assignments
+2025-08-02 at 06:07:43 | INFO | Request method: GET
+2025-08-02 at 06:07:43 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:43 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/groups', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:07:43 | INFO | Authenticated user: 2
+2025-08-02 at 06:07:43 | INFO | Authenticated user: 2
+2025-08-02 at 06:07:43 | INFO | Authenticated user: 2
+2025-08-02 at 06:08:11 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:08:11 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:08:41 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:08:41 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:08:42 | INFO | Initialized monitored groups for user 2: {'-1004592944834', '2395474558', '2073177832', '-1001671029930', '2377709132', '-1002395474558', '-1001704565413', '1997157548', '1232960120', '2171549335', '4592944834', '1156966846', '-1002377709132', '-1001232960120', '-1002073177832', '1764462918', '-1001764462918', '-1001156966846', '1671029930', '-1001997157548', '-1004724647570', '1704565413', '4724647570', '-1002171549335', '2229830090', '-1002229830090'}
+2025-08-02 at 06:08:42 | INFO | New message received: 875153 in -1001232960120
+2025-08-02 at 06:08:42 | INFO | Initializing MessengerAI with user_id: 2
+2025-08-02 at 06:08:42 | INFO | Cleared all conversations
+2025-08-02 at 06:08:42 | INFO | Cleared all DM errors
+2025-08-02 at 06:08:44 | INFO | AI account 1 initialized successfully
+2025-08-02 at 06:08:46 | INFO | Stopping message monitoring...
+2025-08-02 at 06:08:59 | INFO | Starting message monitoring...
+2025-08-02 at 06:08:59 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:08:59 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:08:59 | INFO | Health check monitoring task started
+2025-08-02 at 06:08:59 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:08:59 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:08:59 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:08:59 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:09:07 | INFO | Stopping message monitoring...
+2025-08-02 at 06:09:07 | INFO | Monitoring task cancelled
+2025-08-02 at 06:09:07 | INFO | Application shutdown complete
+2025-08-02 at 06:11:51 | INFO | Starting message monitoring...
+2025-08-02 at 06:11:51 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:11:51 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:11:51 | INFO | Health check monitoring task started
+2025-08-02 at 06:11:51 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:11:51 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:11:51 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:12:21 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:12:21 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:12:30 | INFO | Stopping message monitoring...
+2025-08-02 at 06:12:30 | INFO | Monitoring task cancelled
+2025-08-02 at 06:12:30 | INFO | Application shutdown complete
+2025-08-02 at 06:13:45 | INFO | Starting message monitoring...
+2025-08-02 at 06:13:45 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:13:45 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:13:45 | INFO | Health check monitoring task started
+2025-08-02 at 06:13:45 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:13:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:13:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:13:56 | INFO | Stopping message monitoring...
+2025-08-02 at 06:13:56 | INFO | Monitoring task cancelled
+2025-08-02 at 06:13:56 | INFO | Application shutdown complete
+2025-08-02 at 06:13:59 | INFO | Starting message monitoring...
+2025-08-02 at 06:13:59 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:13:59 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:13:59 | INFO | Health check monitoring task started
+2025-08-02 at 06:13:59 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:13:59 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:13:59 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:14:07 | INFO | Stopping message monitoring...
+2025-08-02 at 06:14:11 | INFO | Starting message monitoring...
+2025-08-02 at 06:14:13 | INFO | Starting message monitoring...
+2025-08-02 at 06:14:13 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:14:13 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:14:13 | INFO | Health check monitoring task started
+2025-08-02 at 06:14:13 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:14:13 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:14:13 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:14:15 | INFO | Stopping message monitoring...
+2025-08-02 at 06:14:15 | INFO | Monitoring task cancelled
+2025-08-02 at 06:14:15 | INFO | Application shutdown complete
+2025-08-02 at 06:14:18 | INFO | Starting message monitoring...
+2025-08-02 at 06:14:18 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:14:18 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:14:18 | INFO | Health check monitoring task started
+2025-08-02 at 06:14:18 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:14:18 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:14:18 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:14:26 | INFO | Stopping message monitoring...
+2025-08-02 at 06:14:28 | INFO | Starting message monitoring...
+2025-08-02 at 06:14:29 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:14:29 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:14:29 | INFO | Health check monitoring task started
+2025-08-02 at 06:14:29 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:14:29 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:14:29 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:14:29 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:14:30 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:14:30 | INFO | Request method: GET
+2025-08-02 at 06:14:30 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:14:30 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:14:32 | INFO | Request path: /api/diagnostics/reinitialize
+2025-08-02 at 06:14:32 | INFO | Request method: POST
+2025-08-02 at 06:14:32 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'origin': 'http://localhost:8000', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'content-length': '0', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:14:32 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'origin': 'http://localhost:8000', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'content-length': '0', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:14:55 | INFO | Initialized monitored groups for user 2: {'-1002171549335', '-1001704565413', '-1002377709132', '1156966846', '2171549335', '1997157548', '-1002395474558', '-1001232960120', '1764462918', '2377709132', '2073177832', '2395474558', '-1004724647570', '-1002229830090', '1232960120', '-1001764462918', '2229830090', '-1001997157548', '-1004592944834', '-1001156966846', '4724647570', '1704565413', '4592944834', '-1002073177832', '-1001671029930', '1671029930'}
+2025-08-02 at 06:14:55 | INFO | New message received: 75 in -1002229830090
+2025-08-02 at 06:14:55 | INFO | Initializing MessengerAI with user_id: 2
+2025-08-02 at 06:14:55 | INFO | Cleared all conversations
+2025-08-02 at 06:14:55 | INFO | Cleared all DM errors
+2025-08-02 at 06:14:57 | INFO | AI account 1 initialized successfully
+2025-08-02 at 06:14:59 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:14:59 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:14:59 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:14:59 | INFO | AI account 2 initialized successfully
+2025-08-02 at 06:14:59 | INFO | Loaded 2 group-AI mappings for user 2
+2025-08-02 at 06:14:59 | INFO | Loaded 4 keywords for user 2: {'there yo', 'yo', 'sup', 'hello'}
+2025-08-02 at 06:15:00 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:15:00 | INFO | Request method: GET
+2025-08-02 at 06:15:00 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:15:00 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:15:01 | INFO | Successfully analyzed message with Gemini
+2025-08-02 at 06:15:01 | INFO | Message from Max None in Sapientia Capital matched keywords: ['hello']
+2025-08-02 at 06:15:02 | INFO | Successfully analyzed message with Gemini
+2025-08-02 at 06:15:04 | INFO | Sent AI response via DM to Max None using account 2
+2025-08-02 at 06:15:04 | ERROR | Error updating WebSocket with conversation data: 'AIAccount' object has no attribute 'get'
+2025-08-02 at 06:15:29 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:15:29 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:15:30 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:15:30 | INFO | Request method: GET
+2025-08-02 at 06:15:30 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:15:30 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:15:57 | INFO | Request path: /api/ai/accounts
+2025-08-02 at 06:15:57 | INFO | Request method: GET
+2025-08-02 at 06:15:57 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/group-ai-assignments', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:15:57 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/group-ai-assignments', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:15:57 | INFO | Request path: /api/ai/group-assignments
+2025-08-02 at 06:15:57 | INFO | Request method: GET
+2025-08-02 at 06:15:57 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/group-ai-assignments', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:15:57 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/group-ai-assignments', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:15:57 | INFO | Authenticated user: 2
+2025-08-02 at 06:15:57 | INFO | Authenticated user: 2
+2025-08-02 at 06:15:58 | INFO | Request path: /api/ai/accounts
+2025-08-02 at 06:15:58 | INFO | Request method: GET
+2025-08-02 at 06:15:58 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/ai-accounts', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:15:58 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/ai-accounts', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:15:58 | INFO | Authenticated user: 2
+2025-08-02 at 06:15:58 | INFO | Request path: /api/ai/accounts/test
+2025-08-02 at 06:15:58 | INFO | Request method: POST
+2025-08-02 at 06:15:58 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/ai-accounts', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'origin': 'http://localhost:8000', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'content-type': 'application/json', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'content-length': '16', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:15:58 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/ai-accounts', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'origin': 'http://localhost:8000', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'content-type': 'application/json', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'content-length': '16', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:15:58 | INFO | Authenticated user: 2
+2025-08-02 at 06:15:58 | INFO | Account 1 Telegram credentials : 13322732017, API ID: 20643767, API Hash: 19f5b98b70c93ede92f3a3dc02a02316
+2025-08-02 at 06:16:04 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:16:04 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:16:04 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:16:04 | INFO | Request path: /api/keywords
+2025-08-02 at 06:16:04 | INFO | Request method: GET
+2025-08-02 at 06:16:04 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/keywords', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:16:04 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/keywords', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:16:09 | ERROR | Error in test_ai_account: database is locked
+2025-08-02 at 06:16:09 | WARNING | [Handled] HTTPException: 500: database is locked
+2025-08-02 at 06:16:09 | INFO | Authenticated user: 2
+2025-08-02 at 06:16:09 | INFO | Request path: /api/ai/accounts/test
+2025-08-02 at 06:16:09 | INFO | Request method: POST
+2025-08-02 at 06:16:09 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/keywords', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'origin': 'http://localhost:8000', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'content-type': 'application/json', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'content-length': '16', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:16:09 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/keywords', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'origin': 'http://localhost:8000', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'content-type': 'application/json', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'content-length': '16', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:16:09 | INFO | Authenticated user: 2
+2025-08-02 at 06:16:09 | INFO | George Auglia Telegram credentials : 16192889405, API ID: 20643767, API Hash: 19f5b98b70c93ede92f3a3dc02a02316
+2025-08-02 at 06:16:22 | INFO | Stopping message monitoring...
+2025-08-02 at 06:16:22 | INFO | Monitoring task cancelled
+2025-08-02 at 06:16:25 | INFO | Starting message monitoring...
+2025-08-02 at 06:16:25 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:16:25 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:16:25 | INFO | Health check monitoring task started
+2025-08-02 at 06:16:25 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:16:25 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:16:25 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:16:25 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:16:42 | INFO | Stopping message monitoring...
+2025-08-02 at 06:16:42 | INFO | Monitoring task cancelled
+2025-08-02 at 06:16:46 | INFO | Starting message monitoring...
+2025-08-02 at 06:16:46 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:16:46 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:16:46 | INFO | Health check monitoring task started
+2025-08-02 at 06:16:46 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:16:46 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:16:46 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:16:46 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:17:16 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:17:16 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:17:40 | INFO | Stopping message monitoring...
+2025-08-02 at 06:17:40 | INFO | Monitoring task cancelled
+2025-08-02 at 06:17:44 | INFO | Starting message monitoring...
+2025-08-02 at 06:17:44 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:17:44 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:17:44 | INFO | Health check monitoring task started
+2025-08-02 at 06:17:44 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:17:44 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:17:44 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:17:44 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:17:44 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:17:44 | INFO | Request method: GET
+2025-08-02 at 06:17:44 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:17:44 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:17:49 | INFO | Request path: /api/auth/status
+2025-08-02 at 06:17:49 | INFO | Request method: GET
+2025-08-02 at 06:17:49 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'content-type': 'application/json', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:17:49 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'content-type': 'application/json', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:17:49 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:17:49 | INFO | Request method: GET
+2025-08-02 at 06:17:49 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:17:49 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:17:49 | INFO | Request path: /api/telegram/groups
+2025-08-02 at 06:17:49 | INFO | Request method: GET
+2025-08-02 at 06:17:49 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:17:49 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:17:50 | INFO | Authenticated user: 2
+2025-08-02 at 06:17:50 | INFO | Retrieved 14 groups for user 2
+2025-08-02 at 06:18:05 | INFO | Stopping message monitoring...
+2025-08-02 at 06:18:05 | INFO | Monitoring task cancelled
+2025-08-02 at 06:18:05 | INFO | Application shutdown complete
+2025-08-02 at 06:18:08 | INFO | Starting message monitoring...
+2025-08-02 at 06:18:08 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:18:08 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:18:08 | INFO | Health check monitoring task started
+2025-08-02 at 06:18:08 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:18:08 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:18:08 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:18:19 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:18:19 | INFO | Request method: GET
+2025-08-02 at 06:18:19 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:18:19 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:18:36 | INFO | Stopping message monitoring...
+2025-08-02 at 06:18:36 | INFO | Monitoring task cancelled
+2025-08-02 at 06:18:36 | INFO | Application shutdown complete
+2025-08-02 at 06:18:39 | INFO | Starting message monitoring...
+2025-08-02 at 06:18:39 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:18:39 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:18:39 | INFO | Health check monitoring task started
+2025-08-02 at 06:18:39 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:18:39 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:18:39 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:18:39 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:18:49 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:18:49 | INFO | Request method: GET
+2025-08-02 at 06:18:49 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:18:49 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:19:09 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:19:09 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:19:19 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:19:19 | INFO | Request method: GET
+2025-08-02 at 06:19:19 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:19:19 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:19:28 | INFO | Stopping message monitoring...
+2025-08-02 at 06:19:28 | INFO | Monitoring task cancelled
+2025-08-02 at 06:19:28 | INFO | Application shutdown complete
+2025-08-02 at 06:19:32 | INFO | Starting message monitoring...
+2025-08-02 at 06:19:32 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:19:32 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:19:32 | INFO | Health check monitoring task started
+2025-08-02 at 06:19:32 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:19:32 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:19:32 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:19:32 | INFO | Stopping message monitoring...
+2025-08-02 at 06:19:32 | INFO | Monitoring task cancelled
+2025-08-02 at 06:19:32 | INFO | Application shutdown complete
+2025-08-02 at 06:19:36 | INFO | Starting message monitoring...
+2025-08-02 at 06:19:36 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:19:36 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:19:36 | INFO | Health check monitoring task started
+2025-08-02 at 06:19:36 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:19:36 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:19:36 | WARNING | High CPU usage detected: 91.2%
+2025-08-02 at 06:19:36 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:19:36 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:19:37 | INFO | Stopping message monitoring...
+2025-08-02 at 06:19:37 | INFO | Monitoring task cancelled
+2025-08-02 at 06:19:37 | INFO | Application shutdown complete
+2025-08-02 at 06:20:09 | INFO | Starting message monitoring...
+2025-08-02 at 06:20:09 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:20:09 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:20:09 | INFO | Health check monitoring task started
+2025-08-02 at 06:20:09 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:20:09 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:20:09 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:20:09 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:20:09 | INFO | Request method: GET
+2025-08-02 at 06:20:09 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:20:09 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:20:16 | INFO | Stopping message monitoring...
+2025-08-02 at 06:20:19 | INFO | Starting message monitoring...
+2025-08-02 at 06:20:19 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:20:19 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:20:19 | INFO | Health check monitoring task started
+2025-08-02 at 06:20:19 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:20:19 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:20:19 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:20:19 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:20:19 | INFO | Request method: GET
+2025-08-02 at 06:20:19 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:20:19 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:20:49 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:20:49 | INFO | Request method: GET
+2025-08-02 at 06:20:49 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:20:49 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:20:49 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:20:49 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:21:19 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:21:19 | INFO | Request method: GET
+2025-08-02 at 06:21:19 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:21:19 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:21:19 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:21:19 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:21:19 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:21:42 | INFO | Stopping message monitoring...
+2025-08-02 at 06:21:42 | INFO | Monitoring task cancelled
+2025-08-02 at 06:21:42 | INFO | Application shutdown complete
+2025-08-02 at 06:21:45 | INFO | Starting message monitoring...
+2025-08-02 at 06:21:45 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:21:45 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:21:45 | INFO | Health check monitoring task started
+2025-08-02 at 06:21:45 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:21:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:21:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:21:45 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:22:00 | INFO | Stopping message monitoring...
+2025-08-02 at 06:22:00 | INFO | Monitoring task cancelled
+2025-08-02 at 06:22:00 | INFO | Application shutdown complete
+2025-08-02 at 06:22:07 | INFO | Starting message monitoring...
+2025-08-02 at 06:22:07 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:22:07 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:22:07 | INFO | Health check monitoring task started
+2025-08-02 at 06:22:07 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:22:07 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:22:07 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:22:07 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:22:07 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:22:07 | INFO | Request method: GET
+2025-08-02 at 06:22:07 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:07 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:07 | INFO | AI messenger diagnostics requested
+2025-08-02 at 06:22:19 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:22:19 | INFO | Request method: GET
+2025-08-02 at 06:22:19 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:19 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:19 | INFO | AI messenger diagnostics requested
+2025-08-02 at 06:22:29 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:22:29 | INFO | Request method: GET
+2025-08-02 at 06:22:29 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:29 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:29 | INFO | AI messenger diagnostics requested
+2025-08-02 at 06:22:37 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:22:37 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:22:40 | INFO | Request path: /api/auth/status
+2025-08-02 at 06:22:40 | INFO | Request method: GET
+2025-08-02 at 06:22:40 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'content-type': 'application/json', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:40 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'content-type': 'application/json', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:40 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:22:40 | INFO | Request method: GET
+2025-08-02 at 06:22:40 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:40 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:41 | INFO | AI messenger diagnostics requested
+2025-08-02 at 06:22:41 | INFO | Request path: /api/telegram/groups
+2025-08-02 at 06:22:41 | INFO | Request method: GET
+2025-08-02 at 06:22:41 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:41 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:41 | INFO | Authenticated user: 2
+2025-08-02 at 06:22:42 | INFO | Retrieved 14 groups for user 2
+2025-08-02 at 06:22:55 | INFO | Request path: /api/ai/accounts
+2025-08-02 at 06:22:55 | INFO | Request method: GET
+2025-08-02 at 06:22:55 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/group-ai-assignments', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:55 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/group-ai-assignments', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:55 | INFO | Request path: /api/ai/group-assignments
+2025-08-02 at 06:22:55 | INFO | Request method: GET
+2025-08-02 at 06:22:55 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/group-ai-assignments', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:55 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/group-ai-assignments', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:55 | INFO | Authenticated user: 2
+2025-08-02 at 06:22:55 | INFO | Authenticated user: 2
+2025-08-02 at 06:22:55 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:22:55 | INFO | Request method: GET
+2025-08-02 at 06:22:55 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:55 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:22:55 | INFO | AI messenger diagnostics requested
+2025-08-02 at 06:23:07 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:23:07 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:23:08 | INFO | Stopping message monitoring...
+2025-08-02 at 06:23:12 | INFO | Starting message monitoring...
+2025-08-02 at 06:23:12 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:23:12 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:23:12 | INFO | Health check monitoring task started
+2025-08-02 at 06:23:12 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:23:12 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:23:12 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:23:12 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:23:12 | INFO | Request method: GET
+2025-08-02 at 06:23:12 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:23:12 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:23:12 | INFO | AI messenger diagnostics requested
+2025-08-02 at 06:23:39 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:23:39 | INFO | Request method: GET
+2025-08-02 at 06:23:39 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:23:39 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:23:39 | INFO | AI messenger diagnostics requested
+2025-08-02 at 06:23:42 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:23:42 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:24:08 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:24:08 | INFO | Request method: GET
+2025-08-02 at 06:24:08 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:24:08 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:24:08 | INFO | AI messenger diagnostics requested
+2025-08-02 at 06:24:12 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:24:12 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:24:14 | INFO | Initialized monitored groups for user 2: {'1997157548', '-1001232960120', '-1004724647570', '-1002395474558', '2229830090', '-1002229830090', '1232960120', '2171549335', '1704565413', '4592944834', '-1001704565413', '-1002377709132', '-1001156966846', '1156966846', '-1001997157548', '-1002073177832', '-1001671029930', '-1001764462918', '1671029930', '2377709132', '4724647570', '1764462918', '2395474558', '2073177832', '-1002171549335', '-1004592944834'}
+2025-08-02 at 06:24:14 | INFO | New message received: 875160 in -1001232960120
+2025-08-02 at 06:24:14 | INFO | Initializing MessengerAI with user_id: 2
+2025-08-02 at 06:24:14 | INFO | Cleared all conversations
+2025-08-02 at 06:24:14 | INFO | Cleared all DM errors
+2025-08-02 at 06:24:17 | ERROR | Error initializing AI messenger: 'AIAccount' object has no attribute 'username'
+2025-08-02 at 06:24:17 | ERROR | Failed to initialize MessengerAI with user_id: 2
+2025-08-02 at 06:24:39 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:24:39 | INFO | Request method: GET
+2025-08-02 at 06:24:39 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:24:39 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:24:39 | INFO | AI messenger diagnostics requested
+2025-08-02 at 06:24:42 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:24:42 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:25:04 | INFO | New message received: 76 in -1002229830090
+2025-08-02 at 06:25:04 | INFO | Initializing MessengerAI with user_id: 2
+2025-08-02 at 06:25:04 | INFO | Cleared all conversations
+2025-08-02 at 06:25:04 | INFO | Cleared all DM errors
+2025-08-02 at 06:25:05 | INFO | New message received: 875161 in -1001232960120
+2025-08-02 at 06:25:05 | INFO | Loaded 4 keywords for user 2: {'sup', 'there yo', 'yo', 'hello'}
+2025-08-02 at 06:25:07 | ERROR | Error initializing AI messenger: 'AIAccount' object has no attribute 'username'
+2025-08-02 at 06:25:07 | ERROR | Failed to initialize MessengerAI with user_id: 2
+2025-08-02 at 06:25:09 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:25:09 | INFO | Request method: GET
+2025-08-02 at 06:25:09 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:25:09 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:25:09 | INFO | AI messenger diagnostics requested
+2025-08-02 at 06:25:12 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:25:12 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:25:12 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:25:25 | INFO | New message received: 77 in -1002229830090
+2025-08-02 at 06:25:25 | INFO | Initializing MessengerAI with user_id: 2
+2025-08-02 at 06:25:25 | INFO | Cleared all conversations
+2025-08-02 at 06:25:25 | INFO | Cleared all DM errors
+2025-08-02 at 06:25:27 | ERROR | Error initializing AI messenger: 'AIAccount' object has no attribute 'username'
+2025-08-02 at 06:25:27 | ERROR | Failed to initialize MessengerAI with user_id: 2
+2025-08-02 at 06:25:39 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:25:39 | INFO | Request method: GET
+2025-08-02 at 06:25:39 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:25:39 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:25:39 | INFO | AI messenger diagnostics requested
+2025-08-02 at 06:25:42 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:25:42 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:26:09 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:26:09 | INFO | Request method: GET
+2025-08-02 at 06:26:09 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:26:09 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:26:09 | INFO | AI messenger diagnostics requested
+2025-08-02 at 06:26:11 | INFO | Stopping message monitoring...
+2025-08-02 at 06:26:16 | INFO | Starting message monitoring...
+2025-08-02 at 06:26:16 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:26:16 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:26:16 | INFO | Health check monitoring task started
+2025-08-02 at 06:26:16 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:26:16 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:26:16 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:26:37 | INFO | Initialized monitored groups for user 2: {'1764462918', '-1002229830090', '2377709132', '-1002171549335', '-1001764462918', '1156966846', '-1001997157548', '1232960120', '-1002395474558', '-1002073177832', '-1004724647570', '2395474558', '4724647570', '-1001232960120', '4592944834', '2073177832', '2229830090', '-1001704565413', '2171549335', '-1001156966846', '1671029930', '-1004592944834', '1997157548', '-1001671029930', '1704565413', '-1002377709132'}
+2025-08-02 at 06:26:37 | INFO | New message received: 78 in -1002229830090
+2025-08-02 at 06:26:37 | INFO | Initializing MessengerAI with user_id: 2
+2025-08-02 at 06:26:37 | INFO | Cleared all conversations
+2025-08-02 at 06:26:37 | INFO | Cleared all DM errors
+2025-08-02 at 06:26:39 | ERROR | Error initializing AI messenger: 'AIAccount' object has no attribute 'phone'
+2025-08-02 at 06:26:39 | ERROR | Failed to initialize MessengerAI with user_id: 2
+2025-08-02 at 06:26:39 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:26:39 | INFO | Request method: GET
+2025-08-02 at 06:26:39 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:26:39 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:26:39 | INFO | AI messenger diagnostics requested
+2025-08-02 at 06:26:46 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:26:46 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:26:54 | INFO | Stopping message monitoring...
+2025-08-02 at 06:26:54 | INFO | Monitoring task cancelled
+2025-08-02 at 06:26:58 | INFO | Starting message monitoring...
+2025-08-02 at 06:27:01 | INFO | Starting message monitoring...
+2025-08-02 at 06:27:01 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:27:01 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:27:01 | INFO | Health check monitoring task started
+2025-08-02 at 06:27:01 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:27:01 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:27:01 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:27:03 | INFO | Initialized monitored groups for user 2: {'1671029930', '1232960120', '4592944834', '1156966846', '2229830090', '-1001764462918', '1704565413', '-1002395474558', '2073177832', '1997157548', '1764462918', '-1002073177832', '-1001997157548', '2171549335', '-1004724647570', '2377709132', '-1002171549335', '-1001156966846', '4724647570', '-1002229830090', '-1001232960120', '-1002377709132', '-1001671029930', '-1001704565413', '2395474558', '-1004592944834'}
+2025-08-02 at 06:27:03 | INFO | New message received: 79 in -1002229830090
+2025-08-02 at 06:27:03 | INFO | Initializing MessengerAI with user_id: 2
+2025-08-02 at 06:27:03 | INFO | Cleared all conversations
+2025-08-02 at 06:27:03 | INFO | Cleared all DM errors
+2025-08-02 at 06:27:05 | ERROR | Error initializing AI messenger: 'AIAccount' object has no attribute 'username'
+2025-08-02 at 06:27:05 | ERROR | Failed to initialize MessengerAI with user_id: 2
+2025-08-02 at 06:27:09 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:27:09 | INFO | Request method: GET
+2025-08-02 at 06:27:09 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:27:09 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:27:09 | INFO | AI messenger diagnostics requested
+2025-08-02 at 06:27:12 | INFO | Stopping message monitoring...
+2025-08-02 at 06:27:15 | INFO | Starting message monitoring...
+2025-08-02 at 06:27:15 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:27:15 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:27:15 | INFO | Health check monitoring task started
+2025-08-02 at 06:27:15 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:27:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:27:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:27:17 | INFO | Initialized monitored groups for user 2: {'4724647570', '1156966846', '-1002377709132', '2229830090', '-1002395474558', '1764462918', '2171549335', '-1001704565413', '1671029930', '-1002229830090', '-1001764462918', '1232960120', '-1001671029930', '-1004592944834', '4592944834', '2395474558', '-1002073177832', '1997157548', '-1002171549335', '-1004724647570', '1704565413', '2073177832', '-1001232960120', '-1001156966846', '2377709132', '-1001997157548'}
+2025-08-02 at 06:27:17 | INFO | New message received: 80 in -1002229830090
+2025-08-02 at 06:27:17 | INFO | Initializing MessengerAI with user_id: 2
+2025-08-02 at 06:27:17 | INFO | Cleared all conversations
+2025-08-02 at 06:27:17 | INFO | Cleared all DM errors
+2025-08-02 at 06:27:19 | INFO | AI account 1 initialized successfully
+2025-08-02 at 06:27:21 | INFO | AI account 2 initialized successfully
+2025-08-02 at 06:27:21 | INFO | Loaded 2 group-AI mappings for user 2
+2025-08-02 at 06:27:21 | INFO | Loaded 4 keywords for user 2: {'there yo', 'yo', 'sup', 'hello'}
+2025-08-02 at 06:27:23 | INFO | Successfully analyzed message with Gemini
+2025-08-02 at 06:27:23 | INFO | Message from Max None in Sapientia Capital matched keywords: ['hello']
+2025-08-02 at 06:27:24 | INFO | Successfully analyzed message with Gemini
+2025-08-02 at 06:27:26 | INFO | Sent AI response via DM to Max None using account 2
+2025-08-02 at 06:27:26 | ERROR | Error updating WebSocket with conversation data: 'AIAccount' object has no attribute 'get'
+2025-08-02 at 06:27:44 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:27:44 | INFO | Request method: GET
+2025-08-02 at 06:27:44 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:27:44 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:27:44 | INFO | AI messenger diagnostics requested
+2025-08-02 at 06:27:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:27:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:28:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:28:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:28:17 | INFO | New message received: 875165 in -1001232960120
+2025-08-02 at 06:28:18 | INFO | New message received: 875164 in -1001232960120
+2025-08-02 at 06:28:44 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:28:44 | INFO | Request method: GET
+2025-08-02 at 06:28:44 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:28:44 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:28:44 | INFO | AI messenger diagnostics requested
+2025-08-02 at 06:28:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:28:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:28:50 | INFO | Request path: /api/auth/status
+2025-08-02 at 06:28:50 | INFO | Request method: GET
+2025-08-02 at 06:28:50 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'content-type': 'application/json', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:28:50 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'content-type': 'application/json', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:28:50 | INFO | Request path: /api/diagnostics
+2025-08-02 at 06:28:50 | INFO | Request method: GET
+2025-08-02 at 06:28:50 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:28:50 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:28:50 | INFO | AI messenger diagnostics requested
+2025-08-02 at 06:28:51 | INFO | Request path: /api/telegram/groups
+2025-08-02 at 06:28:51 | INFO | Request method: GET
+2025-08-02 at 06:28:51 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:28:51 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/diagnostics', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:28:51 | INFO | Authenticated user: 2
+2025-08-02 at 06:28:51 | INFO | Retrieved 14 groups for user 2
+2025-08-02 at 06:28:51 | INFO | Request path: /api/ai/accounts
+2025-08-02 at 06:28:51 | INFO | Request method: GET
+2025-08-02 at 06:28:51 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/group-ai-assignments', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:28:51 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/group-ai-assignments', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:28:51 | INFO | Request path: /api/ai/group-assignments
+2025-08-02 at 06:28:51 | INFO | Request method: GET
+2025-08-02 at 06:28:51 | INFO | Request headers: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/group-ai-assignments', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:28:51 | INFO | Authorization header: Headers({'x-forwarded-host': 'localhost:8000', 'x-forwarded-proto': 'http', 'x-forwarded-port': '8000', 'x-forwarded-for': '127.0.0.1', 'accept-language': 'en-US,en;q=0.9', 'accept-encoding': 'gzip, deflate, br, zstd', 'referer': 'http://localhost:8000/group-ai-assignments', 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin', 'accept': '*/*', 'sec-ch-ua-mobile': '?0', 'sec-ch-ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'authorization': 'Bearer token_2', 'sec-ch-ua-platform': '"macOS"', 'cache-control': 'no-cache', 'pragma': 'no-cache', 'connection': 'close', 'host': '0.0.0.0:8030'})
+2025-08-02 at 06:28:51 | INFO | Authenticated user: 2
+2025-08-02 at 06:28:51 | INFO | Authenticated user: 2
+2025-08-02 at 06:29:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:29:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:29:15 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:29:33 | INFO | Stopping message monitoring...
+2025-08-02 at 06:29:33 | INFO | Monitoring task cancelled
+2025-08-02 at 06:29:33 | INFO | Application shutdown complete
+2025-08-02 at 06:29:36 | INFO | Starting message monitoring...
+2025-08-02 at 06:29:36 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:29:36 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:29:36 | INFO | Health check monitoring task started
+2025-08-02 at 06:29:36 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:29:36 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:29:36 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:29:38 | INFO | Initialized monitored groups for user 2: {'2171549335', '1997157548', '-1004724647570', '1232960120', '-1002229830090', '4724647570', '-1002073177832', '1764462918', '1671029930', '2395474558', '-1001232960120', '-1001997157548', '4592944834', '-1001764462918', '1156966846', '-1001704565413', '-1004592944834', '-1001156966846', '2377709132', '-1001671029930', '-1002377709132', '2073177832', '-1002395474558', '-1002171549335', '1704565413', '2229830090'}
+2025-08-02 at 06:29:38 | INFO | New message received: 81 in -1002229830090
+2025-08-02 at 06:29:38 | INFO | Initializing MessengerAI with user_id: 2
+2025-08-02 at 06:29:38 | INFO | Cleared all conversations
+2025-08-02 at 06:29:38 | INFO | Cleared all DM errors
+2025-08-02 at 06:29:39 | INFO | AI account 1 initialized successfully
+2025-08-02 at 06:29:42 | INFO | AI account 2 initialized successfully
+2025-08-02 at 06:29:42 | INFO | Loaded 2 group-AI mappings for user 2
+2025-08-02 at 06:29:42 | INFO | Loaded 4 keywords for user 2: {'yo', 'hello', 'there yo', 'sup'}
+2025-08-02 at 06:29:44 | INFO | Successfully analyzed message with Gemini
+2025-08-02 at 06:29:44 | INFO | Message from Max None in Sapientia Capital matched keywords: ['hello']
+2025-08-02 at 06:29:45 | INFO | Successfully analyzed message with Gemini
+2025-08-02 at 06:29:46 | INFO | Sent AI response via DM to Max None using account 2
+2025-08-02 at 06:29:46 | ERROR | Error updating WebSocket with conversation data: ConnectionManager.update_conversation() takes 2 positional arguments but 3 were given
+2025-08-02 at 06:30:06 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:30:06 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:30:20 | INFO | Stopping message monitoring...
+2025-08-02 at 06:30:20 | INFO | Monitoring task cancelled
+2025-08-02 at 06:30:20 | INFO | Application shutdown complete
+2025-08-02 at 06:30:23 | INFO | Starting message monitoring...
+2025-08-02 at 06:30:23 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:30:23 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:30:23 | INFO | Health check monitoring task started
+2025-08-02 at 06:30:23 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:30:23 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:30:23 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:30:23 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:30:42 | INFO | Stopping message monitoring...
+2025-08-02 at 06:30:42 | INFO | Monitoring task cancelled
+2025-08-02 at 06:30:45 | INFO | Starting message monitoring...
+2025-08-02 at 06:30:45 | INFO | Created monitoring task: <Task pending name='Task-10' coro=<_run_client() running at /Users/mazibuckler/apps/tgportal/server/app/services/monitor.py:210>>
+2025-08-02 at 06:30:45 | INFO | Telegram message monitoring started successfully
+2025-08-02 at 06:30:45 | INFO | Health check monitoring task started
+2025-08-02 at 06:30:45 | INFO | Starting Telegram client event loop
+2025-08-02 at 06:30:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:30:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:30:53 | INFO | Initialized monitored groups for user 2: {'1156966846', '2377709132', '4592944834', '1232960120', '-1002395474558', '1704565413', '2395474558', '-1001764462918', '1764462918', '-1001997157548', '-1001232960120', '4724647570', '-1002377709132', '2229830090', '-1001156966846', '-1004724647570', '-1001671029930', '-1002073177832', '-1002229830090', '2073177832', '-1004592944834', '1997157548', '2171549335', '-1002171549335', '1671029930', '-1001704565413'}
+2025-08-02 at 06:30:53 | INFO | New message received: 82 in -1002229830090
+2025-08-02 at 06:30:53 | INFO | Initializing MessengerAI with user_id: 2
+2025-08-02 at 06:30:53 | INFO | Cleared all conversations
+2025-08-02 at 06:30:53 | INFO | Cleared all DM errors
+2025-08-02 at 06:30:55 | INFO | AI account 1 initialized successfully
+2025-08-02 at 06:30:57 | INFO | AI account 2 initialized successfully
+2025-08-02 at 06:30:57 | INFO | Loaded 2 group-AI mappings for user 2
+2025-08-02 at 06:30:57 | INFO | Loaded 4 keywords for user 2: {'there yo', 'hello', 'yo', 'sup'}
+2025-08-02 at 06:30:59 | INFO | Successfully analyzed message with Gemini
+2025-08-02 at 06:30:59 | INFO | Message from Max None in Sapientia Capital matched keywords: ['hello']
+2025-08-02 at 06:31:00 | INFO | Successfully analyzed message with Gemini
+2025-08-02 at 06:31:01 | INFO | Sent AI response via DM to Max None using account 2
+2025-08-02 at 06:31:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:31:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:31:24 | INFO | AI account 2 received DM reply from Max None (ID: 7989850612)
+2025-08-02 at 06:31:25 | INFO | Successfully analyzed message with Gemini
+2025-08-02 at 06:31:26 | INFO | Sent AI response to DM from Max None
+2025-08-02 at 06:31:41 | INFO | AI account 2 received DM reply from Max None (ID: 7989850612)
+2025-08-02 at 06:31:42 | INFO | Successfully analyzed message with Gemini
+2025-08-02 at 06:31:43 | INFO | Sent AI response to DM from Max None
+2025-08-02 at 06:31:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:31:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:31:45 | WARNING | High CPU usage detected: 100.0%
+2025-08-02 at 06:32:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:32:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:32:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:32:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:32:47 | INFO | New message received: 416076 in -1002073177832
+2025-08-02 at 06:33:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:33:15 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:33:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:33:45 | WARNING | AI messenger is not initialized during health check
+2025-08-02 at 06:33:46 | INFO | New message received: 875167 in -1001232960120

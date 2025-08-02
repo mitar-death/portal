@@ -1,6 +1,6 @@
 import json
 import uuid
-from typing import  Awaitable, Callable, Any
+from typing import  Awaitable, Callable, Any, Optional
 from fastapi import Request, Response, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy import select
@@ -132,3 +132,41 @@ class ResponseTransformerMiddleware(BaseHTTPMiddleware):
             return JSONResponse(content=wrapped_body, status_code=response.status_code)
 
         return response
+
+
+async def get_current_user(token: str) -> Optional[User]:
+    """
+    Get the current user from a token string.
+    This is used for WebSocket authentication where the token is passed as a query parameter.
+    
+    Args:
+        token: The authentication token
+        
+    Returns:
+        The authenticated user object or None if authentication fails
+    """
+    if not token or not token.startswith("token_"):
+        logger.warning(f"Invalid token format: {token}")
+        return None
+        
+    try:
+        user_id = int(token.split("token_")[1])
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(User).where(User.id == user_id)
+            )
+            user = result.scalars().first()
+            
+            if not user:
+                logger.warning(f"User not found for token: {token}")
+                return None
+                
+            logger.debug(f"WebSocket authenticated user: {user.id}")
+            return user
+            
+    except ValueError:
+        logger.warning(f"Invalid token format (not an integer): {token}")
+        return None
+    except Exception as e:
+        logger.error(f"WebSocket authentication error: {str(e)}")
+        return None

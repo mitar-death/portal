@@ -198,7 +198,7 @@ async def logout_user(request: Request):
     """
     return await telegram_logout_service(request)
 
-@router.get('/ai/diagnostics', tags=['AI'])
+@router.get('/diagnostics', tags=['Diagnotics'])
 async def get_diagnostics(request: Request):
     """
     Get diagnostic information about the AI messenger system.
@@ -206,7 +206,7 @@ async def get_diagnostics(request: Request):
     """
     return await get_ai_diagnostics(request)
 
-@router.post('/ai/reinitialize', tags=['AI'])
+@router.post('/diagnostics/reinitialize', tags=['Diagnotics'])
 async def reinitialize_ai(request: Request):
     """
     Force reinitialization of the AI messenger system.

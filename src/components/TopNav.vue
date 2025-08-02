@@ -36,6 +36,10 @@
         <v-icon left>mdi-account-switch</v-icon>
         AI Assignments
       </v-btn>
+       <v-btn to="/diagnostics" text>
+        <v-icon left>mdi-bug</v-icon>
+        Diagnostics
+      </v-btn>
 
       <v-text-field
         flat

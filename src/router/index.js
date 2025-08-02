@@ -17,6 +17,12 @@ const routes = [
     }
   },
   {
+    path: '/diagnostics',
+    name: 'diagnostics',
+    component: () => import('../views/DiagnosticsView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/keywords',
     name: 'keywords',
     component: () => import('../views/KeywordsView.vue'),

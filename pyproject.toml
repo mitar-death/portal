@@ -25,6 +25,7 @@ dotenv = "^0.9.9"
 greenlet = "^3.2.3"
 loguru = "^0.7.3"
 google-generativeai = "^0.8.5"
+psutil = "^7.0.0"
 
 [tool.poetry.scripts]
 app = "server.app.main:run"

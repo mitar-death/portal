@@ -11,6 +11,7 @@ from server.app.services.db_helpers import get_user_selected_groups
 from server.app.services.group_helpers import get_group_ai_mappings
 from server.app.services.message_analyzer import MessageAnalyzer
 from server.app.services.conversation_manager import ConversationManager
+from server.app.services.websocket_manager import websocket_manager
 import traceback
         
 
@@ -29,6 +30,12 @@ class MessengerAI:
         # New components for refactored messaging system
         self.message_analyzer = MessageAnalyzer()  # For analyzing messages and detecting keywords
         self.conversation_manager = ConversationManager()  # For tracking DM conversations
+        
+        # Track monitored keywords
+        self.monitored_keywords = set()
+        
+        # Store conversations
+        self.conversations = {}
         
     async def load_group_ai_mappings(self, user_id):
         """
@@ -363,6 +370,29 @@ class MessengerAI:
                 # Add the response to the conversation history
                 self.conversation_manager.add_ai_response(sender_id, ai_account_id, response)
                 
+                # Update WebSocket clients with conversation data
+                try:
+                    # Get the updated conversation history
+                    conversation_history = self.conversation_manager.get_conversation_history(sender_id, ai_account_id)
+                    conversation_id = f"convo_{sender_id}_{ai_account_id}"
+                    
+                    # Create conversation data for WebSocket
+                    conversation_data = {
+                        "id" : conversation_id,
+                        "user_id": sender_id,
+                        "sender_name": sender_name,
+                        "ai_account_id": ai_account_id,
+                        "ai_account_name": self.ai_accounts[ai_account_id].name if ai_account_id in self.ai_accounts else "Unknown",
+                        "last_updated": datetime.now().isoformat(),
+                        "history": conversation_history,
+                        "message_count": len(conversation_history)
+                    }
+                    
+                    # Send to WebSocket clients
+                    asyncio.create_task(websocket_manager.update_conversation(conversation_data))
+                except Exception as e:
+                    logger.error(f"Error updating WebSocket with conversation data: {e}")
+                
             except telethon_errors.FloodWaitError as e:
                 wait_time = getattr(e, 'seconds', 60)
                 logger.warning(f"FloodWaitError: Need to wait {wait_time} seconds before sending more messages")
@@ -694,3 +724,107 @@ class MessengerAI:
             results["status"] = "error"
             results["error"] = str(e)
             return results
+        
+    def get_active_conversations(self):
+        """
+        Get information about all active conversations.
+        Returns a list of conversation information dictionaries.
+        """
+        conversations = []
+        
+        for user_id, conv_data in self.conversations.items():
+            try:
+                conversation = {
+                    "conversation_id": str(user_id),
+                    "user_id": user_id,
+                    "user_name": conv_data.get("user_name", f"User {user_id}"),
+                    "start_time": conv_data.get("start_time", ""),
+                    "last_message_time": conv_data.get("last_update_time", ""),
+                    "message_count": len(conv_data.get("messages", [])),
+                    "chat_type": "Direct Message",
+                    "status": "active" if (datetime.now() - datetime.fromisoformat(conv_data.get("last_update_time", datetime.now().isoformat()))).total_seconds() < 3600 else "inactive"
+                }
+                conversations.append(conversation)
+            except Exception as e:
+                logger.error(f"Error getting conversation info for user {user_id}: {e}")
+        
+        return conversations
+        
+    def get_clients_info(self):
+        """
+        Get information about AI clients
+        """
+        return {
+            "connected_clients": [ai_id for ai_id, client in self.ai_clients.items() if client and client.is_connected()],
+            "active_listeners": len(self.ai_clients),
+            "total_accounts": len(self.ai_accounts)
+        }
+        
+    def get_monitored_groups_info(self):
+        """
+        Get information about monitored groups
+        """
+        return {
+            "groups": list(self.group_ai_map.keys()),
+            "keywords_count": len(self.monitored_keywords)
+        }
+
+    async def _update_conversation_status(self, user_id, update_type="update"):
+        """
+        Update the WebSocket clients about a conversation update
+        """
+        try:
+            
+            
+            if update_type == "new" or update_type == "update":
+                # Get the conversation data
+                if user_id in self.conversations:
+                    conv_data = self.conversations[user_id]
+                    conversation = {
+                        "conversation_id": str(user_id),
+                        "user_id": user_id,
+                        "user_name": conv_data.get("user_name", f"User {user_id}"),
+                        "start_time": conv_data.get("start_time", ""),
+                        "last_message_time": conv_data.get("last_update_time", ""),
+                        "message_count": len(conv_data.get("messages", [])),
+                        "chat_type": "Direct Message",
+                        "status": "active"
+                    }
+                    
+                    # Send the update
+                    await websocket_manager.update_conversation(conversation)
+            
+        except Exception as e:
+            logger.error(f"Error updating conversation status via WebSocket: {e}")
+            logger.error(traceback.format_exc())
+
+
+# This is a singleton instance of the MessengerAI class
+_messenger_ai_instance = None
+
+async def get_messenger_ai():
+    """
+    Get the global MessengerAI instance.
+    If no instance exists, returns None.
+    """
+    global _messenger_ai_instance
+    return _messenger_ai_instance
+
+async def initialize_messenger_ai(user_id):
+    """
+    Initialize the global MessengerAI instance for a specific user.
+    """
+    global _messenger_ai_instance
+    
+    # Clean up existing instance if it exists
+    if _messenger_ai_instance:
+        await _messenger_ai_instance.cleanup()
+    
+    # Create a new instance
+    _messenger_ai_instance = MessengerAI()
+    success = await _messenger_ai_instance.initialize(user_id)
+    
+    if not success:
+        _messenger_ai_instance = None
+        
+    return success

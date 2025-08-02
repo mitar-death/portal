@@ -7,9 +7,10 @@ from contextlib import asynccontextmanager
 from server.app.core.logging import setup_logging, logger
 from server.app.core.config import settings
 from server.app.routes.base_router import router
+from server.app.routes.websocket_routes import ws_router
 from server.app.core.middlewares import DBSessionMiddleware, AuthMiddleware, RequestLoggingMiddleware
 from server.app.services.telegram import get_client
-from server.app.services.monitor import start_monitoring, stop_monitoring
+from server.app.services.monitor import start_monitoring, stop_monitoring, start_health_check_task
 from server.app.core.exceptions import (
     AppException,
     app_exception_handler,
@@ -38,6 +39,10 @@ async def lifespan(app: FastAPI):
         logger.info("Telegram message monitoring started successfully")
     else:
         logger.warning("Failed to start Telegram message monitoring. Login may be required.")
+    
+    # Start the health check task for real-time diagnostics
+    await start_health_check_task()
+    logger.info("Health check monitoring task started")
     
     yield
     
@@ -70,6 +75,7 @@ app.add_middleware(
 
 # Include API routers with a prefix
 app.include_router(router)
+app.include_router(ws_router)
 
 # Middlewares - add in reverse order (last added is executed first)
 app.add_middleware(AuthMiddleware)  # Will be executed last

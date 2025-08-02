@@ -1,5 +1,6 @@
 import asyncio
 import os
+import psutil
 from telethon import events
 from server.app.services.telegram import get_client
 from server.app.core.logging import logger
@@ -8,8 +9,30 @@ from server.app.services.messenger_ai import MessengerAI
 from server.app.services.db_helpers import get_user_keywords, get_user_selected_groups
 from server.app.models.models import SelectedGroup
 from sqlalchemy import select
+from server.app.services.messenger_ai import get_messenger_ai
+from server.app.services.websocket_manager import websocket_manager
+from datetime import datetime, timedelta
+from collections import deque
 
-from datetime import datetime
+# Add a new class to track recent errors
+class ErrorTracker:
+    def __init__(self, max_errors=20):
+        self.recent_errors = deque(maxlen=max_errors)
+        
+    def add_error(self, message, details=None):
+        self.recent_errors.append({
+            "timestamp": datetime.now().isoformat(),
+            "message": message,
+            "details": details
+        })
+        
+    def get_recent_errors(self):
+        return list(self.recent_errors)
+    
+# Create a singleton instance
+error_tracker = ErrorTracker()
+
+
 # Global variables
 client = get_client()
 monitoring_task = None
@@ -150,6 +173,22 @@ async def handle_new_message(event):
             # Always record DMs
             write_message_to_file(message_data, active_user_id)
             
+        # Send the message to the WebSocket manager for real-time monitoring
+        try:
+            # Add additional contextual information to the message data
+            websocket_message = message_data.copy()
+            websocket_message.update({
+                "is_group_message": is_group_message,
+                "matched_keywords": message_data.get('matched_keywords', []),
+                "monitored": True,
+                "processed_time": datetime.now().isoformat()
+            })
+            
+            # Send to WebSocket clients
+            asyncio.create_task(websocket_manager.add_chat_message(websocket_message))
+        except Exception as e:
+            logger.error(f"Error sending message to WebSocket: {e}")
+            
         # Always send the message to MessengerAI for processing
         # The MessengerAI component will decide whether to respond based on:
         # - For group messages: only if they contain keywords
@@ -193,12 +232,10 @@ async def _run_client():
 async def _periodic_health_check():
     """
     Periodically check the health of messenger_ai and reinitialize if needed.
+    Also broadcasts diagnostic information to WebSocket clients.
     """
     while True:
         try:
-            # Wait for 5 minutes between checks
-            await asyncio.sleep(300)
-            
             # Check if messenger_ai is None and needs to be reinitialized
             global messenger_ai, active_user_id
             if active_user_id and messenger_ai is None:
@@ -218,6 +255,31 @@ async def _periodic_health_check():
                         await ensure_messenger_ai_initialized()
                 except Exception as e:
                     logger.error(f"Error during messenger_ai health check: {e}")
+                    
+            # Collect diagnostic information
+            diagnostics = await diagnostic_check()
+            
+            # Broadcast diagnostics to WebSocket clients
+            try:
+                # Add health check timestamp
+                diagnostics["health_check_time"] = datetime.now().isoformat()
+                
+                # Broadcast to all WebSocket clients
+                await websocket_manager.update_diagnostics(diagnostics)
+                
+                # Send notification if there are issues
+                if diagnostics.get("ai_status") and diagnostics["ai_status"] != "ready":
+                    await websocket_manager.send_notification(
+                        "ai_status_warning",
+                        f"AI messenger status is {diagnostics['ai_status']}",
+                        "warning"
+                    )
+            except Exception as e:
+                logger.error(f"Error broadcasting diagnostics to WebSocket clients: {e}")
+                
+            # Wait for a while before the next check (5 minutes)
+            await asyncio.sleep(300)
+            
         except asyncio.CancelledError:
             # Allow the task to be cancelled cleanly
             break
@@ -251,12 +313,16 @@ async def start_monitoring(user_id=None):
         # Load user's keywords
         await load_user_keywords(user_id)
         
-        # Initialize MessengerAI for this user
-        messenger_ai = MessengerAI()
-        ai_initialized = await messenger_ai.initialize(user_id)
+        # Initialize MessengerAI for this user using the singleton
+        from server.app.services.messenger_ai import initialize_messenger_ai, get_messenger_ai
+        
+        ai_initialized = await initialize_messenger_ai(user_id)
         logger.info(f"MessengerAI initialized: {ai_initialized}")
         
         if ai_initialized:
+            # Update our local reference to the global singleton
+            messenger_ai = await get_messenger_ai()
+            
             logger.info(f"MessengerAI initialized for user {user_id}")
             # Log diagnostic information
             logger.debug(f"AI clients initialized: {list(messenger_ai.ai_clients.keys())}")
@@ -318,9 +384,10 @@ async def stop_monitoring():
     logger.info("Stopping message monitoring...")
     
     # Clean up messenger AI if it exists
+    from server.app.services.messenger_ai import get_messenger_ai
+    messenger_ai = await get_messenger_ai()
     if messenger_ai:
         await messenger_ai.cleanup()
-        messenger_ai = None
     
     # Reset user and groups
     active_user_id = None
@@ -367,6 +434,11 @@ async def ensure_messenger_ai_initialized():
     """
     global messenger_ai, active_user_id
     
+    # Use the get_messenger_ai and initialize_messenger_ai functions
+    from server.app.services.messenger_ai import get_messenger_ai, initialize_messenger_ai
+    
+    # First, check if the singleton is initialized
+    messenger_ai = await get_messenger_ai()
     if messenger_ai is not None:
         return True
         
@@ -380,10 +452,11 @@ async def ensure_messenger_ai_initialized():
         return False
     
     logger.warning(f"MessengerAI is None. Attempting to reinitialize for user {active_user_id}...")
-    messenger_ai = MessengerAI()
-    ai_initialized = await messenger_ai.initialize(active_user_id)
+    success = await initialize_messenger_ai(active_user_id)
     
-    if ai_initialized:
+    if success:
+        # Update local reference to the global singleton
+        messenger_ai = await get_messenger_ai()
         logger.info(f"Successfully reinitialized MessengerAI for user {active_user_id}")
         return True
     else:
@@ -393,59 +466,87 @@ async def ensure_messenger_ai_initialized():
 
 async def diagnostic_check():
     """
-    Perform a diagnostic check of the monitoring system and AI messenger.
-    Returns information about the current state.
+    Check the status of the AI messenger and related services
+    Returns a dictionary with diagnostic information
     """
-    global active_user_id, monitored_group_ids, keywords, messenger_ai
     
-    result = {
-        "active_user_id": active_user_id,
-        "monitored_groups_count": len(monitored_group_ids) if monitored_group_ids else 0,
-        "monitored_groups": list(monitored_group_ids) if monitored_group_ids else [],
-        "keywords_count": len(keywords) if keywords else 0,
-        "keywords": list(keywords) if keywords else [],
-        "messenger_ai_initialized": messenger_ai is not None,
-        "client_connected": False,
-        "client_authorized": False,
-        "ai_status": "not_initialized"
+    messenger_ai = await get_messenger_ai()
+    
+    diagnostics = {
+        "ai_status": {
+            "is_initialized": messenger_ai is not None,
+            "connected_clients": 0,
+            "active_listeners": 0,
+            "monitored_groups_count": 0,
+            "monitored_keywords_count": 0
+        },
+        "conversations": [],
+        "recent_errors": error_tracker.get_recent_errors()
     }
     
-    # Check telegram client status
-    try:
-        if client:
-            result["client_connected"] = client.is_connected()
-            if result["client_connected"]:
-                result["client_authorized"] = await client.is_user_authorized()
-    except Exception as e:
-        logger.error(f"Error checking client status: {e}")
-    
-    # Check messenger AI status
     if messenger_ai:
-        try:
-            ai_diagnostic = await messenger_ai.diagnostic_check()
-            result["ai_diagnostic"] = ai_diagnostic
-            result["ai_status"] = ai_diagnostic["status"]
-        except Exception as e:
-            logger.error(f"Error checking AI messenger status: {e}")
-            result["ai_status"] = "error"
-    else:
-        # Try to reinitialize messenger_ai if it's None and we have an active user
-        if active_user_id:
-            result["ai_status"] = "attempting_reinit"
-            ai_initialized = await ensure_messenger_ai_initialized()
-            if ai_initialized and messenger_ai:
-                try:
-                    ai_diagnostic = await messenger_ai.diagnostic_check()
-                    result["ai_diagnostic"] = ai_diagnostic
-                    result["ai_status"] = ai_diagnostic["status"]
-                    result["messenger_ai_initialized"] = True
-                    result["messenger_ai_reinitialized"] = True
-                except Exception as e:
-                    logger.error(f"Error checking reinitialized AI messenger status: {e}")
-                    result["ai_status"] = "error_after_reinit"
-            else:
-                result["ai_status"] = "reinit_failed"
-        else:
-            result["ai_status"] = "no_active_user"
+        # Get more detailed information
+        clients_info = messenger_ai.get_clients_info()
+        diagnostics["ai_status"]["connected_clients"] = len(clients_info["connected_clients"])
+        diagnostics["ai_status"]["active_listeners"] = clients_info["active_listeners"]
+        
+        # Get monitored groups information
+        groups_info = messenger_ai.get_monitored_groups_info()
+        diagnostics["ai_status"]["monitored_groups_count"] = len(groups_info["groups"])
+        diagnostics["ai_status"]["monitored_keywords_count"] = groups_info["keywords_count"]
+        
+        # Get active conversations
+        conversations = messenger_ai.get_active_conversations()
+        diagnostics["conversations"] = conversations
     
-    return result
+    return diagnostics
+    
+# Add a periodic task to update WebSocket clients with the latest diagnostics
+async def _periodic_health_check():
+    """
+    Periodically check system health and update connected WebSocket clients
+    """
+    while True:
+        try:
+            # Get the latest diagnostics
+            diagnostics = await diagnostic_check()
+            
+            # Update all connected WebSocket clients
+            await websocket_manager.update_diagnostics(diagnostics)
+            
+            # Log any critical issues
+            if not diagnostics["ai_status"]["is_initialized"]:
+                logger.warning("AI messenger is not initialized during health check")
+                error_tracker.add_error("AI messenger is not initialized", 
+                                        "The AI messenger system is not properly initialized and may not be functioning correctly")
+                
+            # Check system resources
+            try:
+                cpu_percent = psutil.cpu_percent()
+                memory_percent = psutil.virtual_memory().percent
+                
+                if cpu_percent > 90:
+                    logger.warning(f"High CPU usage detected: {cpu_percent}%")
+                    error_tracker.add_error(f"High CPU usage: {cpu_percent}%", 
+                                          "System performance may be degraded")
+                    
+                if memory_percent > 90:
+                    logger.warning(f"High memory usage detected: {memory_percent}%")
+                    error_tracker.add_error(f"High memory usage: {memory_percent}%", 
+                                          "System may experience out-of-memory errors")
+            except Exception as e:
+                logger.error(f"Error checking system resources: {e}")
+                
+        except Exception as e:
+            logger.error(f"Error in periodic health check: {e}")
+            error_tracker.add_error("Health check failed", str(e))
+            
+        # Wait before the next check
+        await asyncio.sleep(30)  # Check every 30 seconds
+
+# Function to start the health check background task
+async def start_health_check_task():
+    """
+    Start the background task for periodic health checks
+    """
+    asyncio.create_task(_periodic_health_check())
