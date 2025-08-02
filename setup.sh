@@ -60,29 +60,13 @@ if ! command -v poetry &> /dev/null; then
   pip3 install poetry
 fi
 
-# # Configure Poetry settings
-# echo "Configuring Poetry..."
-# poetry config virtualenvs.create false
+# Configure Poetry settings
+echo "Configuring Poetry..."
+poetry config virtualenvs.create false
 
 # Install dependencies using Poetry
 echo "Installing dependencies with Poetry..."
-poetry install --no-dev --no-interaction || {
-  echo "Poetry install failed. Trying with explicit installation..."
-  # Check if pyproject.toml exists
-  if [ -f "pyproject.toml" ]; then
-    echo "Installing from pyproject.toml..."
-    pip3 install .
-  else
-    echo "No pyproject.toml found. Trying requirements.txt..."
-    if [ -f "requirements.txt" ]; then
-      pip3 install -r requirements.txt
-    else
-      echo "Generating requirements.txt from pyproject.toml..."
-      poetry export -f requirements.txt --output requirements.txt --without-hashes
-      pip3 install -r requirements.txt
-    fi
-  fi
-}
+poetry install --no-interaction 
 
 # Copy environment file
 cp .env.prod .env
