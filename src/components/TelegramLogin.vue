@@ -70,6 +70,7 @@
 import { ref, defineEmits, onMounted, computed } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import { fetchWithAuth } from "@/services/auth-interceptor";
 
 const store = useStore();
 const router = useRouter();
@@ -111,13 +112,34 @@ async function checkAuthStatus() {
       return;
     }
     
-    const isAuthenticated = await store.dispatch("auth/checkAuthStatus");
-    if (isAuthenticated) {
+    // First check local state for performance
+    if (store.getters["auth/isAuthenticated"]) {
       step.value = "authenticated";
-      showSnackbar("You are already logged in", "success");
+      
+      // Then verify with backend to ensure sync
+      const isAuthenticated = await store.dispatch("auth/checkAuthStatus");
+      if (!isAuthenticated) {
+        // Backend says not authenticated but frontend thinks we are - handle mismatch
+        step.value = "phone";
+        showSnackbar("Your session has expired. Please log in again.", "warning");
+      }
+    } else {
+      // Not authenticated locally, check with backend
+      const isAuthenticated = await store.dispatch("auth/checkAuthStatus");
+      if (isAuthenticated) {
+        step.value = "authenticated";
+        showSnackbar("You are already logged in", "success");
+      } else {
+        step.value = "phone";
+      }
     }
   } catch (error) {
     console.error("Error checking auth status:", error);
+    // On error, clear local auth and show login form
+    if (store.getters["auth/isAuthenticated"]) {
+      await store.dispatch("auth/logout");
+    }
+    step.value = "phone";
   } finally {
     loading.value = false;
   }
@@ -149,7 +171,10 @@ async function logout() {
     step.value = "phone";
   } catch (error) {
     console.error("Error during logout:", error);
-    showSnackbar("Failed to logout", "error");
+    // Even if there's an error with the server, we still want to clear the local state
+    // and allow the user to log in again
+    showSnackbar("Logged out locally, but there may have been an issue with the server", "warning");
+    step.value = "phone";
   } finally {
     loading.value = false;
   }
@@ -168,15 +193,14 @@ async function requestCode() {
 
   loading.value = true;
   try {
-    // Use the relative API path to our FastAPI backend
-    const response = await fetch("/api/auth/request-code", {
+    // Use our auth interceptor instead of raw fetch
+    const response = await fetchWithAuth("/api/auth/request-code", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ phone_number: phone.value }),
-      credentials: "include",
-    });
+    }, { redirect: false }); // Don't auto-redirect during login flow
 
     const data = await response.json();
 
@@ -184,10 +208,14 @@ async function requestCode() {
       if (data.action === "already_authorized") {
         // The user is already authorized on the backend
         showSnackbar("You are already logged in with Telegram", "success");
+        
+        // First, ensure local state matches backend
+        if (!store.getters["auth/isAuthenticated"]) {
+          await store.dispatch("auth/checkAuthStatus");
+        }
+        
         // Update UI to show authenticated state
         step.value = "authenticated";
-        // Check auth status to sync frontend with backend
-        await checkAuthStatus();
       } else {
         // Normal flow - code was sent
         showSnackbar("Verification code sent to your phone", "success");
@@ -197,7 +225,22 @@ async function requestCode() {
       }
     } else {
       console.error("API Error:", data);
-      showSnackbar(data.detail || "Failed to send verification code", "error");
+      
+      // Handle specific error scenarios
+      if (response.status === 400 && data.detail && data.detail.includes("No active login session")) {
+        showSnackbar("Session expired. Please try again.", "warning");
+        // Clear any existing auth state since there's a mismatch
+        if (store.getters["auth/isAuthenticated"]) {
+          await store.dispatch("auth/logout");
+        }
+      } else if (response.status === 401) {
+        showSnackbar("Authentication error. Please try again.", "error");
+        if (store.getters["auth/isAuthenticated"]) {
+          await store.dispatch("auth/logout");
+        }
+      } else {
+        showSnackbar(data.detail || "Failed to send verification code", "error");
+      }
     }
   } catch (error) {
     console.error("Request Error:", error);
@@ -211,7 +254,8 @@ async function verifyCode() {
 
   loading.value = true;
   try {
-    const response = await fetch("/api/auth/verify-code", {
+    // Use our auth interceptor instead of raw fetch
+    const response = await fetchWithAuth("/api/auth/verify-code", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -221,16 +265,20 @@ async function verifyCode() {
         code: code.value,
         phone_code_hash: phone_code_hash.value, // Include the phone code hash
       }),
-      credentials: "include", // Add credentials to maintain session cookies
-    });
+    }, { redirect: false }); // Don't auto-redirect during login flow
 
     const data = await response.json();
     console.log("Verify code response:", data);
 
     if (response.ok && data.success) {
       showSnackbar("Login successful!", "success");
-      // Let Vuex handle the localStorage
-      // The dispatch will take care of storing in localStorage
+      
+      // Clear any existing auth state first
+      if (store.getters["auth/isAuthenticated"]) {
+        await store.dispatch("auth/logout");
+      }
+      
+      // Then update with new auth data
       await store.dispatch("auth/loginWithTelegram", {
         user: data.user,
         token: data.token,
@@ -243,7 +291,20 @@ async function verifyCode() {
       emit("login-success", data.user);
     } else {
       console.error("Verification API Error:", data);
-      showSnackbar(data.detail || "Invalid verification code", "error");
+      
+      // Handle specific errors
+      if (response.status === 401) {
+        showSnackbar("Invalid verification code. Please try again.", "error");
+      } else if (response.status >= 500) {
+        showSnackbar("Server error. Please try again later.", "error");
+      } else {
+        showSnackbar(data.detail || "Invalid verification code", "error");
+      }
+      
+      // If there was a session mismatch, go back to phone input
+      if (data.error === "session_expired" || data.error === "session_not_found") {
+        step.value = "phone";
+      }
     }
   } catch (error) {
     console.error("Verification Request Error:", error);

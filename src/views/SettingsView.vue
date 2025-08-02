@@ -96,86 +96,76 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { useTheme } from "vuetify";
+import { ref } from "vue";
 
-export default {
-  name: "SettingsView",
+const theme = useTheme();
 
-  data() {
-    const theme = useTheme();
+const darkMode = ref(theme.global.current.value.dark);
+const notifications = ref(localStorage.getItem("notifications") === "true");
+const confirmDialog = ref(false);
+const confirmResetDialog = ref(false);
+const isResettingAI = ref(false);
+const resetStatus = ref(null);
 
-    return {
-      darkMode: theme.global.current.value.dark,
-      notifications: localStorage.getItem("notifications") === "true",
-      confirmDialog: false,
-      confirmResetDialog: false,
-      isResettingAI: false,
-      resetStatus: null,
+const toggleDarkMode = (value) => {
+  theme.global.name.value = value ? "dark" : "light";
+};
+
+const toggleNotifications = (value) => {
+  localStorage.setItem("notifications", value);
+};
+
+const confirmLogout = () => {
+  confirmDialog.value = true;
+};
+
+const confirmResetAI = () => {
+  confirmResetDialog.value = true;
+};
+
+const resetAIMessenger = async () => {
+  confirmResetDialog.value = false;
+  isResettingAI.value = true;
+  resetStatus.value = null;
+
+  try {
+    const response = await fetch("/api/ai/reinitialize", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      resetStatus.value = {
+        type: "success",
+        message: "AI Messenger successfully reset and reinitialized",
+      };
+    } else {
+      resetStatus.value = {
+        type: "warning",
+        message: `Reset partial: ${result.message}`,
+      };
+    }
+  } catch (error) {
+    console.error("Error resetting AI messenger:", error);
+    resetStatus.value = {
+      type: "error",
+      message: `Failed to reset AI messenger: ${error.message}`,
     };
-  },
+  } finally {
+    isResettingAI.value = false;
+  }
+};
 
-  methods: {
-    toggleDarkMode(value) {
-      const theme = useTheme();
-      theme.global.name.value = value ? "dark" : "light";
-    },
-
-    toggleNotifications(value) {
-      localStorage.setItem("notifications", value);
-    },
-
-    confirmLogout() {
-      this.confirmDialog = true;
-    },
-
-    confirmResetAI() {
-      this.confirmResetDialog = true;
-    },
-
-    async resetAIMessenger() {
-      this.confirmResetDialog = false;
-      this.isResettingAI = true;
-      this.resetStatus = null;
-
-      try {
-        const response = await fetch("/api/ai/reinitialize", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          this.resetStatus = {
-            type: "success",
-            message: "AI Messenger successfully reset and reinitialized",
-          };
-        } else {
-          this.resetStatus = {
-            type: "warning",
-            message: `Reset partial: ${result.message}`,
-          };
-        }
-      } catch (error) {
-        console.error("Error resetting AI messenger:", error);
-        this.resetStatus = {
-          type: "error",
-          message: `Failed to reset AI messenger: ${error.message}`,
-        };
-      } finally {
-        this.isResettingAI = false;
-      }
-    },
-
-    async logoutFromAllDevices() {
-      this.confirmDialog = false;
-      await this.$store.dispatch("logout");
-      this.$router.push("/");
-    },
-  },
+const logoutFromAllDevices = async () => {
+  confirmDialog.value = false;
+  await store.dispatch("logout");
+  router.push("/");
 };
 </script>

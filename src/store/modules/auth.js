@@ -1,5 +1,6 @@
 // auth.js - Authentication module for Vuex store
 // Handles user authentication state and related actions
+import { fetchWithAuth } from '@/services/auth-interceptor'
 
 // Load stored authentication data from local storage
 const loadStoredAuth = () => {
@@ -50,22 +51,23 @@ export default {
             }
 
             try {
-                const response = await fetch('/api/auth/status', {
+                // Use our auth interceptor service instead of raw fetch
+                const response = await fetchWithAuth('/api/auth/status', {
                     method: 'GET',
-                    credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json'
                     }
-                });
+                }, { redirect: false }); // Don't auto-redirect on 401
 
                 if (!response.ok) {
-                    // Clear auth state if server reports unauthorized
-                    if (response.status === 401) {
+                    // Clear auth state if server reports unauthorized or any other error
+                    if (response.status === 401 || response.status >= 500) {
                         // Only clear if we thought we were authenticated
                         if (state.isAuthenticated) {
                             commit('CLEAR_AUTH');
                             localStorage.removeItem('tgportal_user');
                             localStorage.removeItem('tgportal_token');
+                            console.log('Cleared auth state due to server error:', response.status);
                         }
                     }
                     return false;
@@ -126,24 +128,9 @@ export default {
             commit('SET_AUTH', { user, token })
 
             return Promise.resolve()
-        },
-
-        async logout({ commit, dispatch, rootState }) {
+        }, async logout({ commit, dispatch, rootState }) {
             try {
-                const response = await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${rootState.auth.token}`
-                    },
-                    credentials: 'include'
-                })
-
-                if (!response.ok) {
-                    console.error('Logout failed:', response.statusText)
-                    return Promise.reject('Logout failed')
-                }
-
+                // Always clear local storage and state first to prevent UI issues
                 localStorage.removeItem('tgportal_user')
                 localStorage.removeItem('tgportal_token')
 
@@ -153,10 +140,25 @@ export default {
                 // Clear other store data
                 dispatch('telegram/clearGroups', null, { root: true })
 
+                // Call backend only after frontend is clean
+                const response = await fetchWithAuth('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }, { redirect: false, clearAuth: false }); // No need to handle auth errors during logout
+
+                if (!response.ok) {
+                    console.error('Logout API call failed:', response.statusText)
+                    // No need to reject since we've already cleared frontend state
+                }
+
                 return Promise.resolve()
             } catch (error) {
                 console.error('Error during logout:', error)
-                return Promise.reject(error)
+                // Even if API call fails, we still want to clean up the frontend
+                // Already done above, so just resolve
+                return Promise.resolve()
             }
         }
     }

@@ -92,23 +92,57 @@ const router = createRouter({
 })
 
 // Navigation guards
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   // Check if the route requires authentication
   if (to.matched.some(record => record.meta.requiresAuth)) {
-    // Check if user is authenticated
+    // First check if the user is authenticated according to the store
     if (!store.getters['auth/isAuthenticated']) {
       // If not authenticated, redirect to login page with a redirect parameter
-      // This helps prevent endless redirects
       next({
         name: 'login',
         query: {
-          redirect: 'home',
-          from: to.fullPath
+          from: to.fullPath,
+          authChecked: 'true'
         }
       });
-    } else {
-      // If authenticated, proceed
+      return;
+    }
+
+    // If the local state says we're authenticated, validate with the server
+    // But only do this check if coming from login or external navigation
+    if (from.name !== 'login' && from.name !== null) {
+      // For normal navigation between authenticated routes, trust the local state
+      // This prevents excessive API calls when navigating between protected routes
       next();
+      return;
+    }
+
+    try {
+      // Coming from login or direct URL, verify auth with server
+      const isAuthenticated = await store.dispatch('auth/checkAuthStatus');
+      if (isAuthenticated) {
+        // Auth confirmed by server, proceed
+        next();
+      } else {
+        // Server says not authenticated, redirect to login
+        next({
+          name: 'login',
+          query: {
+            from: to.fullPath,
+            sessionExpired: 'true'
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Auth check error in route guard:', error);
+      // On error, assume not authenticated and redirect
+      next({
+        name: 'login',
+        query: {
+          from: to.fullPath,
+          authChecked: 'true'
+        }
+      });
     }
   } else {
     // Route doesn't require auth, always proceed

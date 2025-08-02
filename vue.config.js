@@ -1,4 +1,6 @@
 const { defineConfig } = require('@vue/cli-service')
+
+const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
 module.exports = defineConfig({
   transpileDependencies: true,
 
@@ -10,7 +12,7 @@ module.exports = defineConfig({
     port: 8080,
     proxy: {
       '/api': {
-        target: 'http://0.0.0.0:8030',
+        target: backendUrl,
         changeOrigin: true,
         // Don't rewrite the path since our API already expects /api prefix
         pathRewrite: null

@@ -21,22 +21,35 @@ const router = useRouter();
 onMounted(async () => {
   try {
     const currentRoute = router.currentRoute.value;
-    
+
     // Skip the auth check if we were redirected due to authentication issues
     // This prevents infinite loops between login and home pages
-    if (currentRoute.query.authChecked === 'true' || 
-        currentRoute.query.sessionExpired === 'true' ||
-        currentRoute.query.redirect === 'home') {
+    if (
+      currentRoute.query.authChecked === "true" ||
+      currentRoute.query.sessionExpired === "true" ||
+      currentRoute.query.redirect === "home"
+    ) {
       console.log("Skipping auth check due to redirect flags");
       return;
     }
-    
+
     const isAuthenticated = await store.dispatch("auth/checkAuthStatus");
     if (isAuthenticated) {
       redirectToHome();
+    } else {
+      // If we had tokens but backend says we're not authenticated,
+      // clear everything to ensure consistency
+      if (store.getters["auth/isAuthenticated"]) {
+        await store.dispatch("auth/logout");
+        console.log("Cleared inconsistent auth state on login page");
+      }
     }
   } catch (error) {
     console.error("Error checking auth status on login page:", error);
+    // On error, clear auth state to be safe
+    if (store.getters["auth/isAuthenticated"]) {
+      await store.dispatch("auth/logout");
+    }
   }
 });
 
@@ -44,13 +57,17 @@ function redirectToHome() {
   // Check if there's a 'from' in the query, and redirect there if it exists
   const currentRoute = router.currentRoute.value;
   const fromPath = currentRoute.query.from;
-  
+
   // Clear any auth flags when successfully navigating
   if (fromPath) {
     // Navigate to the original path but remove any auth flags to prevent future loops
     router.push({
       path: fromPath,
-      query: { ...currentRoute.query, authChecked: undefined, sessionExpired: undefined }
+      query: {
+        ...currentRoute.query,
+        authChecked: undefined,
+        sessionExpired: undefined,
+      },
     });
   } else {
     router.push("/");

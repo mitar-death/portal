@@ -58,4 +58,24 @@ onMounted(async () => {
     console.error('Error checking auth status on app startup:', error);
   }
 });
+
+// Handle successful login from the login modal
+const handleLoginSuccess = (userData) => {
+  // Close the modal
+  showLoginModal.value = false;
+  
+  // Show success message
+  store.dispatch('ui/showSnackbar', {
+    text: 'Login successful!',
+    color: 'success'
+  });
+  
+  // Fetch groups after successful login
+  store.dispatch('telegram/fetchTelegramGroups');
+};
+
+// Hide the snackbar
+const hideSnackbar = () => {
+  store.dispatch('ui/hideSnackbar');
+};
 </script>
