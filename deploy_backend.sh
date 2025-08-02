@@ -1,6 +1,7 @@
 #!/bin/bash
 # filepath: /Users/mazibuckler/apps/tgportal/deploy_backend.sh
 # This script deploys the TG Portal backend to a GCP Compute Engine instance
+# Uses GitHub-based deployment for improved cross-platform compatibility
 # It is designed to be idempotent (can be run multiple times safely)
 
 set -e  # Exit on any error
@@ -19,28 +20,26 @@ MACHINE_TYPE="e2-medium"
 VM_USERNAME="$USER"
 APP_DIR="/home/$VM_USERNAME/tgportal"
 
+# GitHub configuration - update these with your repository details
+GITHUB_REPO=${GITHUB_REPO:-"https://github.com/mitar-death/portal"}
+GITHUB_BRANCH=${GITHUB_BRANCH:-"stable-without-redis"}
+
 # Load environment variables from .env file if it exists
 if [ -f ".env" ]; then
   # Create a temporary file for sourcing
   ENV_TEMP=$(mktemp)
   echo "#!/bin/bash" > "$ENV_TEMP"
   
-  # Parse .env file with better error handling, fixing common issues
-  grep -v '^#' .env | grep -v '^$' | sed -e 's/\r$//' | sed -e 's/^[[:space:]]*//g' | sed -e 's/[[:space:]]*=[[:space:]]*/=/g' | while IFS= read -r line; do
+  # Parse .env file and export variables
+  grep -v '^#' .env | grep -v '^$' | sed -e 's/\r$//' | \
+  sed -e 's/^[[:space:]]*//g' | sed -e 's/[[:space:]]*=[[:space:]]*/=/g' | \
+  while IFS= read -r line; do
     # Skip lines that don't contain an equals sign
-    if [[ "$line" != *"="* ]]; then
-      continue
+    if [[ "$line" == *"="* ]]; then
+      var_name=$(echo "$line" | cut -d '=' -f 1 | tr -d '[:space:]')
+      var_value=$(echo "$line" | cut -d '=' -f 2-)
+      echo "export $var_name=\"$var_value\"" >> "$ENV_TEMP"
     fi
-    
-    # Extract variable name and value
-    var_name=$(echo "$line" | cut -d '=' -f 1)
-    var_value=$(echo "$line" | cut -d '=' -f 2-)
-    
-    # Clean up the variable name and value
-    var_name=$(echo "$var_name" | tr -d '[:space:]')
-    
-    # Export the variable
-    echo "export $var_name=\"$var_value\"" >> "$ENV_TEMP"
   done
   
   source "$ENV_TEMP"
@@ -80,8 +79,10 @@ else
     --tags=http-server,https-server \
     --metadata=startup-script='#! /bin/bash
       apt-get update
-      apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx
+      apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential
       apt-get install -y postgresql postgresql-contrib
+      apt-get install -y zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev
+
     '
   
   echo -e "${GREEN}Instance created successfully.${NC}"
@@ -141,23 +142,6 @@ done
 # Prepare the deployment files
 echo -e "${YELLOW}Preparing deployment files...${NC}"
 TEMP_DIR=$(mktemp -d)
-rsync -av \
-  --exclude 'node_modules' \
-  --exclude '.venv' \
-  --exclude '.git' \
-  --exclude 'dist' \
-  --exclude '__pycache__' \
-  --exclude '*.pyc' \
-  --exclude '*.pyo' \
-  --exclude '.pytest_cache' \
-  --exclude 'storage/logs' \
-  --exclude 'storage/logs/*' \
-  --exclude 'server/messages' \
-  --exclude 'server/messages/*' \
-  --exclude 'brew_venv' \
-  --exclude '.vscode' \
-  --exclude '.idea' \
-  . "$TEMP_DIR/"
 
 # Create production environment file
 cat > "$TEMP_DIR/.env.prod" << EOL
@@ -165,7 +149,7 @@ cat > "$TEMP_DIR/.env.prod" << EOL
 TELEGRAM_API_ID=${TELEGRAM_API_ID:-"your_telegram_api_id"}
 TELEGRAM_API_HASH=${TELEGRAM_API_HASH:-"your_telegram_api_hash"}
 
-ENV =production
+ENV=production
 # Database settings
 DB_TYPE=postgres
 DB_PORT=5432
@@ -225,159 +209,8 @@ server {
 }
 EOL
 
-# Create setup script to run on the remote machine
-cat > "$TEMP_DIR/setup.sh" << 'EOL'
-#!/bin/bash
-set -e  # Exit on any error
-
-# Display progress
-echo "==============================================="
-echo "Starting TG Portal backend setup"
-echo "==============================================="
-
-# Define app directory explicitly to avoid empty path issues
-APP_DIR="$APP_DIR"
-[ -z "$APP_DIR" ] && { echo "ERROR: APP_DIR is not set"; exit 1; }
-
-# Setup database
-echo "[1/6] Setting up PostgreSQL database..."
-if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw tgportal; then
-  echo "Creating PostgreSQL database and user..."
-  sudo -u postgres psql -c "CREATE DATABASE tgportal;"
-  sudo -u postgres psql -c "CREATE USER tgportal WITH PASSWORD 'tgportal_password';"
-  sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tgportal TO tgportal;"
-  echo "PostgreSQL database and user created successfully."
-else
-  echo "PostgreSQL database already exists. Ensuring user has proper permissions..."
-  sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tgportal TO tgportal;" || true
-fi
-
-# Setup application directory
-echo "[2/6] Setting up application directory..."
-mkdir -p "$APP_DIR"
-echo "Application directory created/verified at $APP_DIR"
-
-# Create necessary directories first
-echo "Creating necessary directories..."
-mkdir -p "$APP_DIR/storage/logs"
-mkdir -p "$APP_DIR/storage/sessions"
-mkdir -p "$APP_DIR/server/messages"
-
-# Copy application files
-echo "[3/6] Copying application files..."
-echo "Using rsync to copy files from /tmp/tgportal_deploy to $APP_DIR"
-rsync -a /tmp/tgportal_deploy/ "$APP_DIR/"
-cd "$APP_DIR"
-
-# Create necessary directories for logs and sessions
-mkdir -p storage/logs
-mkdir -p storage/sessions
-mkdir -p server/messages
-
-# Make sure PYTHONPATH is set for the current session too
-export PYTHONPATH="$APP_DIR"
-
-# Setup Python environment and dependencies
-echo "[4/6] Setting up Python environment and dependencies..."
-echo "Installing Poetry..."
-curl -sSL https://install.python-poetry.org | python3 -
-export PATH="/root/.local/bin:$HOME/.local/bin:$PATH"
-echo 'export PATH="/root/.local/bin:$HOME/.local/bin:$PATH"' >> ~/.bashrc
-echo 'export PATH="/root/.local/bin:$HOME/.local/bin:$PATH"' >> ~/.profile
-
-# Verify Poetry is installed correctly
-if ! command -v poetry &> /dev/null; then
-  echo "Poetry installation failed. Installing with pip..."
-  pip3 install poetry
-fi
-
-# Configure Poetry settings
-echo "Configuring Poetry..."
-poetry config virtualenvs.create false
-poetry config experimental.new-installer false
-
-# Install dependencies using Poetry
-echo "Installing dependencies with Poetry..."
-poetry install --no-dev --no-interaction || {
-  echo "Poetry install failed. Trying with explicit installation..."
-  # Check if pyproject.toml exists
-  if [ -f "pyproject.toml" ]; then
-    echo "Installing from pyproject.toml..."
-    pip3 install .
-  else
-    echo "No pyproject.toml found. Trying requirements.txt..."
-    if [ -f "requirements.txt" ]; then
-      pip3 install -r requirements.txt
-    else
-      echo "Generating requirements.txt from pyproject.toml..."
-      poetry export -f requirements.txt --output requirements.txt --without-hashes
-      pip3 install -r requirements.txt
-    fi
-  fi
-}
-
-# Copy environment file
-cp .env.prod .env
-echo "Production environment file copied."
-
-# Setup supervisor
-echo "[5/6] Setting up Supervisor..."
-sudo mkdir -p /var/log/tgportal
-sudo chown $USER:$USER /var/log/tgportal
-sudo cp tgportal.conf /etc/supervisor/conf.d/
-sudo supervisorctl reread
-sudo supervisorctl update
-if sudo supervisorctl status tgportal | grep -q RUNNING; then
-  echo "Restarting tgportal service..."
-  sudo supervisorctl restart tgportal
-else
-  echo "Starting tgportal service..."
-  sudo supervisorctl start tgportal
-fi
-
-# Setup Nginx
-echo "[6/6] Setting up Nginx..."
-sudo cp tgportal_nginx.conf /etc/nginx/sites-available/tgportal
-sudo ln -sf /etc/nginx/sites-available/tgportal /etc/nginx/sites-enabled/
-if sudo nginx -t; then
-  echo "Nginx configuration is valid."
-  sudo systemctl reload nginx
-else
-  echo "WARNING: Nginx configuration is invalid. Please check manually."
-fi
-
-# Run migrations if needed
-echo "Running database migrations..."
-export PYTHONPATH="$APP_DIR"
-echo "Running migrations with Poetry..."
-poetry run alembic upgrade head || {
-  echo "WARNING: Poetry migration failed. Trying direct alembic command..."
-  if command -v alembic &> /dev/null; then
-    alembic upgrade head || echo "WARNING: Alembic migrations failed. You may need to run them manually."
-  else
-    echo "WARNING: Alembic not found. You may need to run migrations manually."
-  fi
-}
-
-echo "==============================================="
-echo "Setup completed successfully!"
-echo "==============================================="
-EOL
-
-# Replace APP_DIR in the setup script
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  # macOS version of sed
-  sed -i '' "s|\\$APP_DIR|$APP_DIR|g" "$TEMP_DIR/setup.sh"
-else
-  # Linux/GNU version of sed
-  sed -i "s|\\$APP_DIR|$APP_DIR|g" "$TEMP_DIR/setup.sh"
-fi
-chmod +x "$TEMP_DIR/setup.sh"
-
-# Deploy to the VM instance
-echo -e "${YELLOW}Deploying to VM instance...${NC}"
-
-# Create setup script for GitHub-based deployment
+# Create GitHub deployment script
+# Update the GitHub setup script section to fix the token handling
 cat > "$TEMP_DIR/github_setup.sh" << EOL
 #!/bin/bash
 set -e  # Exit on any error
@@ -389,28 +222,53 @@ if ! command -v git &> /dev/null; then
   sudo apt-get install -y git
 fi
 
-# Clone the repository (replace with your actual GitHub repo)
+# Clone the repository
 echo "Cloning repository from GitHub..."
-GITHUB_REPO="https://\${GITHUB_TOKEN}@github.com/your-username/tgportal.git"
-BRANCH="main"  # or your default branch
+GITHUB_REPO="\${GITHUB_REPO}"
+BRANCH="\${GITHUB_BRANCH}"
+GITHUB_TOKEN="\${GITHUB_TOKEN}"
+
+# Format repo URL with token if provided
+if [ -n "\$GITHUB_TOKEN" ]; then
+  # Extract the repository part after github.com/
+  REPO_PART=\$(echo "\$GITHUB_REPO" | sed -e 's|https://github.com/||')
+  
+  # Make sure to remove any trailing slashes
+  REPO_PART=\$(echo "\$REPO_PART" | sed -e 's|/$||')
+  
+  # Create the URL with the token properly
+  GITHUB_URL="https://\${GITHUB_TOKEN}@github.com/\${REPO_PART}"
+  
+  echo "Using authenticated GitHub URL"
+else
+  GITHUB_URL="\$GITHUB_REPO"
+  echo "Using public GitHub URL"
+fi
 
 # Clean up any previous deployment
 rm -rf /tmp/tgportal_deploy
 mkdir -p /tmp/tgportal_deploy
 
-# Clone the repository
-git clone --depth 1 --branch \$BRANCH \$GITHUB_REPO /tmp/tgportal_deploy || {
+# Clone the repository with proper debugging
+echo "Cloning from branch: \$BRANCH"
+set -x  # Enable command echoing for debugging
+git clone --depth 1 --branch "\$BRANCH" "\$GITHUB_URL" /tmp/tgportal_deploy
+set +x  # Disable command echoing
+
+if [ ! -d "/tmp/tgportal_deploy/.git" ]; then
   echo "Failed to clone repository. Check your GitHub token and repository URL."
   exit 1
-}
+fi
 
 # Copy the configuration files
-cp /tmp/config/.env.prod /tmp/tgportal_deploy/
+cp /tmp/config/.env.prod /tmp/tgportal_deploy/.env
 cp /tmp/config/tgportal.conf /tmp/tgportal_deploy/
 cp /tmp/config/tgportal_nginx.conf /tmp/tgportal_deploy/
 
-# Run the setup script
+# Run the setup script or create it if it doesn't exist
 cd /tmp/tgportal_deploy
+
+echo "Running setup script..."
 bash setup.sh
 EOL
 chmod +x "$TEMP_DIR/github_setup.sh"
@@ -428,11 +286,13 @@ if ! gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="mkdir -p /tmp
   exit 1
 fi
 
+# Copy the GitHub setup script
 if ! gcloud compute scp "$TEMP_DIR/github_setup.sh" "$INSTANCE_NAME:~/github_setup.sh" --zone="$ZONE"; then
   echo -e "${RED}Failed to copy setup script to VM. Aborting.${NC}"
   exit 1
 fi
 
+# Copy configuration files
 if ! gcloud compute scp "$TEMP_DIR/config/.env.prod" "$INSTANCE_NAME:/tmp/config/.env.prod" --zone="$ZONE"; then
   echo -e "${RED}Failed to copy .env.prod to VM. Aborting.${NC}"
   exit 1
@@ -448,16 +308,18 @@ if ! gcloud compute scp "$TEMP_DIR/config/tgportal_nginx.conf" "$INSTANCE_NAME:/
   exit 1
 fi
 
-# Extract and run the setup script with progress monitoring
-echo -e "${YELLOW}Setting up the application on the VM...${NC}"
+# Run the GitHub setup script on the VM
+echo -e "${YELLOW}Setting up the application on the VM using GitHub...${NC}"
 echo -e "${YELLOW}This may take several minutes. Please be patient.${NC}"
-echo -e "${YELLOW}Enter your GitHub Personal Access Token when prompted...${NC}"
 
 # Prompt for GitHub token
-read -sp "Enter GitHub Personal Access Token: " GITHUB_TOKEN
+read -sp "Enter GitHub Personal Access Token (leave empty if your repo is public): " GITHUB_TOKEN
 echo
 
+# Run the GitHub deployment script
 gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="
+export GITHUB_REPO='$GITHUB_REPO'
+export GITHUB_BRANCH='$GITHUB_BRANCH'
 export GITHUB_TOKEN='$GITHUB_TOKEN'
 bash ~/github_setup.sh
 " || {
@@ -481,21 +343,7 @@ else
   echo -e "${RED}⚠ TG Portal backend might not be running correctly. Status: $APP_STATUS${NC}"
   echo -e "${YELLOW}Checking supervisor logs...${NC}"
   gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="sudo cat /var/log/tgportal/tgportal.err.log | tail -n 20"
-  echo -e "${YELLOW}You may need to manually check the logs with:${NC}"
-  echo -e "${YELLOW}gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --command=\"sudo supervisorctl status tgportal; sudo cat /var/log/tgportal/tgportal.err.log\"${NC}"
 fi
-
-echo -e "${GREEN}Your FastAPI application should be accessible at: http://$EXTERNAL_IP${NC}"
-
-# Test the API endpoint
-echo -e "${YELLOW}Testing API endpoint...${NC}"
-if curl -s --max-time 5 "http://$EXTERNAL_IP/api/health" | grep -q "status"; then
-  echo -e "${GREEN}✓ API health endpoint is responding!${NC}"
-else
-  echo -e "${YELLOW}⚠ API health endpoint may not be responding. This could be normal if your app doesn't have a /api/health endpoint.${NC}"
-fi
-
-echo -e "${YELLOW}To SSH into the VM: gcloud compute ssh $INSTANCE_NAME --zone=$ZONE${NC}"
 
 # Update the frontend .env file with the new backend URL if needed
 if [ -f ".env" ]; then
@@ -514,7 +362,8 @@ echo -e "${GREEN}Deployment Summary:${NC}"
 echo -e "${GREEN}==================================================================${NC}"
 echo -e "${YELLOW}Backend URL:${NC} http://$EXTERNAL_IP"
 echo -e "${YELLOW}VM Instance:${NC} $INSTANCE_NAME (Zone: $ZONE)"
-echo -e "${YELLOW}Machine Type:${NC} $MACHINE_TYPE"
+echo -e "${YELLOW}GitHub Repository:${NC} $GITHUB_REPO"
+echo -e "${YELLOW}GitHub Branch:${NC} $GITHUB_BRANCH"
 echo -e "${YELLOW}==================================================================${NC}"
 echo -e "${GREEN}Next steps:${NC}"
 echo -e "1. Update your Firebase configuration to allow requests from this domain"
