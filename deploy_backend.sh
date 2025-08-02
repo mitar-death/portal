@@ -73,15 +73,39 @@ else
   gcloud compute instances create "$INSTANCE_NAME" \
     --zone="$ZONE" \
     --machine-type="$MACHINE_TYPE" \
-    --image-family=debian-11 \
+    --image-family=debian-12 \
     --image-project=debian-cloud \
     --boot-disk-size=200GB \
     --tags=http-server,https-server \
     --metadata=startup-script='#! /bin/bash
-      apt-get update
-      apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential
-      apt-get install -y postgresql postgresql-contrib
-      apt-get install -y zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev  rsync
+        apt-get update -y
+        apt-get upgrade -y
+
+        # Install system dependencies
+        apt-get install -y \
+            wget curl git supervisor nginx certbot python3-certbot-nginx \
+            build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev \
+            libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev \
+            liblzma-dev uuid-dev libgdbm-compat-dev xz-utils tk-dev \
+            postgresql postgresql-contrib \
+            rsync
+
+        # Install Python 3.12 from source
+        cd /usr/src
+        wget https://www.python.org/ftp/python/3.12.2/Python-3.12.2.tgz
+        tar xzf Python-3.12.2.tgz
+        cd Python-3.12.2
+        ./configure --enable-optimizations
+        make -j "$(nproc)"
+        make altinstall  # Use altinstall to avoid overwriting system python
+
+        # Verify Python 3.12
+        python3.12 --version
+        pip3.12 install --upgrade pip setuptools wheel
+
+        # Enable services
+        systemctl enable nginx
+        systemctl enable postgresql
     '
   
   echo -e "${GREEN}Instance created successfully.${NC}"
