@@ -268,18 +268,18 @@ if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
     fi
     
     # Check if the domain DNS is properly set up for Certbot verification
-  #   CURRENT_IP=$(curl -s ifconfig.me)
-  #   DOMAIN_IP=$(dig +short $CUSTOM_DOMAIN A)
+    CURRENT_IP=$(curl -s ifconfig.me)
+    DOMAIN_IP=$(dig +short $CUSTOM_DOMAIN A)
   
-  # if [ -z "$DOMAIN_IP" ]; then
-  #   echo -e "${RED}Domain $CUSTOM_DOMAIN doesn't have an A record. Certbot verification will fail.${NC}"
-  #   echo -e "${YELLOW}Please add an A record: $CUSTOM_DOMAIN -> $CURRENT_IP${NC}"
-  #   exit 1
-  # elif [ "$DOMAIN_IP" != "$CURRENT_IP" ]; then
-  #   echo -e "${RED}Domain $CUSTOM_DOMAIN points to $DOMAIN_IP, but this server's IP is $CURRENT_IP${NC}"
-  #   echo -e "${YELLOW}Please update your DNS A record to point to $CURRENT_IP${NC}"
-  #   exit 1
-  # fi
+  if [ -z "$DOMAIN_IP" ]; then
+    echo -e "${RED}Domain $CUSTOM_DOMAIN doesn't have an A record. Certbot verification will fail.${NC}"
+    echo -e "${YELLOW}Please add an A record: $CUSTOM_DOMAIN -> $CURRENT_IP${NC}"
+    exit 1
+  elif [ "$DOMAIN_IP" != "$CURRENT_IP" ]; then
+    echo -e "${RED}Domain $CUSTOM_DOMAIN points to $DOMAIN_IP, but this server's IP is $CURRENT_IP${NC}"
+    echo -e "${YELLOW}Please update your DNS A record to point to $CURRENT_IP${NC}"
+    exit 1
+  fi
   
   echo -e "${GREEN}Domain $CUSTOM_DOMAIN correctly points to this server. Proceeding with Certbot...${NC}"
   if ! sudo certbot --nginx -d $CUSTOM_DOMAIN --non-interactive --agree-tos --email admin@$CUSTOM_DOMAIN --redirect; then
