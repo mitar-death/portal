@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 
 # Configuration variables - edit these as needed
 PROJECT_ID=${FIREBASE_PROJECT_ID:-"gen-lang-client-0560055117"}
-INSTANCE_NAME="tgportal-backend"
+INSTANCE_NAME="tgportal-backend-2"
 ZONE="us-central1-a"
 MACHINE_TYPE="e2-medium"
 VM_USERNAME="$USER"
@@ -103,7 +103,7 @@ else
 
       apt-get update
       # Install essential packages
-      apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential  zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev  postgresql-client dig
+      apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential  zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev rsync postgresql-client 
 
       # Create log directory for application
       mkdir -p /var/log/tgportal
@@ -322,9 +322,9 @@ USE_HTTPS="$USE_HTTPS"
 
 # Install Git if not already available
 if ! command -v git &> /dev/null; then
-  echo -e "\${YELLOW}Installing Git and rsync...\${NC}"
+  echo -e "\${YELLOW}Installing Git...\${NC}"
   sudo apt-get update
-  sudo apt-get install -y git rsync
+  sudo apt-get install -y git
 fi
 
 # Clone the repository
