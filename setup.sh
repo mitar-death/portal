@@ -116,7 +116,7 @@ sed -i "s|command=.*|command=$VENV_PATH/bin/poetry run app|" tgportal.conf
 sed -i "s|environment=.*|environment=PYTHONPATH=\"$APP_DIR\",PATH=\"$VENV_PATH/bin:/home/$USER/.local/bin:/usr/local/bin:/usr/bin:/bin\",VIRTUAL_ENV=\"$VENV_PATH\"|" tgportal.conf
 
 # Copy environment file
-cp .env.prod .env
+cp /tmp/config/.env.prod .env
 echo "Production environment file copied."
 
 # Setup supervisor
