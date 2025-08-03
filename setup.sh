@@ -286,6 +286,9 @@ if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
     echo -e "${RED}Certbot failed to generate SSL certificates. Please check manually.${NC}"
     exit 1
   fi
+  
+  # Close the 'else' part of the certificate existence check
+  fi
 
 
   # Create nginx configuration for HTTPS
@@ -377,8 +380,9 @@ EOL
   else
     echo -e "${RED}WARNING: Nginx configuration is invalid. Please check manually.${NC}"
   fi
+fi
 
-echo -e "${GREEN}Running database migrations...${NC}"
+# Run migrations if needed
 export PYTHONPATH="$APP_DIR"
 echo -e "${GREEN}Running migrations with Poetry in virtual environment...${NC}"
 if [ -n "$VENV_PATH" ] && [ -f "$VENV_PATH/bin/alembic" ]; then
@@ -393,6 +397,8 @@ else
       echo -e "${YELLOW}WARNING: Alembic not found. You may need to run migrations manually.${NC}"
     fi
   }
+fi
+
 fi
 
 
