@@ -311,13 +311,12 @@ if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
       echo -e "${RED}Certbot failed to generate SSL certificates. Please check manually.${NC}"
       exit 1
     fi
-    fi
   fi
 
   # Create nginx configuration for HTTPS
   echo -e "${YELLOW}Configuring Nginx for HTTPS...${NC}"
 
-    # Check if we're using custom certs or Let's Encrypt certs
+  # Check if we're using custom certs or Let's Encrypt certs
   if [ -f "/etc/custom-certs/archive/$CUSTOM_DOMAIN/fullchain1.pem" ]; then
     # Using custom certificates
     echo -e "${GREEN}Using custom certificates for HTTPS configuration...${NC}"
@@ -333,7 +332,41 @@ if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
     echo -e "${RED}Checked both /etc/custom-certs/archive/$CUSTOM_DOMAIN/ and /etc/letsencrypt/live/$CUSTOM_DOMAIN/...${NC}"
     echo -e "${YELLOW}Falling back to HTTP configuration...${NC}"
     
+    # Create HTTP-only configuration for custom domain
+    sudo tee /etc/nginx/sites-available/tgportal > /dev/null << EOL
+server {
+    listen 80;
+    server_name $CUSTOM_DOMAIN;
 
+    location / {
+        proxy_pass http://127.0.0.1:8030;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOL
+    
+    # Create symbolic link if it doesn't exist
+    sudo ln -sf /etc/nginx/sites-available/tgportal /etc/nginx/sites-enabled/
+    
+    # Validate and reload Nginx configuration
+    if sudo nginx -t; then
+      echo -e "${GREEN}Nginx configuration is valid.${NC}"
+      sudo systemctl reload nginx
+    else
+      echo -e "${RED}WARNING: Nginx configuration is invalid. Please check manually.${NC}"
+    fi
+    
+    # Skip the rest of the HTTPS setup
+    return
+  fi
+  
+  # If we got here, we have valid SSL certificates
   sudo tee /etc/nginx/sites-available/tgportal > /dev/null << EOL
 server {
     listen 80;
