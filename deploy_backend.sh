@@ -81,25 +81,49 @@ else
     --tags=http-server,https-server \
     --metadata=startup-script='#!/bin/bash
       # Update package lists
-      apt-get update
-      
-      # Install essential packages
-      PACKAGES="python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential"
-      PACKAGES="$PACKAGES postgresql postgresql-contrib"
-      PACKAGES="$PACKAGES zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev rsync"
-      
-      for pkg in $PACKAGES; do
-        if ! dpkg -l | grep -q "ii  $pkg"; then
-          echo "Installing $pkg..."
-          apt-get install -y $pkg
-        else
-          echo "$pkg is already installed."
-        fi
-      done
-      
-      # Create log directory for application
-      mkdir -p /var/log/tgportal
-      chmod 755 /var/log/tgportal
+       apt-get update
+
+    # Install PostgreSQL properly with explicit confirmation
+    echo "Installing PostgreSQL..."
+    DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql postgresql-contrib
+
+    # Ensure PostgreSQL is running
+    systemctl enable postgresql
+    systemctl start postgresql
+    
+    # Wait for PostgreSQL to initialize fully
+    echo "Waiting for PostgreSQL to initialize..."
+    counter=0
+    while ! sudo -u postgres psql -c "SELECT 1" >/dev/null 2>&1; do
+      counter=$((counter + 1))
+      if [ $counter -gt 30 ]; then
+        echo "PostgreSQL did not initialize properly. Manual intervention required."
+        break
+      fi
+      echo "Waiting for PostgreSQL to be ready... ($counter/30)"
+      sleep 2
+    done
+    
+    # Install other packages
+    PACKAGES="python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential"
+    PACKAGES="$PACKAGES zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev rsync"
+    
+    for pkg in $PACKAGES; do
+      if ! dpkg -l | grep -q "ii  $pkg"; then
+        echo "Installing $pkg..."
+        apt-get install -y $pkg
+      else
+        echo "$pkg is already installed."
+      fi
+    done
+    
+    # Create log directory for application
+    mkdir -p /var/log/tgportal
+    chmod 755 /var/log/tgportal
+    
+    # Fix postgresql permissions if needed
+    chown -R postgres:postgres /var/lib/postgresql/
+    chmod 700 /var/lib/postgresql/
     '
   
   echo -e "${GREEN}Instance created successfully.${NC}"
