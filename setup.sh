@@ -219,7 +219,7 @@ DB_DATABASE=${DB_DATABASE}
 DEBUG=false
 HOST=127.0.0.1
 PORT=8000
-SERVER_PORT=8030
+SERVER_PORT=8000
 
 # Backend URL for the frontend
 BACKEND_URL=http://${EXTERNAL_IP}
@@ -249,7 +249,7 @@ else
   PYTHON_PATH=$(which python3 || echo "/usr/bin/python3")
   sudo tee /etc/supervisor/conf.d/tgportal.conf > /dev/null <<EOF
 [program:tgportal]
-command=$PYTHON_PATH -m uvicorn server.app.main:app --host=127.0.0.1 --port=8030 --workers 4
+command=$PYTHON_PATH -m uvicorn server.app.main:app --host=127.0.0.1 --port=8000 --workers 4
 directory=$APP_DIR
 user=$REAL_USER
 autostart=true
@@ -258,7 +258,7 @@ stopasgroup=true
 killasgroup=true
 stderr_logfile=/var/log/tgportal/tgportal.err.log
 stdout_logfile=/var/log/tgportal/tgportal.out.log
-environment=PYTHONPATH="$APP_DIR",PORT="8030"
+environment=PYTHONPATH="$APP_DIR",PORT="8000"
 EOF
 fi
 
@@ -406,7 +406,7 @@ server {
     ssl_certificate_key ${KEY_PATH};
 
     location / {
-        proxy_pass http://0.0.0.0:8030;
+        proxy_pass http://0.0.0.0:8000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -430,7 +430,7 @@ server {
     server_name ${EXTERNAL_IP};
 
     location / {
-        proxy_pass http://127.0.0.1:8030;
+        proxy_pass http://127.0.0.1:8000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -469,7 +469,7 @@ server {
     server_name ${CUSTOM_DOMAIN:-${EXTERNAL_IP}};
 
     location / {
-        proxy_pass http://127.0.0.1:8030;
+        proxy_pass http://127.0.0.1:8000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
