@@ -406,7 +406,7 @@ server {
     ssl_certificate_key ${KEY_PATH};
 
     location / {
-        proxy_pass http://127.0.0.1:8030;
+        proxy_pass http://0.0.0.0:8030;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
