@@ -313,7 +313,7 @@ USE_HTTPS="$USE_HTTPS"
 # Install packages
 echo -e "\${YELLOW}Installing essential packages...\${NC}"
 sudo apt-get update -y
-sudo apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev postgresql-client dnsutils
+sudo apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev postgresql-client dnsutils netcat-openbsd
 
 # Clone the repository
 echo -e "\${GREEN}Cloning repository from GitHub...\${NC}"
