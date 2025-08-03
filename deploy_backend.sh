@@ -23,6 +23,8 @@ APP_DIR="/home/$VM_USERNAME/tgportal"
 # GitHub configuration - update these with your repository details
 GITHUB_REPO=${GITHUB_REPO:-"https://github.com/mitar-death/portal"}
 GITHUB_BRANCH=${GITHUB_BRANCH:-"stable-without-redis"}
+GITHUB_TOKEN=${GITHUB_TOKEN:-"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"}  
+
 
 # Load environment variables from .env file if it exists
 if [ -f ".env" ]; then
@@ -77,11 +79,27 @@ else
     --image-project=debian-cloud \
     --boot-disk-size=200GB \
     --tags=http-server,https-server \
-    --metadata=startup-script='#! /bin/bash
+    --metadata=startup-script='#!/bin/bash
+      # Update package lists
       apt-get update
-      apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential
-      apt-get install -y postgresql postgresql-contrib
-      apt-get install -y zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev  rsync
+      
+      # Install essential packages
+      PACKAGES="python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential"
+      PACKAGES="$PACKAGES postgresql postgresql-contrib"
+      PACKAGES="$PACKAGES zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev rsync"
+      
+      for pkg in $PACKAGES; do
+        if ! dpkg -l | grep -q "ii  $pkg"; then
+          echo "Installing $pkg..."
+          apt-get install -y $pkg
+        else
+          echo "$pkg is already installed."
+        fi
+      done
+      
+      # Create log directory for application
+      mkdir -p /var/log/tgportal
+      chmod 755 /var/log/tgportal
     '
   
   echo -e "${GREEN}Instance created successfully.${NC}"
@@ -142,8 +160,11 @@ done
 echo -e "${YELLOW}Preparing deployment files...${NC}"
 TEMP_DIR=$(mktemp -d)
 
+# Create a temporary config directory to hold the configuration files
+mkdir -p "$TEMP_DIR/config"
+
 # Create production environment file
-cat > "$TEMP_DIR/.env.prod" << EOL
+cat > "$TEMP_DIR/config/.env.prod" << EOL
 # Telegram API credentials
 TELEGRAM_API_ID=${TELEGRAM_API_ID:-"your_telegram_api_id"}
 TELEGRAM_API_HASH=${TELEGRAM_API_HASH:-"your_telegram_api_hash"}
@@ -174,55 +195,31 @@ FIREBASE_PROJECT_NUMBER=${FIREBASE_PROJECT_NUMBER:-"your_firebase_project_number
 GOOGLE_STUDIO_API_KEY=${GOOGLE_STUDIO_API_KEY:-"your_google_studio_api_key"}
 EOL
 
-# Create supervisor configuration
-cat > "$TEMP_DIR/tgportal.conf" << EOL
-[program:tgportal]
-command=/home/${VM_USERNAME}/.local/bin/poetry run app
-directory=${APP_DIR}
-user=${VM_USERNAME}
-autostart=true
-autorestart=true
-stopasgroup=true
-killasgroup=true
-stderr_logfile=/var/log/tgportal/tgportal.err.log
-stdout_logfile=/var/log/tgportal/tgportal.out.log
-environment=PYTHONPATH="${APP_DIR}",PATH="/home/${VM_USERNAME}/.local/bin:/usr/local/bin:/usr/bin:/bin"
-EOL
-
-# Create Nginx configuration
-cat > "$TEMP_DIR/tgportal_nginx.conf" << EOL
-server {
-    listen 80;
-    server_name ${EXTERNAL_IP};
-
-    location / {
-        proxy_pass http://localhost:8030;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-}
-EOL
-
 # Create GitHub deployment script
-# Update the GitHub setup script section to fix the token handling
 cat > "$TEMP_DIR/github_setup.sh" << EOL
 #!/bin/bash
 set -e  # Exit on any error
 
+# Define colors for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# Define variables
+EXTERNAL_IP=\$(curl -s http://checkip.amazonaws.com)
+APP_DIR="$APP_DIR"
+VM_USERNAME="$VM_USERNAME"
+
 # Install Git if not already available
 if ! command -v git &> /dev/null; then
-  echo "Installing Git..."
+  echo -e "\${YELLOW}Installing Git...\${NC}"
   sudo apt-get update
   sudo apt-get install -y git
 fi
 
 # Clone the repository
-echo "Cloning repository from GitHub..."
+echo -e "\${GREEN}Cloning repository from GitHub...\${NC}"
 GITHUB_REPO="\${GITHUB_REPO}"
 BRANCH="\${GITHUB_BRANCH}"
 GITHUB_TOKEN="\${GITHUB_TOKEN}"
@@ -238,52 +235,39 @@ if [ -n "\$GITHUB_TOKEN" ]; then
   # Create the URL with the token properly
   GITHUB_URL="https://\${GITHUB_TOKEN}@github.com/\${REPO_PART}"
   
-  echo "Using authenticated GitHub URL"
+  echo -e "\${GREEN}Using authenticated GitHub URL\${NC}"
 else
   GITHUB_URL="\$GITHUB_REPO"
-  echo "Using public GitHub URL"
+  echo -e "\${GREEN}Using public GitHub URL\${NC}"
 fi
 
 # Clean up any previous deployment
 rm -rf /tmp/tgportal_deploy
 mkdir -p /tmp/tgportal_deploy
 
-# Clone the repository with proper debugging
-echo "Cloning from branch: \$BRANCH"
+# Clone the repository
+echo -e "\${GREEN}Cloning from branch: \$BRANCH\${NC}"
 set -x  # Enable command echoing for debugging
 git clone --depth 1 --branch "\$BRANCH" "\$GITHUB_URL" /tmp/tgportal_deploy
 set +x  # Disable command echoing
 
 if [ ! -d "/tmp/tgportal_deploy/.git" ]; then
-  echo "Failed to clone repository. Check your GitHub token and repository URL."
+  echo -e "\${RED}Failed to clone repository. Check your GitHub token and repository URL.\${NC}"
   exit 1
 fi
 
-# Copy the configuration files
-cp /tmp/config/.env.prod /tmp/tgportal_deploy/.env
-cp /tmp/config/tgportal.conf /tmp/tgportal_deploy/
-cp /tmp/config/tgportal_nginx.conf /tmp/tgportal_deploy/
 
-# Run the setup script or create it if it doesn't exist
+# Export variables for setup script
+export EXTERNAL_IP="\$EXTERNAL_IP"
+export APP_DIR="\$APP_DIR"
+export VM_USERNAME="\$VM_USERNAME"
+
+# Run the setup script
 cd /tmp/tgportal_deploy
-
-echo "Running setup script..."
+echo -e "\${GREEN}Running setup script...\${NC}"
 bash setup.sh
 EOL
 chmod +x "$TEMP_DIR/github_setup.sh"
-
-# Create a temporary config directory to hold the configuration files
-mkdir -p "$TEMP_DIR/config"
-cp "$TEMP_DIR/.env.prod" "$TEMP_DIR/config/"
-cp "$TEMP_DIR/tgportal.conf" "$TEMP_DIR/config/"
-cp "$TEMP_DIR/tgportal_nginx.conf" "$TEMP_DIR/config/"
-
-# Copy the config files and setup script to the VM
-echo -e "${YELLOW}Copying setup script and configuration files to the VM...${NC}"
-if ! gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="mkdir -p /tmp/config"; then
-  echo -e "${RED}Failed to create config directory on VM. Aborting.${NC}"
-  exit 1
-fi
 
 # Copy the GitHub setup script
 if ! gcloud compute scp "$TEMP_DIR/github_setup.sh" "$INSTANCE_NAME:~/github_setup.sh" --zone="$ZONE"; then
@@ -291,35 +275,17 @@ if ! gcloud compute scp "$TEMP_DIR/github_setup.sh" "$INSTANCE_NAME:~/github_set
   exit 1
 fi
 
-# Copy configuration files
-if ! gcloud compute scp "$TEMP_DIR/config/.env.prod" "$INSTANCE_NAME:/tmp/config/.env.prod" --zone="$ZONE"; then
-  echo -e "${RED}Failed to copy .env.prod to VM. Aborting.${NC}"
-  exit 1
-fi
 
-if ! gcloud compute scp "$TEMP_DIR/config/tgportal.conf" "$INSTANCE_NAME:/tmp/config/tgportal.conf" --zone="$ZONE"; then
-  echo -e "${RED}Failed to copy tgportal.conf to VM. Aborting.${NC}"
-  exit 1
-fi
-
-if ! gcloud compute scp "$TEMP_DIR/config/tgportal_nginx.conf" "$INSTANCE_NAME:/tmp/config/tgportal_nginx.conf" --zone="$ZONE"; then
-  echo -e "${RED}Failed to copy tgportal_nginx.conf to VM. Aborting.${NC}"
-  exit 1
-fi
-
-# Run the GitHub setup script on the VM
+# Run the GitHub deployment script
 echo -e "${YELLOW}Setting up the application on the VM using GitHub...${NC}"
 echo -e "${YELLOW}This may take several minutes. Please be patient.${NC}"
 
-# Prompt for GitHub token
-read -sp "Enter GitHub Personal Access Token (leave empty if your repo is public): " GITHUB_TOKEN
-echo
-
-# Run the GitHub deployment script
+# Run the GitHub deployment script with proper environment variables
 gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="
 export GITHUB_REPO='$GITHUB_REPO'
 export GITHUB_BRANCH='$GITHUB_BRANCH'
 export GITHUB_TOKEN='$GITHUB_TOKEN'
+export EXTERNAL_IP='$EXTERNAL_IP'
 bash ~/github_setup.sh
 " || {
   echo -e "${RED}Deployment failed. Please check the logs for more information.${NC}"
@@ -338,23 +304,25 @@ APP_STATUS=$(gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="sudo 
 
 if [[ "$APP_STATUS" == *"RUNNING"* ]]; then
   echo -e "${GREEN}✓ TG Portal backend is running successfully!${NC}"
+  echo -e "${GREEN}✓ Application is accessible at: http://$EXTERNAL_IP${NC}"
+  
+  # Check the application response
+  echo -e "${YELLOW}Checking if application is responding...${NC}"
+  RESPONSE=$(gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="curl -s -o /dev/null -w '%{http_code}' http://localhost:8030/health" 2>/dev/null || echo "000")
+  
+  if [[ "$RESPONSE" == "200" ]]; then
+    echo -e "${GREEN}✓ Application API is responding correctly (Status: $RESPONSE)${NC}"
+  else
+    echo -e "${YELLOW}⚠ Application API might not be fully initialized yet. Status: $RESPONSE${NC}"
+    echo -e "${YELLOW}The application might need a few more moments to start up completely.${NC}"
+  fi
 else
   echo -e "${RED}⚠ TG Portal backend might not be running correctly. Status: $APP_STATUS${NC}"
   echo -e "${YELLOW}Checking supervisor logs...${NC}"
   gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="sudo cat /var/log/tgportal/tgportal.err.log | tail -n 20"
 fi
 
-# Update the frontend .env file with the new backend URL if needed
-if [ -f ".env" ]; then
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS version of sed
-    sed -i '' "s|BACKEND_URL=.*|BACKEND_URL=http://$EXTERNAL_IP|g" .env
-  else
-    # Linux/GNU version of sed
-    sed -i "s|BACKEND_URL=.*|BACKEND_URL=http://$EXTERNAL_IP|g" .env
-  fi
-  echo -e "${GREEN}Updated BACKEND_URL in .env file to point to the new server: http://$EXTERNAL_IP${NC}"
-fi
+
 
 echo -e "${GREEN}==================================================================${NC}"
 echo -e "${GREEN}Deployment Summary:${NC}"

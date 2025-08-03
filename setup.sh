@@ -1,14 +1,23 @@
 #!/bin/bash
 set -e  # Exit on any error
 
+# Colors for terminal output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
 # Display progress
-echo "==============================================="
-echo "Starting TG Portal backend setup"
-echo "==============================================="
+echo -e "${GREEN}===============================================${NC}"
+echo -e "${GREEN}Starting TG Portal backend setup${NC}"
+echo -e "${GREEN}===============================================${NC}"
 
 # Define app directory explicitly to avoid empty path issues
 APP_DIR=${APP_DIR:-"/home/$USER/tgportal"}
-[ -z "$APP_DIR" ] && { echo "ERROR: APP_DIR is not set"; exit 1; }
+[ -z "$APP_DIR" ] && { echo -e "${RED}ERROR: APP_DIR is not set${NC}"; exit 1; }
+
+# Get external IP for Nginx configuration if not provided
+EXTERNAL_IP=${EXTERNAL_IP:-$(curl -s http://checkip.amazonaws.com)}
 
 # Setup database
 echo "[1/6] Setting up PostgreSQL database..."
@@ -43,6 +52,12 @@ echo "Copying files from repository to $APP_DIR"
 rsync -a . "$APP_DIR/" --exclude '.git' --exclude '__pycache__' --exclude '*.pyc'
 cd "$APP_DIR"
 
+# Ensure supervisor and nginx directories exist
+echo "Setting up system directories..."
+sudo mkdir -p /etc/supervisor/conf.d
+sudo mkdir -p /etc/nginx/sites-available
+sudo mkdir -p /etc/nginx/sites-enabled
+
 # Make sure PYTHONPATH is set for the current session too
 export PYTHONPATH="$APP_DIR"
 
@@ -69,19 +84,28 @@ poetry config virtualenvs.in-project true
 echo "Creating Poetry virtual environment..."
 cd "$APP_DIR"
 poetry env use python3
-VENV_PATH=$(poetry env info --path)
+VENV_PATH=$(poetry env info --path 2>/dev/null || echo "")
+
+if [ -z "$VENV_PATH" ]; then
+  echo "Failed to get virtual environment path from Poetry. Creating manually..."
+  python3 -m venv "$APP_DIR/.venv"
+  VENV_PATH="$APP_DIR/.venv"
+fi
+
 echo "Virtual environment created at: $VENV_PATH"
 
 # Activate the virtual environment
 echo "Activating virtual environment..."
-source "$VENV_PATH/bin/activate" || {
-  echo "Failed to activate virtual environment. Trying alternative approach..."
-  if [ -f "$VENV_PATH/bin/activate" ]; then
-    . "$VENV_PATH/bin/activate"
-  else
-    echo "ERROR: Could not activate virtual environment. Will continue with system Python."
-  fi
-}
+if [ -f "$VENV_PATH/bin/activate" ]; then
+  source "$VENV_PATH/bin/activate" || {
+    echo "Failed to activate virtual environment with source. Trying with dot operator..."
+    . "$VENV_PATH/bin/activate" || {
+      echo "WARNING: Could not activate virtual environment. Will continue with system Python."
+    }
+  }
+else
+  echo "WARNING: Virtual environment activation script not found at $VENV_PATH/bin/activate"
+fi
 
 
 # Install dependencies using Poetry
@@ -105,64 +129,167 @@ poetry install --no-interaction || {
 }
 
 
-# Update supervisor configuration to use the virtual environment
-echo "Updating supervisor configuration to use Poetry virtual environment..."
-# First, backup the original config
-cp tgportal.conf tgportal.conf.bak
+# Copy environment file from config directory if it exists
+if [ -f "/tmp/config/.env.prod" ]; then
+  cp /tmp/config/.env.prod .env
+  echo -e "${GREEN}Production environment file copied from /tmp/config/.env.prod.${NC}"
+elif [ -f ".env.prod" ]; then
+  cp .env.prod .env
+  echo -e "${GREEN}Production environment file copied from local .env.prod.${NC}"
+else
+  echo -e "${YELLOW}WARNING: No production environment file found. Creating a basic one...${NC}"
+  cat > .env << EOL
+    # Telegram API credentials
+    TELEGRAM_API_ID=${TELEGRAM_API_ID:-"your_telegram_api_id"}
+    TELEGRAM_API_HASH=${TELEGRAM_API_HASH:-"your_telegram_api_hash"}
 
-# Update the command in the supervisor config to use the virtual environment
-sed -i "s|command=.*|command=$VENV_PATH/bin/poetry run app|" tgportal.conf
-# Also update the environment to include the virtual environment's path
-sed -i "s|environment=.*|environment=PYTHONPATH=\"$APP_DIR\",PATH=\"$VENV_PATH/bin:/home/$USER/.local/bin:/usr/local/bin:/usr/bin:/bin\",VIRTUAL_ENV=\"$VENV_PATH\"|" tgportal.conf
+    ENV=production
+    # Database settings
+    DB_TYPE=postgres
+    DB_PORT=5432
+    DB_USERNAME=tgportal
+    DB_PASSWORD=tgportal_password
+    DB_HOST=localhost
+    DB_DATABASE=tgportal
 
-# Copy environment file
-cp /tmp/config/.env.prod .env
-echo "Production environment file copied."
+    # FastAPI settings
+    DEBUG=false
+    HOST=0.0.0.0
+    PORT=8030
+    SERVER_PORT=8030
+
+    # Backend URL for the frontend
+    BACKEND_URL=http://${EXTERNAL_IP}
+
+    # Firebase settings
+    FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-"your_firebase_project_id"}
+    FIREBASE_PROJECT_NUMBER=${FIREBASE_PROJECT_NUMBER:-"your_firebase_project_number"}
+
+    # AI model settings
+    GOOGLE_STUDIO_API_KEY=${GOOGLE_STUDIO_API_KEY:-"your_google_studio_api_key"}
+EOL
+fi
 
 # Setup supervisor
-echo "[5/6] Setting up Supervisor..."
+echo -e "${GREEN}[5/6] Setting up Supervisor...${NC}"
 sudo mkdir -p /var/log/tgportal
 sudo chown $USER:$USER /var/log/tgportal
-sudo cp tgportal.conf /etc/supervisor/conf.d/
+
+# Check if supervisor config exists in /tmp/config or was created during deployment
+if [ -f "/tmp/config/tgportal.conf" ]; then
+  echo -e "${GREEN}Using supervisor configuration from deployment...${NC}"
+  sudo cp "/tmp/config/tgportal.conf" /etc/supervisor/conf.d/
+elif [ -f "$APP_DIR/tgportal.conf" ]; then
+  echo -e "${GREEN}Copying supervisor configuration from app directory...${NC}"
+  sudo cp "$APP_DIR/tgportal.conf" /etc/supervisor/conf.d/
+else
+  echo -e "${YELLOW}Creating supervisor configuration file...${NC}"
+  sudo tee /etc/supervisor/conf.d/tgportal.conf > /dev/null << EOL
+    [program:tgportal]
+    command=$VENV_PATH/bin/poetry run app
+    directory=$APP_DIR
+    user=$USER
+    autostart=true
+    autorestart=true
+    stopasgroup=true
+    killasgroup=true
+    stderr_logfile=/var/log/tgportal/tgportal.err.log
+    stdout_logfile=/var/log/tgportal/tgportal.out.log
+    environment=PYTHONPATH="$APP_DIR",PATH="$VENV_PATH/bin:/home/$USER/.local/bin:/usr/local/bin:/usr/bin:/bin",VIRTUAL_ENV="$VENV_PATH"
+EOL
+fi
+
+# Reload supervisor configuration
 sudo supervisorctl reread
 sudo supervisorctl update
+
+# Check if the app is already running
 if sudo supervisorctl status tgportal | grep -q RUNNING; then
-  echo "Restarting tgportal service..."
+  echo -e "${GREEN}Restarting tgportal service...${NC}"
   sudo supervisorctl restart tgportal
 else
-  echo "Starting tgportal service..."
+  echo -e "${GREEN}Starting tgportal service...${NC}"
   sudo supervisorctl start tgportal
 fi
 
 # Setup Nginx
-echo "[6/6] Setting up Nginx..."
-sudo cp tgportal_nginx.conf /etc/nginx/sites-available/tgportal
+echo -e "${GREEN}[6/6] Setting up Nginx...${NC}"
+
+# Check if nginx config exists in /tmp/config or was created during deployment
+if [ -f "/tmp/config/tgportal_nginx.conf" ]; then
+  echo -e "${GREEN}Using Nginx configuration from deployment...${NC}"
+  sudo cp "/tmp/config/tgportal_nginx.conf" /etc/nginx/sites-available/tgportal
+elif [ -f "$APP_DIR/tgportal_nginx.conf" ]; then
+  echo -e "${GREEN}Copying Nginx configuration from app directory...${NC}"
+  sudo cp "$APP_DIR/tgportal_nginx.conf" /etc/nginx/sites-available/tgportal
+else
+  echo -e "${YELLOW}Creating Nginx configuration file...${NC}"
+  sudo tee /etc/nginx/sites-available/tgportal > /dev/null << EOL
+server {
+    listen 80;
+    server_name ${EXTERNAL_IP};
+
+    location / {
+        proxy_pass http://localhost:8030;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOL
+fi
+
+# Create symbolic link if it doesn't exist
 sudo ln -sf /etc/nginx/sites-available/tgportal /etc/nginx/sites-enabled/
+
+# Validate and reload Nginx configuration
 if sudo nginx -t; then
-  echo "Nginx configuration is valid."
+  echo -e "${GREEN}Nginx configuration is valid.${NC}"
   sudo systemctl reload nginx
 else
-  echo "WARNING: Nginx configuration is invalid. Please check manually."
+  echo -e "${RED}WARNING: Nginx configuration is invalid. Please check manually.${NC}"
 fi
 
 # Run migrations if needed
-echo "Running database migrations..."
+echo -e "${GREEN}Running database migrations...${NC}"
 export PYTHONPATH="$APP_DIR"
-echo "Running migrations with Poetry in virtual environment..."
+echo -e "${GREEN}Running migrations with Poetry in virtual environment...${NC}"
 if [ -n "$VENV_PATH" ] && [ -f "$VENV_PATH/bin/alembic" ]; then
   "$VENV_PATH/bin/alembic" upgrade head
 else
-  echo "Trying with Poetry run command..."
+  echo -e "${YELLOW}Trying with Poetry run command...${NC}"
   poetry run alembic upgrade head || {
-    echo "WARNING: Poetry migration failed. Trying direct alembic command..."
+    echo -e "${YELLOW}WARNING: Poetry migration failed. Trying direct alembic command...${NC}"
     if command -v alembic &> /dev/null; then
-      alembic upgrade head || echo "WARNING: Alembic migrations failed. You may need to run them manually."
+      alembic upgrade head || echo -e "${YELLOW}WARNING: Alembic migrations failed. You may need to run them manually.${NC}"
     else
-      echo "WARNING: Alembic not found. You may need to run migrations manually."
+      echo -e "${YELLOW}WARNING: Alembic not found. You may need to run migrations manually.${NC}"
     fi
   }
 fi
 
-echo "==============================================="
-echo "Setup completed successfully!"
-echo "==============================================="
+# Create a healthcheck endpoint
+if grep -q "app.get(\"/health\"" "$APP_DIR/server/app/main.py"; then
+  echo -e "${GREEN}Healthcheck endpoint already exists.${NC}"
+else
+  echo -e "${YELLOW}Adding healthcheck endpoint to main.py...${NC}"
+  # Find the line with app = FastAPI() and add the healthcheck route after it
+  if grep -q "app = FastAPI" "$APP_DIR/server/app/main.py"; then
+    TEMP_FILE=$(mktemp)
+    awk '/app = FastAPI/{print; print "\n@app.get(\"/health\", tags=[\"health\"])"; print "async def health_check():"; print "    return {\"status\": \"ok\", \"message\": \"TG Portal API is running\"}\n"; next}1' "$APP_DIR/server/app/main.py" > "$TEMP_FILE"
+    mv "$TEMP_FILE" "$APP_DIR/server/app/main.py"
+    echo -e "${GREEN}Healthcheck endpoint added.${NC}"
+  else
+    echo -e "${YELLOW}Unable to find FastAPI app definition. Skipping healthcheck endpoint.${NC}"
+  fi
+fi
+
+echo -e "${GREEN}===============================================${NC}"
+echo -e "${GREEN}Setup completed successfully!${NC}"
+echo -e "${GREEN}===============================================${NC}"
+echo -e "${YELLOW}TG Portal backend is now running at:${NC} http://${EXTERNAL_IP}"
+echo -e "${GREEN}===============================================${NC}"
