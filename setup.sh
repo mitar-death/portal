@@ -108,7 +108,7 @@ info "Creating necessary subdirectories..."
 mkdir -p "$APP_DIR/storage/logs" "$APP_DIR/storage/sessions" "$APP_DIR/server/messages"
 
 info "Copying application source into $APP_DIR (cleaning caches)..."
-rsync -a --delete --exclude='__pycache__' --exclude='*.pyc' --exclude='.git' ./ "$APP_DIR/"
+cp -r . "$APP_DIR/" && find "$APP_DIR" -name "__pycache__" -o -name "*.pyc" -o -name ".git" | xargs rm -rf 2>/dev/null || true
 cd "$APP_DIR"
 
 # ---------- System directories ----------
