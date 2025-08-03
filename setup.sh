@@ -333,6 +333,7 @@ server {
     }
 }
 EOL
+  fi
   
 else
   # Regular Nginx setup without HTTPS
