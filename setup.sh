@@ -252,23 +252,34 @@ echo -e "${GREEN}[6/6] Setting up Nginx...${NC}"
 # Check if a custom domain is configured
 if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
   echo -e "${GREEN}Custom domain detected: $CUSTOM_DOMAIN${NC}"
-  echo -e "${YELLOW}Using Certbot to generate SSL certificates...${NC}"
+  echo -e "${YELLOW}Setting up HTTPS with SSL certificate...${NC}"
   
-  # Check if the domain dns is set and can be reached by certbot
-  echo -e "${YELLOW}Checking if the domain $CUSTOM_DOMAIN is reachable...${NC}"
-  # Check if the domain DNS is properly set up for Certbot verification
-  CURRENT_IP=$(curl -s ifconfig.me)
-  DOMAIN_IP=$(dig +short $CUSTOM_DOMAIN A)
+  # Check if certificates already exist before running Certbot
+  if [ -f "/etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem" ] && [ -f "/etc/letsencrypt/live/$CUSTOM_DOMAIN/privkey.pem" ]; then
+    echo -e "${GREEN}SSL certificates for $CUSTOM_DOMAIN already exist. Skipping certificate generation.${NC}"
+  else
+    # Check if the domain dns is set and can be reached by certbot
+    echo -e "${YELLOW}Checking if the domain $CUSTOM_DOMAIN is reachable...${NC}"
+    
+    # Install dig if not available
+    if ! command -v dig &> /dev/null; then
+      echo -e "${YELLOW}Installing DNS utilities (dig)...${NC}"
+      sudo apt-get update && sudo apt-get install -y dnsutils
+    fi
+    
+    # Check if the domain DNS is properly set up for Certbot verification
+  #   CURRENT_IP=$(curl -s ifconfig.me)
+  #   DOMAIN_IP=$(dig +short $CUSTOM_DOMAIN A)
   
-  if [ -z "$DOMAIN_IP" ]; then
-    echo -e "${RED}Domain $CUSTOM_DOMAIN doesn't have an A record. Certbot verification will fail.${NC}"
-    echo -e "${YELLOW}Please add an A record: $CUSTOM_DOMAIN -> $CURRENT_IP${NC}"
-    exit 1
-  elif [ "$DOMAIN_IP" != "$CURRENT_IP" ]; then
-    echo -e "${RED}Domain $CUSTOM_DOMAIN points to $DOMAIN_IP, but this server's IP is $CURRENT_IP${NC}"
-    echo -e "${YELLOW}Please update your DNS A record to point to $CURRENT_IP${NC}"
-    exit 1
-  fi
+  # if [ -z "$DOMAIN_IP" ]; then
+  #   echo -e "${RED}Domain $CUSTOM_DOMAIN doesn't have an A record. Certbot verification will fail.${NC}"
+  #   echo -e "${YELLOW}Please add an A record: $CUSTOM_DOMAIN -> $CURRENT_IP${NC}"
+  #   exit 1
+  # elif [ "$DOMAIN_IP" != "$CURRENT_IP" ]; then
+  #   echo -e "${RED}Domain $CUSTOM_DOMAIN points to $DOMAIN_IP, but this server's IP is $CURRENT_IP${NC}"
+  #   echo -e "${YELLOW}Please update your DNS A record to point to $CURRENT_IP${NC}"
+  #   exit 1
+  # fi
   
   echo -e "${GREEN}Domain $CUSTOM_DOMAIN correctly points to this server. Proceeding with Certbot...${NC}"
   if ! sudo certbot --nginx -d $CUSTOM_DOMAIN --non-interactive --agree-tos --email admin@$CUSTOM_DOMAIN --redirect; then
@@ -280,10 +291,13 @@ if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
   # Create nginx configuration for HTTPS
   echo -e "${YELLOW}Configuring Nginx for HTTPS...${NC}"
 
-  # Using Let's Encrypt certificates
-  echo -e "${GREEN}Using Let's Encrypt certificates for HTTPS configuration...${NC}"
-  CERT_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem"
-  KEY_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/privkey.pem"
+  # Check if we're using custom certs or Let's Encrypt certs
+
+  if [ -f "/etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem" ]; then
+    # Using Let's Encrypt certificates
+    echo -e "${GREEN}Using Let's Encrypt certificates for HTTPS configuration...${NC}"
+    CERT_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem"
+    KEY_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/privkey.pem"
 
   # If we got here, we have valid SSL certificates
   sudo tee /etc/nginx/sites-available/tgportal > /dev/null << EOL
