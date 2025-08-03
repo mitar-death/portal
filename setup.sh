@@ -312,16 +312,8 @@ server {
     # SSL certificate files
     ssl_certificate /etc/custom-certs/archive/$CUSTOM_DOMAIN/fullchain1.pem;
     ssl_certificate_key /etc/custom-certs/archive/$CUSTOM_DOMAIN/privkey1.pem;
-    
-    # SSL configuration
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_prefer_server_ciphers on;
-    ssl_ciphers 'EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH';
-    ssl_session_timeout 1d;
-    ssl_session_cache shared:SSL:50m;
-    ssl_stapling on;
-    ssl_stapling_verify on;
-    
+
+
     # Proxy settings
     location / {
         proxy_pass http://localhost:8030;
