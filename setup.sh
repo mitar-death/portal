@@ -252,120 +252,39 @@ echo -e "${GREEN}[6/6] Setting up Nginx...${NC}"
 # Check if a custom domain is configured
 if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
   echo -e "${GREEN}Custom domain detected: $CUSTOM_DOMAIN${NC}"
-  echo -e "${GREEN}Setting up HTTPS with SSL certificate...${NC}"
-
-  # Create directories for SSL certificates
-  echo -e "${YELLOW}Creating SSL certificate directories...${NC}"
-  sudo mkdir -p /etc/custom-certs/live/$CUSTOM_DOMAIN
-  sudo mkdir -p /etc/custom-certs/archive/$CUSTOM_DOMAIN
+  echo -e "${YELLOW}Using Certbot to generate SSL certificates...${NC}"
   
-  # Create Certificate and private key files
-  echo -e "${YELLOW}Creating SSL certificate and private key files...${NC}"
-  if [ -n "$DOMAIN_SSL_CERTIFICATE" ] && [ -n "$DOMAIN_SSL_PRIVATE_KEY" ]; then
-    # Create a temporary file for the certificate and private key
-    CERT_TEMP=$(mktemp)
-    KEY_TEMP=$(mktemp)
-    
-    # Write the certificate and key to temporary files
-    echo "$DOMAIN_SSL_CERTIFICATE" > "$CERT_TEMP"
-    echo "$DOMAIN_SSL_PRIVATE_KEY" > "$KEY_TEMP"
-    
-    # Create the necessary directories with proper ownership
-    sudo mkdir -p /etc/custom-certs/archive/$CUSTOM_DOMAIN
-    sudo mkdir -p /etc/custom-certs/live/$CUSTOM_DOMAIN
-    
-    # Copy the files to their destinations with proper permissions
-    sudo cp "$CERT_TEMP" /etc/custom-certs/archive/$CUSTOM_DOMAIN/fullchain1.pem
-    sudo cp "$KEY_TEMP" /etc/custom-certs/archive/$CUSTOM_DOMAIN/privkey1.pem
-    
-    # Remove temporary files
-    rm "$CERT_TEMP" "$KEY_TEMP"
-    
-    # Set proper permissions
-    sudo chmod 644 /etc/custom-certs/archive/$CUSTOM_DOMAIN/fullchain1.pem
-    sudo chmod 600 /etc/custom-certs/archive/$CUSTOM_DOMAIN/privkey1.pem
-    
-    echo -e "${GREEN}SSL certificates successfully installed${NC}"
-  else
-    echo -e "${YELLOW}Error: DOMAIN_SSL_CERTIFICATE or DOMAIN_SSL_PRIVATE_KEY is not set.${NC}"
-    echo -e "${YELLOW}Using Certbot to generate SSL certificates...${NC}"
-    
-    # Check if the domain dns is set and can be reached by certbot
-    echo -e "${YELLOW}Checking if the domain $CUSTOM_DOMAIN is reachable...${NC}"
-    # Check if the domain DNS is properly set up for Certbot verification
-    # CURRENT_IP=$(curl -s ifconfig.me)
-    # DOMAIN_IP=$(dig +short $CUSTOM_DOMAIN A)
-    
-    # if [ -z "$DOMAIN_IP" ]; then
-    #   echo -e "${RED}Domain $CUSTOM_DOMAIN doesn't have an A record. Certbot verification will fail.${NC}"
-    #   echo -e "${YELLOW}Please add an A record: $CUSTOM_DOMAIN -> $CURRENT_IP${NC}"
-    #   exit 1
-    # elif [ "$DOMAIN_IP" != "$CURRENT_IP" ]; then
-    #   echo -e "${RED}Domain $CUSTOM_DOMAIN points to $DOMAIN_IP, but this server's IP is $CURRENT_IP${NC}"
-    #   echo -e "${YELLOW}Please update your DNS A record to point to $CURRENT_IP${NC}"
-    #   exit 1
-    # fi
-    
-    echo -e "${GREEN}Domain $CUSTOM_DOMAIN correctly points to this server. Proceeding with Certbot...${NC}"
-    if ! sudo certbot --nginx -d $CUSTOM_DOMAIN --non-interactive --agree-tos --email admin@$CUSTOM_DOMAIN --redirect; then
-      echo -e "${RED}Certbot failed to generate SSL certificates. Please check manually.${NC}"
-      exit 1
-    fi
+  # Check if the domain dns is set and can be reached by certbot
+  echo -e "${YELLOW}Checking if the domain $CUSTOM_DOMAIN is reachable...${NC}"
+  # Check if the domain DNS is properly set up for Certbot verification
+  CURRENT_IP=$(curl -s ifconfig.me)
+  DOMAIN_IP=$(dig +short $CUSTOM_DOMAIN A)
+  
+  if [ -z "$DOMAIN_IP" ]; then
+    echo -e "${RED}Domain $CUSTOM_DOMAIN doesn't have an A record. Certbot verification will fail.${NC}"
+    echo -e "${YELLOW}Please add an A record: $CUSTOM_DOMAIN -> $CURRENT_IP${NC}"
+    exit 1
+  elif [ "$DOMAIN_IP" != "$CURRENT_IP" ]; then
+    echo -e "${RED}Domain $CUSTOM_DOMAIN points to $DOMAIN_IP, but this server's IP is $CURRENT_IP${NC}"
+    echo -e "${YELLOW}Please update your DNS A record to point to $CURRENT_IP${NC}"
+    exit 1
   fi
+  
+  echo -e "${GREEN}Domain $CUSTOM_DOMAIN correctly points to this server. Proceeding with Certbot...${NC}"
+  if ! sudo certbot --nginx -d $CUSTOM_DOMAIN --non-interactive --agree-tos --email admin@$CUSTOM_DOMAIN --redirect; then
+    echo -e "${RED}Certbot failed to generate SSL certificates. Please check manually.${NC}"
+    exit 1
+  fi
+
 
   # Create nginx configuration for HTTPS
   echo -e "${YELLOW}Configuring Nginx for HTTPS...${NC}"
 
-  # Check if we're using custom certs or Let's Encrypt certs
-  if [ -f "/etc/custom-certs/archive/$CUSTOM_DOMAIN/fullchain1.pem" ]; then
-    # Using custom certificates
-    echo -e "${GREEN}Using custom certificates for HTTPS configuration...${NC}"
-    CERT_PATH="/etc/custom-certs/archive/$CUSTOM_DOMAIN/fullchain1.pem"
-    KEY_PATH="/etc/custom-certs/archive/$CUSTOM_DOMAIN/privkey1.pem"
-  elif [ -f "/etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem" ]; then
-    # Using Let's Encrypt certificates
-    echo -e "${GREEN}Using Let's Encrypt certificates for HTTPS configuration...${NC}"
-    CERT_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem"
-    KEY_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/privkey.pem"
-  else
-    echo -e "${RED}Error: No SSL certificates found at expected locations.${NC}"
-    echo -e "${RED}Checked both /etc/custom-certs/archive/$CUSTOM_DOMAIN/ and /etc/letsencrypt/live/$CUSTOM_DOMAIN/...${NC}"
-    echo -e "${YELLOW}Falling back to HTTP configuration...${NC}"
-    
-    # Create HTTP-only configuration for custom domain
-    sudo tee /etc/nginx/sites-available/tgportal > /dev/null << EOL
-server {
-    listen 80;
-    server_name $CUSTOM_DOMAIN;
+  # Using Let's Encrypt certificates
+  echo -e "${GREEN}Using Let's Encrypt certificates for HTTPS configuration...${NC}"
+  CERT_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem"
+  KEY_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/privkey.pem"
 
-    location / {
-        proxy_pass http://127.0.0.1:8030;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-}
-EOL
-    
-    # Create symbolic link if it doesn't exist
-    sudo ln -sf /etc/nginx/sites-available/tgportal /etc/nginx/sites-enabled/
-    
-    # Validate and reload Nginx configuration
-    if sudo nginx -t; then
-      echo -e "${GREEN}Nginx configuration is valid.${NC}"
-      sudo systemctl reload nginx
-    else
-      echo -e "${RED}WARNING: Nginx configuration is invalid. Please check manually.${NC}"
-    fi
-    
-    # Skip the rest of the HTTPS setup
-    return
-  fi
-  
   # If we got here, we have valid SSL certificates
   sudo tee /etc/nginx/sites-available/tgportal > /dev/null << EOL
 server {
