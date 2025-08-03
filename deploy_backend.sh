@@ -33,6 +33,7 @@ GITHUB_REPO=${GITHUB_REPO:-"https://github.com/mitar-death/portal"}
 GITHUB_BRANCH=${GITHUB_BRANCH:-"stable-without-redis"}
 GITHUB_TOKEN=${GITHUB_TOKEN:-"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"}  
 
+RESET_INSTANCE=true
 
 # Load environment variables from .env file if it exists
 if [ -f ".env" ]; then
@@ -87,6 +88,12 @@ gcloud config set project "$PROJECT_ID"
 # Check if the instance exists
 if gcloud compute instances describe "$INSTANCE_NAME" --zone="$ZONE" &> /dev/null; then
   echo -e "${GREEN}Instance $INSTANCE_NAME already exists.${NC}"
+  if $RESET_INSTANCE; then
+    echo -e "${YELLOW}Resetting the instance...${NC}"
+    gcloud compute instances reset "$INSTANCE_NAME" --zone="$ZONE"
+  else
+    echo -e "${YELLOW}Skipping instance reset. Continuing with deployment...${NC}"
+  fi
 else
   echo -e "${YELLOW}Creating new VM instance: $INSTANCE_NAME${NC}"
   
