@@ -256,9 +256,9 @@ if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
 
   # Create directories for SSL certificates
   echo -e "${YELLOW}Creating SSL certificate directories...${NC}"
-  sudo mkdir -p /etc/letsencrypt/live/$CUSTOM_DOMAIN
-  sudo mkdir -p /etc/letsencrypt/archive/$CUSTOM_DOMAIN
-  
+  mkdir -p /etc/custom-certs/live/$CUSTOM_DOMAIN
+  mkdir -p /etc/custom-certs/archive/$CUSTOM_DOMAIN
+
   # Create Certificate and private key files
   echo -e "${YELLOW}Creating SSL certificate and private key files...${NC}"
   if [ -n "$DOMAIN_SSL_CERTIFICATE" ] && [ -n "$DOMAIN_SSL_PRIVATE_KEY" ]; then
@@ -271,33 +271,19 @@ if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
     echo "$DOMAIN_SSL_PRIVATE_KEY" > "$KEY_TEMP"
     
     # Create the necessary directories with proper ownership
-    sudo mkdir -p /etc/letsencrypt/archive/$CUSTOM_DOMAIN
-    sudo mkdir -p /etc/letsencrypt/live/$CUSTOM_DOMAIN
+    mkdir -p /etc/custom-certs/archive/$CUSTOM_DOMAIN
+    mkdir -p /etc/custom-certs/live/$CUSTOM_DOMAIN
     
     # Copy the files to their destinations with proper permissions
-    sudo cp "$CERT_TEMP" /etc/letsencrypt/archive/$CUSTOM_DOMAIN/fullchain1.pem
-    sudo cp "$KEY_TEMP" /etc/letsencrypt/archive/$CUSTOM_DOMAIN/privkey1.pem
+    cp "$CERT_TEMP" /etc/custom-certs/archive/$CUSTOM_DOMAIN/fullchain1.pem
+    cp "$KEY_TEMP" /etc/custom-certs/archive/$CUSTOM_DOMAIN/privkey1.pem
     
     # Remove temporary files
     rm "$CERT_TEMP" "$KEY_TEMP"
     
     # Set proper permissions
-    sudo chmod 644 /etc/letsencrypt/archive/$CUSTOM_DOMAIN/fullchain1.pem
-    sudo chmod 600 /etc/letsencrypt/archive/$CUSTOM_DOMAIN/privkey1.pem
-    
-    # Create symlinks in live directory (what nginx will use)
-    sudo ln -sf /etc/letsencrypt/archive/$CUSTOM_DOMAIN/fullchain1.pem /etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem
-    sudo ln -sf /etc/letsencrypt/archive/$CUSTOM_DOMAIN/privkey1.pem /etc/letsencrypt/live/$CUSTOM_DOMAIN/privkey.pem
-    
-    # Verify the files exist and have correct permissions
-    if [ -f "/etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem" ] && [ -f "/etc/letsencrypt/live/$CUSTOM_DOMAIN/privkey.pem" ]; then
-      echo -e "${GREEN}SSL certificate files successfully created and linked${NC}"
-    else
-      echo -e "${RED}ERROR: SSL certificate files were not properly created${NC}"
-      ls -la /etc/letsencrypt/live/$CUSTOM_DOMAIN/
-      ls -la /etc/letsencrypt/archive/$CUSTOM_DOMAIN/
-      exit 1
-    fi
+    chmod 644 /etc/custom-certs/archive/$CUSTOM_DOMAIN/fullchain1.pem
+    chmod 600 /etc/custom-certs/archive/$CUSTOM_DOMAIN/privkey1.pem
     
     echo -e "${GREEN}SSL certificates successfully installed${NC}"
   else
@@ -324,8 +310,8 @@ server {
     server_name $CUSTOM_DOMAIN;
 
     # SSL certificate files
-    ssl_certificate /etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/$CUSTOM_DOMAIN/privkey.pem;
+    ssl_certificate /etc/custom-certs/archive/$CUSTOM_DOMAIN/fullchain1.pem;
+    ssl_certificate_key /etc/custom-certs/archive/$CUSTOM_DOMAIN/privkey1.pem;
     
     # SSL configuration
     ssl_protocols TLSv1.2 TLSv1.3;
@@ -333,7 +319,6 @@ server {
     ssl_ciphers 'EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH';
     ssl_session_timeout 1d;
     ssl_session_cache shared:SSL:50m;
-    ssl_stapling on;
     ssl_stapling_verify on;
     
     # Proxy settings
