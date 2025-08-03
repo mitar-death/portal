@@ -291,13 +291,10 @@ if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
   # Create nginx configuration for HTTPS
   echo -e "${YELLOW}Configuring Nginx for HTTPS...${NC}"
 
-  # Check if we're using custom certs or Let's Encrypt certs
-
-  if [ -f "/etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem" ]; then
-    # Using Let's Encrypt certificates
-    echo -e "${GREEN}Using Let's Encrypt certificates for HTTPS configuration...${NC}"
-    CERT_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem"
-    KEY_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/privkey.pem"
+  # Using Let's Encrypt certificates
+  echo -e "${GREEN}Using Let's Encrypt certificates for HTTPS configuration...${NC}"
+  CERT_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem"
+  KEY_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/privkey.pem"
 
   # If we got here, we have valid SSL certificates
   sudo tee /etc/nginx/sites-available/tgportal > /dev/null << EOL
@@ -333,11 +330,9 @@ server {
     }
 }
 EOL
-  fi
-  
-else
-  # Regular Nginx setup without HTTPS
-  echo -e "${YELLOW}Setting up Nginx with HTTP only...${NC}"
+
+  # Create symbolic link if it doesn't exist
+  sudo ln -sf /etc/nginx/sites-available/tgportal /etc/nginx/sites-enabled/
   
   # Check if nginx config exists in /tmp/config or was created during deployment
   if [ -f "/tmp/config/tgportal_nginx.conf" ]; then
@@ -382,9 +377,9 @@ EOL
   else
     echo -e "${RED}WARNING: Nginx configuration is invalid. Please check manually.${NC}"
   fi
-fi
-
-# Run migrations if needed
+else
+  # Regular Nginx setup without HTTPS
+  echo -e "${YELLOW}Setting up Nginx with HTTP only...${NC}"
 echo -e "${GREEN}Running database migrations...${NC}"
 export PYTHONPATH="$APP_DIR"
 echo -e "${GREEN}Running migrations with Poetry in virtual environment...${NC}"
