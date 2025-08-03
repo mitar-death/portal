@@ -13,7 +13,7 @@ const getApiUrl = () => {
 
     if (isProduction) {
         // Use development URL in production (as per requirement)
-        url = process.env.VUE_APP_DEV_BASE_URL;
+        url = process.env.VUE_APP_DEV_BASE_URL || "https://identitycore.cfd/api";
     } else {
         // Use production URL in development (as per requirement)
         url = process.env.VUE_APP_PROD_BASE_URL;
