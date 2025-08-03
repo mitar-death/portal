@@ -72,7 +72,7 @@ mkdir -p "$APP_DIR/server/messages"
 
 # Copy files from the cloned repository to the application directory
 echo "Copying files from repository to $APP_DIR"
-rsync -a . "$APP_DIR/" --exclude '.git' --exclude '__pycache__' --exclude '*.pyc'
+cp -r . "$APP_DIR/" && find "$APP_DIR" -name "__pycache__" -o -name "*.pyc" -o -name ".git" | xargs rm -rf 2>/dev/null || true
 cd "$APP_DIR"
 
 # Ensure supervisor and nginx directories exist

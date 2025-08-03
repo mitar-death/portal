@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 
 # Configuration variables - edit these as needed
 PROJECT_ID=${FIREBASE_PROJECT_ID:-"gen-lang-client-0560055117"}
-INSTANCE_NAME="tgportal-backend-2"
+INSTANCE_NAME="tgportal-backend"
 ZONE="us-central1-a"
 MACHINE_TYPE="e2-medium"
 VM_USERNAME="$USER"
