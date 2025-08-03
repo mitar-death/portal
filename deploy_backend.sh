@@ -103,7 +103,7 @@ else
 
       apt-get update
       # Install essential packages
-      apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential  zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev rsync postgresql-client dig
+      apt-get install -y python3-pip python3-venv git supervisor rsync nginx certbot python3-certbot-nginx curl wget build-essential  zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev  postgresql-client dig
 
       # Create log directory for application
       mkdir -p /var/log/tgportal
