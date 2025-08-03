@@ -25,6 +25,32 @@ if [ -n "$CLOUD_SQL_CONNECTION_NAME" ] || grep -q "CLOUD_SQL_CONNECTION_NAME" .e
   echo -e "${GREEN}[1/6] Using Cloud SQL PostgreSQL database${NC}"
   echo -e "${GREEN}Connection name: $CLOUD_SQL_CONNECTION_NAME${NC}"
   echo -e "${GREEN}Database host: $DB_HOST${NC}"
+  
+  # Test database connection
+  echo -e "${YELLOW}Testing database connection...${NC}"
+  if command -v pg_isready &> /dev/null; then
+    if pg_isready -h "$DB_HOST" -p 5432 -U "$DB_USERNAME"; then
+      echo -e "${GREEN}Database connection successful!${NC}"
+    else
+      echo -e "${RED}Failed to connect to database. Error code: $?${NC}"
+      echo -e "${YELLOW}This might be due to:${NC}"
+      echo -e "${YELLOW}1. Cloud SQL firewall not allowing connections from this VM${NC}"
+      echo -e "${YELLOW}2. Database credentials being incorrect${NC}"
+      echo -e "${YELLOW}3. Database service not running${NC}"
+      echo -e "${YELLOW}Continuing anyway, but application might not work correctly.${NC}"
+    fi
+  else
+    echo -e "${YELLOW}pg_isready not found. Installing PostgreSQL client tools...${NC}"
+    sudo apt-get update && sudo apt-get install -y postgresql-client
+    
+    if pg_isready -h "$DB_HOST" -p 5432 -U "$DB_USERNAME"; then
+      echo -e "${GREEN}Database connection successful!${NC}"
+    else
+      echo -e "${RED}Failed to connect to database. Error code: $?${NC}"
+      echo -e "${YELLOW}Check Cloud SQL firewall settings and database credentials.${NC}"
+    fi
+  fi
+  
   echo -e "${GREEN}No local PostgreSQL setup needed${NC}"
 else
   # Fallback to local PostgreSQL setup if needed
