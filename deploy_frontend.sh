@@ -9,6 +9,30 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 
+# Load environment variables from .env file if it exists
+if [ -f ".env.production" ]; then
+  # Create a temporary file for sourcing
+  ENV_TEMP=$(mktemp)
+  echo "#!/bin/bash" > "$ENV_TEMP"
+  
+  # Parse .env file and export variables
+  grep -v '^#' .env | grep -v '^$' | sed -e 's/\r$//' | \
+  sed -e 's/^[[:space:]]*//g' | sed -e 's/[[:space:]]*=[[:space:]]*/=/g' | \
+  while IFS= read -r line; do
+    # Skip lines that don't contain an equals sign
+    if [[ "$line" == *"="* ]]; then
+      var_name=$(echo "$line" | cut -d '=' -f 1 | tr -d '[:space:]')
+      var_value=$(echo "$line" | cut -d '=' -f 2-)
+      echo "export $var_name=\"$var_value\"" >> "$ENV_TEMP"
+    fi
+  done
+  
+  source "$ENV_TEMP"
+  rm "$ENV_TEMP"
+  echo -e "${GREEN}Loaded environment variables from .env file${NC}"
+fi
+
+
 echo -e "${GREEN}Building and deploying TG Portal frontend${NC}"
 
 # Navigate to the client directory which is the root directory
@@ -92,7 +116,7 @@ if [ ! -f ".firebaserc" ]; then
   cat > .firebaserc << EOL
 {
   "projects": {
-    "default": "${PROJECT_ID}"
+    "default": "$FIREBASE_PROJECT_ID"
   }
 }
 EOL
@@ -104,5 +128,5 @@ firebase deploy --only hosting
 
 echo -e "${GREEN}Deployment complete! Your app should be live.${NC}"
 echo -e "${GREEN}If you need to set up API URLs, make sure to create a .env.production file with:${NC}"
-echo -e "${YELLOW}VUE_APP_API_URL=${BACKEND_URL}/api${NC}" #backend URL from .env
-echo -e "${YELLOW}VUE_APP_FIREBASE_PROJECT_ID=${PROJECT_ID}${NC}" #firebase project ID from .env
+echo -e "${YELLOW}VUE_APP_API_URL=$BACKEND_URL/api${NC}" #backend URL from .env
+echo -e "${YELLOW}VUE_APP_FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID${NC}" #firebase project ID from .env

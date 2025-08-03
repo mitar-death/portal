@@ -14,7 +14,6 @@ const loadStoredAuth = () => {
 }
 
 const { user, token } = loadStoredAuth()
-const backendUrl = process.env.BACKEND_URL || 'http://localhost:8030';
 
 export default {
     namespaced: true,
@@ -53,7 +52,7 @@ export default {
 
             try {
                 // Use our auth interceptor service instead of raw fetch
-                const response = await fetchWithAuth(`${backendUrl.value}/api/auth/status`, {
+                const response = await fetchWithAuth("/api/auth/status", {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
@@ -142,7 +141,7 @@ export default {
                 dispatch('telegram/clearGroups', null, { root: true })
 
                 // Call backend only after frontend is clean
-                const response = await fetchWithAuth(`${backendUrl.value}/api/auth/logout`, {
+                const response = await fetchWithAuth(`https://104.154.111.44/api/auth/logout`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

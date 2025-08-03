@@ -57,6 +57,22 @@ if [ -f ".env" ]; then
   echo -e "${GREEN}Loaded environment variables from .env file${NC}"
 fi
 
+# Get custom domain from environment or prompt user
+CUSTOM_DOMAIN=${CUSTOM_DOMAIN:-""}
+if [ -z "$CUSTOM_DOMAIN" ]; then
+  read -p "Enter custom domain (leave empty to use IP address only): " CUSTOM_DOMAIN
+fi
+
+# Set USE_HTTPS based on whether a domain is provided
+USE_HTTPS=false
+if [ -n "$CUSTOM_DOMAIN" ]; then
+  USE_HTTPS=true
+  echo -e "${GREEN}Custom domain set to: $CUSTOM_DOMAIN${NC}"
+  echo -e "${GREEN}HTTPS will be enabled${NC}"
+else
+  echo -e "${YELLOW}No custom domain provided. Will use IP address only with HTTP.${NC}"
+fi
+
 # Check if gcloud is installed
 if ! command -v gcloud &> /dev/null; then
   echo -e "${RED}Google Cloud SDK (gcloud) is not installed. Please install it first:${NC}"
@@ -279,8 +295,12 @@ HOST=0.0.0.0
 PORT=8030
 SERVER_PORT=8030
 
-# Backend URL for the frontend
-BACKEND_URL=http://${EXTERNAL_IP}
+# Backend URL for the frontend (with custom domain if provided)
+BACKEND_URL=${CUSTOM_DOMAIN:+https://$CUSTOM_DOMAIN}${CUSTOM_DOMAIN:=""||http://$EXTERNAL_IP}
+
+# Custom domain configuration
+CUSTOM_DOMAIN=$CUSTOM_DOMAIN
+USE_HTTPS=$USE_HTTPS
 
 # Firebase settings
 FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-"your_firebase_project_id"}
@@ -305,6 +325,8 @@ NC='\033[0m' # No Color
 EXTERNAL_IP=\$(curl -s http://checkip.amazonaws.com)
 APP_DIR="$APP_DIR"
 VM_USERNAME="$VM_USERNAME"
+CUSTOM_DOMAIN="$CUSTOM_DOMAIN"
+USE_HTTPS="$USE_HTTPS"
 
 # Install Git if not already available
 if ! command -v git &> /dev/null; then
@@ -366,6 +388,8 @@ export DB_HOST="\$DB_HOST"
 export DB_USERNAME="\$DB_USERNAME"
 export DB_PASSWORD="\$DB_PASSWORD"
 export DB_DATABASE="\$DB_DATABASE"
+export CUSTOM_DOMAIN="\$CUSTOM_DOMAIN"
+export USE_HTTPS="\$USE_HTTPS"
 
 # Run the setup script in the background to avoid hanging SSH session
 cd /tmp/tgportal_deploy
@@ -403,6 +427,8 @@ export DB_HOST='$DB_HOST'
 export DB_USERNAME='$DB_USERNAME'
 export DB_PASSWORD='$DB_PASSWORD'
 export DB_DATABASE='$DB_DATABASE'
+export CUSTOM_DOMAIN='$CUSTOM_DOMAIN'
+export USE_HTTPS='$USE_HTTPS'
 bash ~/github_setup.sh
 " || {
   echo -e "${RED}Deployment failed. Please check the logs for more information.${NC}"
@@ -435,14 +461,25 @@ fi
 echo -e "${GREEN}==================================================================${NC}"
 echo -e "${GREEN}Deployment Summary:${NC}"
 echo -e "${GREEN}==================================================================${NC}"
-echo -e "${YELLOW}Backend URL:${NC} http://$EXTERNAL_IP"
+if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
+  echo -e "${YELLOW}Backend URL:${NC} https://$CUSTOM_DOMAIN"
+else
+  echo -e "${YELLOW}Backend URL:${NC} http://$EXTERNAL_IP"
+fi
 echo -e "${YELLOW}VM Instance:${NC} $INSTANCE_NAME (Zone: $ZONE)"
 echo -e "${YELLOW}GitHub Repository:${NC} $GITHUB_REPO"
 echo -e "${YELLOW}GitHub Branch:${NC} $GITHUB_BRANCH"
+if [ -n "$CUSTOM_DOMAIN" ]; then
+  echo -e "${YELLOW}Custom Domain:${NC} $CUSTOM_DOMAIN (HTTPS: $USE_HTTPS)"
+fi
 echo -e "${YELLOW}==================================================================${NC}"
 echo -e "${GREEN}Next steps:${NC}"
 echo -e "1. Update your Firebase configuration to allow requests from this domain"
-echo -e "2. If you have a domain name, configure it to point to $EXTERNAL_IP"
+if [ -n "$CUSTOM_DOMAIN" ]; then
+  echo -e "2. Ensure your DNS is properly configured to point $CUSTOM_DOMAIN to $EXTERNAL_IP"
+else
+  echo -e "2. If you have a domain name, configure it to point to $EXTERNAL_IP"
+fi
 echo -e "3. Run './deploy_frontend.sh' to deploy your frontend to Firebase"
 echo -e "4. Monitor your application logs with: gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --command=\"sudo tail -f /var/log/tgportal/tgportal.out.log\""
 echo -e "${YELLOW}==================================================================${NC}"

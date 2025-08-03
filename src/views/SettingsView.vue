@@ -108,7 +108,6 @@ const confirmDialog = ref(false);
 const confirmResetDialog = ref(false);
 const isResettingAI = ref(false);
 const resetStatus = ref(null);
-const backendUrl = process.env.BACKEND_URL || "http://localhost:8030";
 
 const toggleDarkMode = (value) => {
   theme.global.name.value = value ? "dark" : "light";
@@ -132,7 +131,7 @@ const resetAIMessenger = async () => {
   resetStatus.value = null;
 
   try {
-    const response = await fetch(`${backendUrl}/api/ai/reinitialize`, {
+    const response = await fetch(`https://104.154.111.44/api/ai/reinitialize`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

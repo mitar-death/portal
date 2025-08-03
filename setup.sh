@@ -249,16 +249,113 @@ sudo supervisorctl status tgportal
 # Setup Nginx
 echo -e "${GREEN}[6/6] Setting up Nginx...${NC}"
 
-# Check if nginx config exists in /tmp/config or was created during deployment
-if [ -f "/tmp/config/tgportal_nginx.conf" ]; then
-  echo -e "${GREEN}Using Nginx configuration from deployment...${NC}"
-  sudo cp "/tmp/config/tgportal_nginx.conf" /etc/nginx/sites-available/tgportal
-elif [ -f "$APP_DIR/tgportal_nginx.conf" ]; then
-  echo -e "${GREEN}Copying Nginx configuration from app directory...${NC}"
-  sudo cp "$APP_DIR/tgportal_nginx.conf" /etc/nginx/sites-available/tgportal
+# Check if a custom domain is configured
+if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
+  echo -e "${GREEN}Custom domain detected: $CUSTOM_DOMAIN${NC}"
+  echo -e "${GREEN}Setting up HTTPS with Let's Encrypt...${NC}"
+  
+# Create symbolic link if it doesn't exist
+sudo ln -sf /etc/nginx/sites-available/tgportal /etc/nginx/sites-enabled/
+
+# Remove default site if it exists
+if [ -f /etc/nginx/sites-enabled/default ]; then
+  sudo rm /etc/nginx/sites-enabled/default
+fi
+
+# Validate and reload Nginx configuration
+if sudo nginx -t; then
+  echo -e "${GREEN}Nginx configuration is valid.${NC}"
+  sudo systemctl reload nginx
 else
-  echo -e "${YELLOW}Creating Nginx configuration file...${NC}"
-  sudo tee /etc/nginx/sites-available/tgportal > /dev/null << EOL
+  echo -e "${RED}Nginx configuration is invalid. Please check manually.${NC}"
+  exit 1
+fi
+
+# Check if DNS is properly configured by checking if the domain resolves to the server IP
+SERVER_IP=$(curl -s http://checkip.amazonaws.com)
+echo -e "${YELLOW}Checking DNS configuration for $CUSTOM_DOMAIN...${NC}"
+echo -e "${YELLOW}Server IP: $SERVER_IP${NC}"
+
+# Try to resolve the domain with dig, host, or nslookup (whatever is available)
+if command -v dig &> /dev/null; then
+  DOMAIN_IP=$(dig +short $CUSTOM_DOMAIN | head -n 1)
+elif command -v host &> /dev/null; then
+  DOMAIN_IP=$(host $CUSTOM_DOMAIN | grep "has address" | head -n 1 | awk '{print $NF}')
+elif command -v nslookup &> /dev/null; then
+  DOMAIN_IP=$(nslookup $CUSTOM_DOMAIN | grep -A1 "Name:" | grep "Address:" | head -n 1 | awk '{print $2}')
+else
+  echo -e "${YELLOW}No DNS lookup tools available. Installing dnsutils...${NC}"
+  sudo apt-get update
+  sudo apt-get install -y dnsutils
+  DOMAIN_IP=$(dig +short $CUSTOM_DOMAIN | head -n 1)
+fi
+
+if [ -z "$DOMAIN_IP" ]; then
+  echo -e "${RED}Warning: Could not resolve $CUSTOM_DOMAIN to an IP address.${NC}"
+  echo -e "${RED}Please make sure your DNS is properly configured to point to $SERVER_IP${NC}"
+  echo -e "${YELLOW}Let's Encrypt validation may fail if DNS is not properly configured.${NC}"
+  
+  read -p "Do you want to continue with Let's Encrypt setup anyway? (y/n): " CONTINUE
+  if [[ ! "$CONTINUE" =~ ^[Yy]$ ]]; then
+    echo -e "${YELLOW}Skipping Let's Encrypt setup. You can run this script again later.${NC}"
+    exit 0
+  fi
+elif [ "$DOMAIN_IP" != "$SERVER_IP" ]; then
+  echo -e "${RED}Warning: Domain $CUSTOM_DOMAIN resolves to $DOMAIN_IP but this server's IP is $SERVER_IP${NC}"
+  echo -e "${RED}Let's Encrypt validation will likely fail. Please fix your DNS configuration.${NC}"
+  
+  read -p "Do you want to continue with Let's Encrypt setup anyway? (y/n): " CONTINUE
+  if [[ ! "$CONTINUE" =~ ^[Yy]$ ]]; then
+    echo -e "${YELLOW}Skipping Let's Encrypt setup. You can run this script again later.${NC}"
+    exit 0
+  fi
+else
+  echo -e "${GREEN}DNS configuration looks good. Domain $CUSTOM_DOMAIN correctly points to $SERVER_IP${NC}"
+fi
+
+# Obtain SSL certificate using Certbot
+echo -e "${GREEN}Obtaining SSL certificate from Let's Encrypt...${NC}"
+sudo certbot --nginx -d "$CUSTOM_DOMAIN" --non-interactive --agree-tos --email "$EMAIL" --redirect || {
+  echo -e "${RED}Certbot failed to obtain SSL certificate.${NC}"
+  echo -e "${YELLOW}This might be due to:${NC}"
+  echo -e "${YELLOW}1. DNS not fully propagated yet${NC}"
+  echo -e "${YELLOW}2. Rate limits with Let's Encrypt${NC}"
+  echo -e "${YELLOW}3. Firewall issues${NC}"
+  echo -e "${YELLOW}Continuing with HTTP only. You can run this script again later.${NC}"
+  exit 1
+}
+
+echo -e "${GREEN}SSL certificate successfully obtained and Nginx configured for HTTPS!${NC}"
+echo -e "${GREEN}Your site is now accessible at https://$CUSTOM_DOMAIN${NC}"
+
+# Set up auto-renewal
+echo -e "${GREEN}Setting up automatic renewal of SSL certificates...${NC}"
+echo "0 0,12 * * * root python3 -c 'import random; import time; time.sleep(random.random() * 3600)' && certbot renew -q" | sudo tee -a /etc/crontab > /dev/null
+
+echo -e "${GREEN}HTTPS setup complete!${NC}"
+EOL
+  
+    # Make the script executable
+    chmod +x "$APP_DIR/setup_https.sh"
+  fi
+  
+  # Run the HTTPS setup script
+  bash "$APP_DIR/setup_https.sh" "$CUSTOM_DOMAIN"
+  
+else
+  # Regular Nginx setup without HTTPS
+  echo -e "${YELLOW}Setting up Nginx with HTTP only...${NC}"
+  
+  # Check if nginx config exists in /tmp/config or was created during deployment
+  if [ -f "/tmp/config/tgportal_nginx.conf" ]; then
+    echo -e "${GREEN}Using Nginx configuration from deployment...${NC}"
+    sudo cp "/tmp/config/tgportal_nginx.conf" /etc/nginx/sites-available/tgportal
+  elif [ -f "$APP_DIR/tgportal_nginx.conf" ]; then
+    echo -e "${GREEN}Copying Nginx configuration from app directory...${NC}"
+    sudo cp "$APP_DIR/tgportal_nginx.conf" /etc/nginx/sites-available/tgportal
+  else
+    echo -e "${YELLOW}Creating Nginx configuration file...${NC}"
+    sudo tee /etc/nginx/sites-available/tgportal > /dev/null << EOL
 server {
     listen 80;
     server_name ${EXTERNAL_IP};
@@ -275,17 +372,18 @@ server {
     }
 }
 EOL
-fi
+  fi
 
-# Create symbolic link if it doesn't exist
-sudo ln -sf /etc/nginx/sites-available/tgportal /etc/nginx/sites-enabled/
+  # Create symbolic link if it doesn't exist
+  sudo ln -sf /etc/nginx/sites-available/tgportal /etc/nginx/sites-enabled/
 
-# Validate and reload Nginx configuration
-if sudo nginx -t; then
-  echo -e "${GREEN}Nginx configuration is valid.${NC}"
-  sudo systemctl reload nginx
-else
-  echo -e "${RED}WARNING: Nginx configuration is invalid. Please check manually.${NC}"
+  # Validate and reload Nginx configuration
+  if sudo nginx -t; then
+    echo -e "${GREEN}Nginx configuration is valid.${NC}"
+    sudo systemctl reload nginx
+  else
+    echo -e "${RED}WARNING: Nginx configuration is invalid. Please check manually.${NC}"
+  fi
 fi
 
 # Run migrations if needed

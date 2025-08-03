@@ -1,6 +1,6 @@
 const { defineConfig } = require('@vue/cli-service')
 
-const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+const backendUrl = process.env.BACKEND_URL
 module.exports = defineConfig({
   transpileDependencies: true,
 

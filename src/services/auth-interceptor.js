@@ -4,8 +4,6 @@
 import store from '@/store';
 import router from '@/router';
 
-const backendUrl = process.env.BACKEND_URL || 'http://localhost:8030';
-
 /**
  * Handles authentication errors from API responses
  * @param {Response} response - The fetch API response object
@@ -64,7 +62,7 @@ export async function fetchWithAuth(url, options = {}, authOptions = {}) {
         }
 
         // Always include credentials
-        options.credentials = 'include';
+        // options.credentials = 'include';
 
         const response = await fetch(url, options);
 
