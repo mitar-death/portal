@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 
 # Configuration variables - edit these as needed
 PROJECT_ID=${FIREBASE_PROJECT_ID:-"gen-lang-client-0560055117"}
-INSTANCE_NAME="tgportal-backend"
+INSTANCE_NAME="tgportal-backend-2"
 ZONE="us-central1-a"
 MACHINE_TYPE="e2-medium"
 VM_USERNAME="$USER"
@@ -32,65 +32,6 @@ DB_REGION=$(echo "$ZONE" | sed 's/-.$//')  # Extract region from zone (e.g., us-
 GITHUB_REPO=${GITHUB_REPO:-"https://github.com/mitar-death/portal"}
 GITHUB_BRANCH=${GITHUB_BRANCH:-"stable-without-redis"}
 GITHUB_TOKEN=${GITHUB_TOKEN:-"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"}  
-
-DOMAIN_SSL_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
-MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCd8cXfNMWoSif6
-1KexlUtWyCymYa3hRFXgq8UBUl3LJJzrnYk6Nl5p6/Ug7ZMMZWX0U6k0UQaVvW4f
-KJ0XhXR/izE3U99S1MSuVssjoiKgzVig41Jy08J1zfL4vKG7IF3PcRXnWJsfppiS
-moV1L8rJQgpsqL4M7KilCkIYMdTXVA556cEtnydHqvH9AWcFuW7ypGTFm9HFB6j5
-9xDkFWeU84XKTemYbJ5LijDB0QIMuvjfIikPjmtVv5360ZgRa+lZn5PXA9BjUX81
-qZRxmraf2S3e0Wui7MC4mrqlw6PgUm46Tr4xV0IYcHHwJ2TMjyGycaG7qQlLM7oz
-eWxHhfevAgMBAAECggEAA+RKCArGAgm4Zs2oR3pnwv7SBtQqU34lEDul8jc5g2tm
-sxw3Hj2VDE7EQ/2b8swUJos3L0hTKAu6XmnYRmpDPsSgalNr5x/CAY+27Vet5cDE
-Ocv6ze8vf/VFUuFcVNQ31jLcTiPYnVTetoy4fso2Lh5X9mnJVl/bH0dGQ1AFsBE4
-E7NvlpPuR7DRJ0vfEQBrinNmnHkZtPaw5FVV4NMOdTC2Z8B7uhec+p/9IeDz7El6
-ywMIaJe6Dhwzv0wM7IfbHwVGObyhCYNZ9bHWIqeRWAIqploClINtxnbuvD37quqR
-lhEibOnQNjGuhY3atJbWLXAHcs5WGKxz5WQ4QwDAXQKBgQDOiCSCp5vxt3eaChQD
-33mR8LQlHNRMxStNhkqRT9f3K/JKDAmLQP2yCxrZ91/fiD350SubVAfOG32c6Gb8
-0D6JcWtd6BXC9DvK7rw0hgciH194coRGqSBFg3wNMeSqGMMrVKKnwAWxXkTl5hTS
-Riak8D8LBnW4U9V1oK7KdCVGcwKBgQDDxmkQ3VVS846nwD8a4TYvrNfniVSVPRiY
-YGBYBt4k4lvzTO+BXWCJxEIJr9JfK5F139T7+G7PqoJj3ORFFJy+mHrSxVa34mFh
-W8Dhi+yRlVjQonDFkDCS5fQvqFYZXpM5Y+gXtAxmXz5TOMDBiciRN+ZoEr2zyCvY
-HExWpaO+1QKBgG6Ez/TSuFJq+SeHCRrhdW6xPdU2Ti0evYNov3JvJYRxEeCp/Fl2
-V8v0wVOuWrGFeJS8Z/dgyiRy9Y8HlkTnMu/dr7S6wxpmE7EOe8wnhJ2v6CjOLxaY
-3loUeEefUVvskFQZoEjgKqu1ZG0Z6D51p6xPm4zM0iXnRq0BZUeVS3UdAoGAfpZk
-iUsUSLbDnyRnqXHGH72bPVNHJdiDdsOaiFCogyD6Y69zjipaqboFGU5esLrzK0y3
-4tUYkZ6nAPtrfl99mp/tiyuejvgKD3HMngpjxR7UdtMSKCy7u8CEy+wFABJvD8TR
-5cG94tPi8NzZhksZLQ0AJns3vm/IKczib4RbBKECgYEApL3CZZVVJwEHEuQQ2brP
-Sa4ygMcUeTm4C6td3BQjm9O2G6xj2i3/W2kW8QTDpx9XxqIDvUrEAnTplQxOngGs
-mcFxC9RAJBrIYT4acGzIqjSBEg8s4flbD5CkMuP8DULw6T4vLxF1SpDvqP12a8NQ
-oRMWKs33xBKtHeb4yFz+224=
------END PRIVATE KEY-----
-"
-DOMAIN_SSL_CERTIFICATE="-----BEGIN CERTIFICATE-----
-MIIErjCCA5agAwIBAgIUQx+j2FqxAkB4nrr4B2RTcSrFMBowDQYJKoZIhvcNAQEL
-BQAwgYsxCzAJBgNVBAYTAlVTMRkwFwYDVQQKExBDbG91ZEZsYXJlLCBJbmMuMTQw
-MgYDVQQLEytDbG91ZEZsYXJlIE9yaWdpbiBTU0wgQ2VydGlmaWNhdGUgQXV0aG9y
-aXR5MRYwFAYDVQQHEw1TYW4gRnJhbmNpc2NvMRMwEQYDVQQIEwpDYWxpZm9ybmlh
-MB4XDTI1MDgwMzA2NDkwMFoXDTQwMDczMDA2NDkwMFowYjEZMBcGA1UEChMQQ2xv
-dWRGbGFyZSwgSW5jLjEdMBsGA1UECxMUQ2xvdWRGbGFyZSBPcmlnaW4gQ0ExJjAk
-BgNVBAMTHUNsb3VkRmxhcmUgT3JpZ2luIENlcnRpZmljYXRlMIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnfHF3zTFqEon+tSnsZVLVsgspmGt4URV4KvF
-AVJdyySc652JOjZeaev1IO2TDGVl9FOpNFEGlb1uHyidF4V0f4sxN1PfUtTErlbL
-I6IioM1YoONSctPCdc3y+LyhuyBdz3EV51ibH6aYkpqFdS/KyUIKbKi+DOyopQpC
-GDHU11QOeenBLZ8nR6rx/QFnBblu8qRkxZvRxQeo+fcQ5BVnlPOFyk3pmGyeS4ow
-wdECDLr43yIpD45rVb+d+tGYEWvpWZ+T1wPQY1F/NamUcZq2n9kt3tFrouzAuJq6
-pcOj4FJuOk6+MVdCGHBx8CdkzI8hsnGhu6kJSzO6M3lsR4X3rwIDAQABo4IBMDCC
-ASwwDgYDVR0PAQH/BAQDAgWgMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcD
-ATAMBgNVHRMBAf8EAjAAMB0GA1UdDgQWBBT9nWY0fCOFiTnWV8IbNrPIgxPSBjAf
-BgNVHSMEGDAWgBQk6FNXXXw0QIep65TbuuEWePwppDBABggrBgEFBQcBAQQ0MDIw
-MAYIKwYBBQUHMAGGJGh0dHA6Ly9vY3NwLmNsb3VkZmxhcmUuY29tL29yaWdpbl9j
-YTAxBgNVHREEKjAoghMqLnJ1Ymlrb25yZXN0ZWQuY2ZkghFydWJpa29ucmVzdGVk
-LmNmZDA4BgNVHR8EMTAvMC2gK6AphidodHRwOi8vY3JsLmNsb3VkZmxhcmUuY29t
-L29yaWdpbl9jYS5jcmwwDQYJKoZIhvcNAQELBQADggEBAIqTMpge+WCQnhVoUKmE
-R/64GqV5XGb1mv/BwvAdTZm5ok5kZgj+uQZpqIZAB1wpn/aI+FgU3acmhydygjro
-SFyadvwT6Nz+gvy07Q9qH5odonmkTjidqREO+139WM99m56J0XsBRTqdDqH407f0
-PlJh+tzafeeHfGHTe5Y6oQzDc54o1Pzv43yxEOOTM8XCAofTpwzPlZlP4mp0lRG4
-8tN8lgGjW8EE4FhdoRBHYb06/XKHEBQPzDk5IgG+hmAbxR63cAkitSv/4EShm06T
-vfYs0JxmbeB8hu7DdYT8TqLh8Y1c97d5AK2+rDTWNC3CQYYLUVMoaoD5a7EqDcrJ
-CTk=
------END CERTIFICATE-----
-"
 
 
 # Load environment variables from .env file if it exists
@@ -162,7 +103,7 @@ else
 
       apt-get update
       # Install essential packages
-      apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential  zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev rsync postgresql-client
+      apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential  zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev rsync postgresql-client 
 
       # Create log directory for application
       mkdir -p /var/log/tgportal

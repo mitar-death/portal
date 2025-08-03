@@ -288,10 +288,22 @@ if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
     echo -e "${GREEN}SSL certificates successfully installed${NC}"
   else
     echo -e "${RED}Error: DOMAIN_SSL_CERTIFICATE or DOMAIN_SSL_PRIVATE_KEY is not set.${NC}"
-    echo -e "${YELLOW}Please provide valid SSL certificate and private key in your environment variables.${NC}"
-    exit 1
+    echo -e "${YELLOW}Using Certbot to generate SSL certificates...${NC}"
+    
+    # Check if the domain dns is set and can be reached by certbot
+    echo -e "${YELLOW}Checking if the domain $CUSTOM_DOMAIN is reachable...${NC}"
+    if ! ping -c 1 "$CUSTOM_DOMAIN" &> /dev/null; then
+      echo -e "${RED}Domain $CUSTOM_DOMAIN is not reachable. Please check your DNS settings. Add the following A record:${NC}"
+      echo -e "${YELLOW}  $CUSTOM_DOMAIN -> $(curl -s ifconfig.me)${NC}"
+      exit 1
+    fi
+    if ! sudo certbot --nginx -d $CUSTOM_DOMAIN --non-interactive --agree-tos --email admin@$CUSTOM_DOMAIN --redirect; then
+      echo -e "${RED}Certbot failed to generate SSL certificates. Please check manually.${NC}"
+      exit 1
+    fi
+    fi
   fi
-  
+
   # Create nginx configuration for HTTPS
   echo -e "${YELLOW}Configuring Nginx for HTTPS...${NC}"
   sudo tee /etc/nginx/sites-available/tgportal > /dev/null << EOL
