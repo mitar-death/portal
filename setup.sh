@@ -52,9 +52,7 @@ mkdir -p "$APP_DIR/storage/logs"
 mkdir -p "$APP_DIR/storage/sessions"
 mkdir -p "$APP_DIR/server/messages"
 
-# Copy application files
-echo "[3/6] Setting up application directory..."
-mkdir -p "$APP_DIR"
+
 
 # Copy files from the cloned repository to the application directory
 echo "Copying files from repository to $APP_DIR"
@@ -181,8 +179,7 @@ fi
 
 # Setup supervisor
 echo -e "${GREEN}[5/6] Setting up Supervisor...${NC}"
-sudo mkdir -p /var/log/tgportal
-sudo chown $USER:$USER /var/log/tgportal
+
 
 # Check if supervisor config exists in /tmp/config or was created during deployment
 if [ -f "/tmp/config/tgportal.conf" ]; then
@@ -193,9 +190,12 @@ elif [ -f "$APP_DIR/tgportal.conf" ]; then
   sudo cp "$APP_DIR/tgportal.conf" /etc/supervisor/conf.d/
 else
   echo -e "${YELLOW}Creating supervisor configuration file...${NC}"
+
+  # Find Python path
+  PYTHON_PATH=$(which python3)
   sudo tee /etc/supervisor/conf.d/tgportal.conf > /dev/null << EOL
     [program:tgportal]
-    command=$VENV_PATH/bin/poetry run app
+    command=$PYTHON_PATH -m uvicorn server.app.main:app --host=0.0.0.0 --port=$SERVER_PORT --workers 4
     directory=$APP_DIR
     user=$USER
     autostart=true
@@ -204,11 +204,15 @@ else
     killasgroup=true
     stderr_logfile=/var/log/tgportal/tgportal.err.log
     stdout_logfile=/var/log/tgportal/tgportal.out.log
-    environment=PYTHONPATH="$APP_DIR",PATH="$VENV_PATH/bin:/home/$USER/.local/bin:/usr/local/bin:/usr/bin:/bin",VIRTUAL_ENV="$VENV_PATH"
+    environment=PYTHONPATH="$APP_DIR",PORT="$SERVER_PORT"
 EOL
 fi
 
+sudo mkdir -p /var/log/tgportal
+sudo chown $USER:$USER /var/log/tgportal
+
 # Reload supervisor configuration
+echo -e "${YELLOW}Updating supervisor configuration...${NC}"
 sudo supervisorctl reread
 sudo supervisorctl update
 
