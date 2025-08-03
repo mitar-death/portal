@@ -84,7 +84,7 @@ else
     --tags=http-server,https-server \
     --metadata=startup-script='#!/bin/bash
       # Update package lists
-      
+
       apt-get update
       # Install essential packages
       apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential  zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev rsync postgresql-client
@@ -452,16 +452,7 @@ if [[ "$APP_STATUS" == *"RUNNING"* ]]; then
   echo -e "${GREEN}✓ TG Portal backend is running successfully!${NC}"
   echo -e "${GREEN}✓ Application is accessible at: http://$EXTERNAL_IP${NC}"
   
-  # Check the application response
-  echo -e "${YELLOW}Checking if application is responding...${NC}"
-  RESPONSE=$(gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="curl -s -o /dev/null -w '%{http_code}' http://localhost:8030/health" 2>/dev/null || echo "000")
-  
-  if [[ "$RESPONSE" == "200" ]]; then
-    echo -e "${GREEN}✓ Application API is responding correctly (Status: $RESPONSE)${NC}"
-  else
-    echo -e "${YELLOW}⚠ Application API might not be fully initialized yet. Status: $RESPONSE${NC}"
-    echo -e "${YELLOW}The application might need a few more moments to start up completely.${NC}"
-  fi
+
 else
   echo -e "${RED}⚠ TG Portal backend might not be running correctly. Status: $APP_STATUS${NC}"
   echo -e "${YELLOW}Checking supervisor logs...${NC}"
