@@ -267,24 +267,76 @@ if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
       sudo apt-get update && sudo apt-get install -y dnsutils
     fi
     
-    # Check if the domain DNS is properly set up for Certbot verification
-  #   CURRENT_IP=$(curl -s ifconfig.me)
-  #   DOMAIN_IP=$(dig +short $CUSTOM_DOMAIN A)
+    # Install netcat if not available
+    if ! command -v nc &> /dev/null; then
+      echo -e "${YELLOW}Installing network utilities (nc)...${NC}"
+      sudo apt-get update && sudo apt-get install -y netcat
+    fi
   
-  # if [ -z "$DOMAIN_IP" ]; then
-  #   echo -e "${RED}Domain $CUSTOM_DOMAIN doesn't have an A record. Certbot verification will fail.${NC}"
-  #   echo -e "${YELLOW}Please add an A record: $CUSTOM_DOMAIN -> $CURRENT_IP${NC}"
-  #   exit 1
-  # elif [ "$DOMAIN_IP" != "$CURRENT_IP" ]; then
-  #   echo -e "${RED}Domain $CUSTOM_DOMAIN points to $DOMAIN_IP, but this server's IP is $CURRENT_IP${NC}"
-  #   echo -e "${YELLOW}Please update your DNS A record to point to $CURRENT_IP${NC}"
-  #   exit 1
-  # fi
+  echo -e "${YELLOW}Verifying domain connectivity before running Certbot...${NC}"
+  CURRENT_IP=$(curl -s ifconfig.me)
+  DOMAIN_IP=$(dig +short $CUSTOM_DOMAIN A)
+  PORT_80_OPEN=$(nc -z -w5 -v $CUSTOM_DOMAIN 80 2>&1 | grep -c "succeeded" || echo "0")
+
+  echo -e "Domain IP: $DOMAIN_IP"
+  echo -e "Server IP: $CURRENT_IP"
+  echo -e "Port 80 accessible: $PORT_80_OPEN"
+
+  # Set default methods
+  USE_DNS_VALIDATION=false
+  SKIP_HTTPS=false
+  USE_SELF_SIGNED=false
+
+  if [[ "$DOMAIN_IP" != "$CURRENT_IP" ]] || [[ "$PORT_80_OPEN" == "0" ]]; then
+    echo -e "${RED}Warning: Domain $CUSTOM_DOMAIN points to $DOMAIN_IP, but this server's IP is $CURRENT_IP${NC}"
+    echo -e "${YELLOW}Let's Encrypt HTTP validation will likely fail.${NC}"
+    echo -e "${YELLOW}Proceeding with DNS-01 challenge method...${NC}"
+    USE_DNS_VALIDATION=true
+  fi
+
+  # Make sure ports are open for certification
+  echo -e "${YELLOW}Ensuring firewall allows Let's Encrypt validation...${NC}"
+  sudo ufw allow 80/tcp || true
+  sudo ufw allow 443/tcp || true
+
+  # Choose certificate method
+  if [ "$USE_DNS_VALIDATION" = "true" ]; then
+    echo -e "${GREEN}Using DNS challenge method for domain verification...${NC}"
+    echo -e "${YELLOW}You will be prompted to add a TXT record to your DNS configuration.${NC}"
+    echo -e "${YELLOW}Follow the instructions displayed, and press Enter when ready.${NC}"
+    
+    if ! sudo certbot certonly --manual --preferred-challenges dns -d $CUSTOM_DOMAIN --agree-tos --email admin@$CUSTOM_DOMAIN; then
+      echo -e "${RED}Certbot DNS validation failed. Creating self-signed certificate as fallback...${NC}"
+      USE_SELF_SIGNED=true
+    fi
+  else
+    echo -e "${GREEN}Using HTTP challenge method for domain verification...${NC}"
+    if ! sudo certbot --nginx -d $CUSTOM_DOMAIN --non-interactive --agree-tos --email admin@$CUSTOM_DOMAIN --redirect; then
+      echo -e "${RED}Certbot HTTP validation failed. Trying DNS validation method...${NC}"
+      
+      echo -e "${YELLOW}You will be prompted to add a TXT record to your DNS configuration.${NC}"
+      echo -e "${YELLOW}Follow the instructions displayed, and press Enter when ready.${NC}"
+      
+      if ! sudo certbot certonly --manual --preferred-challenges dns -d $CUSTOM_DOMAIN --agree-tos --email admin@$CUSTOM_DOMAIN; then
+        echo -e "${RED}Certbot DNS validation also failed. Creating self-signed certificate as fallback...${NC}"
+        USE_SELF_SIGNED=true
+      fi
+    fi
+  fi
   
-  echo -e "${GREEN}Domain $CUSTOM_DOMAIN correctly points to this server. Proceeding with Certbot...${NC}"
-  if ! sudo certbot --nginx -d $CUSTOM_DOMAIN --non-interactive --agree-tos --email admin@$CUSTOM_DOMAIN --redirect; then
-    echo -e "${RED}Certbot failed to generate SSL certificates. Please check manually.${NC}"
-    exit 1
+  # Create self-signed certificate if needed
+  if [ "$USE_SELF_SIGNED" = "true" ]; then
+    echo -e "${YELLOW}Creating self-signed certificate...${NC}"
+    sudo mkdir -p /etc/ssl/private
+    sudo mkdir -p /etc/ssl/certs
+    sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+      -keyout /etc/ssl/private/$CUSTOM_DOMAIN.key \
+      -out /etc/ssl/certs/$CUSTOM_DOMAIN.crt \
+      -subj "/CN=$CUSTOM_DOMAIN/O=TG Portal/C=US"
+    
+    # Update certificate paths
+    CERT_PATH="/etc/ssl/certs/$CUSTOM_DOMAIN.crt"
+    KEY_PATH="/etc/ssl/private/$CUSTOM_DOMAIN.key"
   fi
   
   # Close the 'else' part of the certificate existence check
@@ -294,10 +346,16 @@ if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
   # Create nginx configuration for HTTPS
   echo -e "${YELLOW}Configuring Nginx for HTTPS...${NC}"
 
-  # Using Let's Encrypt certificates
-  echo -e "${GREEN}Using Let's Encrypt certificates for HTTPS configuration...${NC}"
-  CERT_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem"
-  KEY_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/privkey.pem"
+  # Determine certificate paths
+  if [ "$USE_SELF_SIGNED" = "true" ]; then
+    echo -e "${GREEN}Using self-signed certificates for HTTPS configuration...${NC}"
+    CERT_PATH="/etc/ssl/certs/$CUSTOM_DOMAIN.crt"
+    KEY_PATH="/etc/ssl/private/$CUSTOM_DOMAIN.key"
+  else
+    echo -e "${GREEN}Using Let's Encrypt certificates for HTTPS configuration...${NC}"
+    CERT_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem"
+    KEY_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/privkey.pem"
+  fi
 
   # If we got here, we have valid SSL certificates
   sudo tee /etc/nginx/sites-available/tgportal > /dev/null << EOL
@@ -319,6 +377,19 @@ if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
       ssl_certificate $CERT_PATH;
       ssl_certificate_key $KEY_PATH;
 
+      # Enhanced SSL settings
+      ssl_protocols TLSv1.2 TLSv1.3;
+      ssl_prefer_server_ciphers on;
+      ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+      ssl_session_timeout 1d;
+      ssl_session_cache shared:SSL:10m;
+      ssl_session_tickets off;
+
+      # OCSP Stapling
+      ssl_stapling on;
+      ssl_stapling_verify on;
+      resolver 8.8.8.8 8.8.4.4 valid=300s;
+      resolver_timeout 5s;
 
       # Proxy settings
       location / {
@@ -330,6 +401,10 @@ if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
           proxy_set_header X-Real-IP \$remote_addr;
           proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
           proxy_set_header X-Forwarded-Proto \$scheme;
+          proxy_read_timeout 90;
+          proxy_buffer_size 4k;
+          proxy_buffers 4 32k;
+          proxy_busy_buffers_size 64k;
       }
   }
 EOL
@@ -376,9 +451,31 @@ EOL
   # Validate and reload Nginx configuration
   if sudo nginx -t; then
     echo -e "${GREEN}Nginx configuration is valid.${NC}"
-    sudo systemctl reload nginx
+    sudo systemctl reload nginx || sudo service nginx reload
+    echo -e "${GREEN}HTTPS setup completed successfully for $CUSTOM_DOMAIN${NC}"
   else
     echo -e "${RED}WARNING: Nginx configuration is invalid. Please check manually.${NC}"
+    echo -e "${YELLOW}Will continue with HTTP only configuration...${NC}"
+    
+    # Fallback to HTTP-only configuration
+    sudo tee /etc/nginx/sites-available/tgportal > /dev/null << EOL
+    server {
+        listen 80;
+        server_name ${CUSTOM_DOMAIN};
+
+        location / {
+            proxy_pass http://localhost:8030;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade \$http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto \$scheme;
+        }
+    }
+EOL
+    sudo systemctl reload nginx || sudo service nginx reload
   fi
 fi
 
