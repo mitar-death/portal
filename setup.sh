@@ -23,6 +23,8 @@ CLOUD_SQL_CONNECTION_NAME=${CLOUD_SQL_CONNECTION_NAME:-""}
 # Check if we're using Cloud SQL (preferred) or local PostgreSQL
 if [ -n "$CLOUD_SQL_CONNECTION_NAME" ] || grep -q "CLOUD_SQL_CONNECTION_NAME" .env 2>/dev/null; then
   echo -e "${GREEN}[1/6] Using Cloud SQL PostgreSQL database${NC}"
+  echo -e "${GREEN}Connection name: $CLOUD_SQL_CONNECTION_NAME${NC}"
+  echo -e "${GREEN}Database host: $DB_HOST${NC}"
   echo -e "${GREEN}No local PostgreSQL setup needed${NC}"
 else
   # Fallback to local PostgreSQL setup if needed

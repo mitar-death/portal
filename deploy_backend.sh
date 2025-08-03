@@ -137,7 +137,19 @@ echo -e "${GREEN}Instance external IP: $EXTERNAL_IP${NC}"
 
 # Check if Cloud SQL instance exists
 echo -e "${YELLOW}Checking for Cloud SQL PostgreSQL instance...${NC}"
-if gcloud sql instances describe "$DB_INSTANCE_NAME" &> /dev/null; then
+
+MAX_SQL_RETRIES=5
+SQL_RETRY_COUNT=0
+
+check_sql_instance() {
+  if gcloud sql instances describe "$DB_INSTANCE_NAME" &> /dev/null; then
+    return 0  # Success
+  else
+    return 1  # Not found
+  fi
+}
+
+if check_sql_instance; then
   echo -e "${GREEN}Cloud SQL instance $DB_INSTANCE_NAME already exists.${NC}"
   
   # Get the instance connection name and IP
@@ -159,32 +171,93 @@ else
     --availability-type=ZONAL \
     --root-password="$DB_PASSWORD"
   
-  # Get the instance connection name and IP
-  DB_CONNECTION_NAME=$(gcloud sql instances describe "$DB_INSTANCE_NAME" --format="value(connectionName)")
-  DB_HOST=$(gcloud sql instances describe "$DB_INSTANCE_NAME" --format="value(ipAddresses[0].ipAddress)")
+  # Wait for the instance to be fully provisioned with retries
+  echo -e "${YELLOW}Waiting for Cloud SQL instance to be ready...${NC}"
+  while [ $SQL_RETRY_COUNT -lt $MAX_SQL_RETRIES ]; do
+    if check_sql_instance && \
+       DB_CONNECTION_NAME=$(gcloud sql instances describe "$DB_INSTANCE_NAME" --format="value(connectionName)" 2>/dev/null) && \
+       DB_HOST=$(gcloud sql instances describe "$DB_INSTANCE_NAME" --format="value(ipAddresses[0].ipAddress)" 2>/dev/null) && \
+       [ -n "$DB_CONNECTION_NAME" ] && [ -n "$DB_HOST" ]; then
+      echo -e "${GREEN}Cloud SQL instance is ready.${NC}"
+      break
+    else
+      SQL_RETRY_COUNT=$((SQL_RETRY_COUNT+1))
+      if [ $SQL_RETRY_COUNT -eq $MAX_SQL_RETRIES ]; then
+        echo -e "${RED}Failed to create Cloud SQL instance after $MAX_SQL_RETRIES attempts.${NC}"
+        echo -e "${RED}You may need to manually check the instance in the Google Cloud Console.${NC}"
+        echo -e "${RED}Continuing with deployment, but database connection may fail.${NC}"
+      else
+        echo -e "${YELLOW}Cloud SQL instance not ready yet. Waiting 30 seconds (Attempt $SQL_RETRY_COUNT of $MAX_SQL_RETRIES)...${NC}"
+        sleep 30
+      fi
+    fi
+  done
   
   echo -e "${GREEN}Created Cloud SQL instance with IP: $DB_HOST${NC}"
   
-  # Create database and user
+  # Create database and user with retries
   echo -e "${YELLOW}Creating database and user...${NC}"
-  gcloud sql databases create "$DB_DATABASE" --instance="$DB_INSTANCE_NAME"
+  MAX_DB_RETRIES=3
+  DB_RETRY_COUNT=0
   
-  # Create database user
-  gcloud sql users create "$DB_USERNAME" \
-    --instance="$DB_INSTANCE_NAME" \
-    --password="$DB_PASSWORD"
+  while [ $DB_RETRY_COUNT -lt $MAX_DB_RETRIES ]; do
+    if gcloud sql databases create "$DB_DATABASE" --instance="$DB_INSTANCE_NAME" 2>/dev/null; then
+      echo -e "${GREEN}Database created successfully.${NC}"
+      break
+    else
+      DB_RETRY_COUNT=$((DB_RETRY_COUNT+1))
+      if [ $DB_RETRY_COUNT -eq $MAX_DB_RETRIES ]; then
+        echo -e "${RED}Failed to create database after $MAX_DB_RETRIES attempts.${NC}"
+      else
+        echo -e "${YELLOW}Failed to create database. Retrying in 10 seconds...${NC}"
+        sleep 10
+      fi
+    fi
+  done
   
-  echo -e "${GREEN}Database and user created successfully.${NC}"
+  # Create database user with retries
+  MAX_USER_RETRIES=3
+  USER_RETRY_COUNT=0
+  
+  while [ $USER_RETRY_COUNT -lt $MAX_USER_RETRIES ]; do
+    if gcloud sql users create "$DB_USERNAME" --instance="$DB_INSTANCE_NAME" --password="$DB_PASSWORD" 2>/dev/null; then
+      echo -e "${GREEN}Database user created successfully.${NC}"
+      break
+    else
+      USER_RETRY_COUNT=$((USER_RETRY_COUNT+1))
+      if [ $USER_RETRY_COUNT -eq $MAX_USER_RETRIES ]; then
+        echo -e "${RED}Failed to create database user after $MAX_USER_RETRIES attempts.${NC}"
+      else
+        echo -e "${YELLOW}Failed to create database user. Retrying in 10 seconds...${NC}"
+        sleep 10
+      fi
+    fi
+  done
 fi
 
 # Configure firewall to allow the VM to connect to Cloud SQL
 echo -e "${YELLOW}Configuring Cloud SQL firewall...${NC}"
-  
-# Add VM IP to Cloud SQL authorized networks
-gcloud sql instances patch "$DB_INSTANCE_NAME" \
-  --authorized-networks="$EXTERNAL_IP/32"
-  
-echo -e "${GREEN}Cloud SQL firewall configured to allow access from VM ($EXTERNAL_IP).${NC}"
+
+# Add VM IP to Cloud SQL authorized networks with retries
+MAX_FW_RETRIES=3
+FW_RETRY_COUNT=0
+
+while [ $FW_RETRY_COUNT -lt $MAX_FW_RETRIES ]; do
+  if gcloud sql instances patch "$DB_INSTANCE_NAME" \
+      --authorized-networks="$EXTERNAL_IP/32" 2>/dev/null; then
+    echo -e "${GREEN}Cloud SQL firewall configured to allow access from VM ($EXTERNAL_IP).${NC}"
+    break
+  else
+    FW_RETRY_COUNT=$((FW_RETRY_COUNT+1))
+    if [ $FW_RETRY_COUNT -eq $MAX_FW_RETRIES ]; then
+      echo -e "${RED}Failed to configure Cloud SQL firewall after $MAX_FW_RETRIES attempts.${NC}"
+      echo -e "${YELLOW}You may need to manually add $EXTERNAL_IP to authorized networks in the Google Cloud Console.${NC}"
+    else
+      echo -e "${YELLOW}Failed to configure Cloud SQL firewall. Retrying in 5 seconds (Attempt $FW_RETRY_COUNT of $MAX_FW_RETRIES)...${NC}"
+      sleep 5
+    fi
+  fi
+done
 
 # Check if SSH connection to the VM works
 echo -e "${YELLOW}Checking SSH connection to the VM...${NC}"
@@ -323,6 +396,10 @@ export EXTERNAL_IP="\$EXTERNAL_IP"
 export APP_DIR="\$APP_DIR"
 export VM_USERNAME="\$VM_USERNAME"
 export CLOUD_SQL_CONNECTION_NAME="\$CLOUD_SQL_CONNECTION_NAME"
+export DB_HOST="\$DB_HOST"
+export DB_USERNAME="\$DB_USERNAME"
+export DB_PASSWORD="\$DB_PASSWORD"
+export DB_DATABASE="\$DB_DATABASE"
 
 # Run the setup script
 cd /tmp/tgportal_deploy
@@ -348,6 +425,11 @@ export GITHUB_REPO='$GITHUB_REPO'
 export GITHUB_BRANCH='$GITHUB_BRANCH'
 export GITHUB_TOKEN='$GITHUB_TOKEN'
 export EXTERNAL_IP='$EXTERNAL_IP'
+export CLOUD_SQL_CONNECTION_NAME='$DB_CONNECTION_NAME'
+export DB_HOST='$DB_HOST'
+export DB_USERNAME='$DB_USERNAME'
+export DB_PASSWORD='$DB_PASSWORD'
+export DB_DATABASE='$DB_DATABASE'
 bash ~/github_setup.sh
 " || {
   echo -e "${RED}Deployment failed. Please check the logs for more information.${NC}"
