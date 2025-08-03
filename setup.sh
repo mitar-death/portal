@@ -316,6 +316,24 @@ if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
 
   # Create nginx configuration for HTTPS
   echo -e "${YELLOW}Configuring Nginx for HTTPS...${NC}"
+
+    # Check if we're using custom certs or Let's Encrypt certs
+  if [ -f "/etc/custom-certs/archive/$CUSTOM_DOMAIN/fullchain1.pem" ]; then
+    # Using custom certificates
+    echo -e "${GREEN}Using custom certificates for HTTPS configuration...${NC}"
+    CERT_PATH="/etc/custom-certs/archive/$CUSTOM_DOMAIN/fullchain1.pem"
+    KEY_PATH="/etc/custom-certs/archive/$CUSTOM_DOMAIN/privkey1.pem"
+  elif [ -f "/etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem" ]; then
+    # Using Let's Encrypt certificates
+    echo -e "${GREEN}Using Let's Encrypt certificates for HTTPS configuration...${NC}"
+    CERT_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem"
+    KEY_PATH="/etc/letsencrypt/live/$CUSTOM_DOMAIN/privkey.pem"
+  else
+    echo -e "${RED}Error: No SSL certificates found at expected locations.${NC}"
+    echo -e "${RED}Checked both /etc/custom-certs/archive/$CUSTOM_DOMAIN/ and /etc/letsencrypt/live/$CUSTOM_DOMAIN/...${NC}"
+    echo -e "${YELLOW}Falling back to HTTP configuration...${NC}"
+    
+
   sudo tee /etc/nginx/sites-available/tgportal > /dev/null << EOL
 server {
     listen 80;
@@ -332,8 +350,8 @@ server {
     server_name $CUSTOM_DOMAIN;
 
     # SSL certificate files
-    ssl_certificate /etc/custom-certs/archive/$CUSTOM_DOMAIN/fullchain1.pem;
-    ssl_certificate_key /etc/custom-certs/archive/$CUSTOM_DOMAIN/privkey1.pem;
+    ssl_certificate $CERT_PATH;
+    ssl_certificate_key $KEY_PATH;
 
 
     # Proxy settings
@@ -384,6 +402,11 @@ EOL
 
   # Create symbolic link if it doesn't exist
   sudo ln -sf /etc/nginx/sites-available/tgportal /etc/nginx/sites-enabled/
+
+  # Remove default site if it exists
+  if [ -f /etc/nginx/sites-enabled/default ]; then
+    sudo rm /etc/nginx/sites-enabled/default
+  fi
 
   # Validate and reload Nginx configuration
   if sudo nginx -t; then
