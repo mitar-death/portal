@@ -159,7 +159,8 @@ else
     --storage-type=SSD \
     --backup-start-time="23:00" \
     --availability-type=ZONAL \
-    --root-password="$DB_PASSWORD"
+    --root-password="$DB_PASSWORD" \
+    --authorized-networks="0.0.0.0/0"
   
   # Wait for the instance to be fully provisioned with retries
   echo -e "${YELLOW}Waiting for Cloud SQL instance to be ready...${NC}"
