@@ -306,21 +306,7 @@ else
   }
 fi
 
-# Create a healthcheck endpoint
-if grep -q "app.get(\"/health\"" "$APP_DIR/server/app/main.py"; then
-  echo -e "${GREEN}Healthcheck endpoint already exists.${NC}"
-else
-  echo -e "${YELLOW}Adding healthcheck endpoint to main.py...${NC}"
-  # Find the line with app = FastAPI() and add the healthcheck route after it
-  if grep -q "app = FastAPI" "$APP_DIR/server/app/main.py"; then
-    TEMP_FILE=$(mktemp)
-    awk '/app = FastAPI/{print; print "\n@app.get(\"/health\", tags=[\"health\"])"; print "async def health_check():"; print "    return {\"status\": \"ok\", \"message\": \"TG Portal API is running\"}\n"; next}1' "$APP_DIR/server/app/main.py" > "$TEMP_FILE"
-    mv "$TEMP_FILE" "$APP_DIR/server/app/main.py"
-    echo -e "${GREEN}Healthcheck endpoint added.${NC}"
-  else
-    echo -e "${YELLOW}Unable to find FastAPI app definition. Skipping healthcheck endpoint.${NC}"
-  fi
-fi
+
 
 echo -e "${GREEN}===============================================${NC}"
 echo -e "${GREEN}Setup completed successfully!${NC}"
