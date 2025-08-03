@@ -39,16 +39,6 @@ if [ -n "$CLOUD_SQL_CONNECTION_NAME" ] || grep -q "CLOUD_SQL_CONNECTION_NAME" .e
       echo -e "${YELLOW}3. Database service not running${NC}"
       echo -e "${YELLOW}Continuing anyway, but application might not work correctly.${NC}"
     fi
-  else
-    echo -e "${YELLOW}pg_isready not found. Installing PostgreSQL client tools...${NC}"
-    sudo apt-get update && sudo apt-get install -y postgresql-client
-    
-    if pg_isready -h "$DB_HOST" -p 5432 -U "$DB_USERNAME"; then
-      echo -e "${GREEN}Database connection successful!${NC}"
-    else
-      echo -e "${RED}Failed to connect to database. Error code: $?${NC}"
-      echo -e "${YELLOW}Check Cloud SQL firewall settings and database credentials.${NC}"
-    fi
   fi
   
   echo -e "${GREEN}No local PostgreSQL setup needed${NC}"
@@ -221,7 +211,7 @@ else
   PYTHON_PATH=$(which python3)
   sudo tee /etc/supervisor/conf.d/tgportal.conf > /dev/null << EOL
     [program:tgportal]
-    command=$PYTHON_PATH -m uvicorn server.app.main:app --host=0.0.0.0 --port=$SERVER_PORT --workers 4
+    command=$PYTHON_PATH -m uvicorn server.app.main:app --host=0.0.0.0 --port=8030 --workers 4
     directory=$APP_DIR
     user=$USER
     autostart=true
@@ -230,7 +220,7 @@ else
     killasgroup=true
     stderr_logfile=/var/log/tgportal/tgportal.err.log
     stdout_logfile=/var/log/tgportal/tgportal.out.log
-    environment=PYTHONPATH="$APP_DIR",PORT="$SERVER_PORT"
+    environment=PYTHONPATH="$APP_DIR",PORT="8030"
 EOL
 fi
 

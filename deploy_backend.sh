@@ -64,11 +64,6 @@ if ! command -v gcloud &> /dev/null; then
   exit 1
 fi
 
-# Check if gcloud is authenticated
-# echo -e "${YELLOW}You need to authenticate with Google Cloud.${NC}"
-# gcloud auth login
-
-
 # Set the GCP project
 echo -e "${YELLOW}Setting GCP project to: $PROJECT_ID${NC}"
 gcloud config set project "$PROJECT_ID"
@@ -91,9 +86,9 @@ else
       # Update package lists
       apt-get update
       
-     # Install essential packages - no PostgreSQL needed
+     # Install essential packages
      PACKAGES="python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential"
-     PACKAGES="$PACKAGES zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev rsync"
+     PACKAGES="$PACKAGES zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev rsync postgresql-client"
       
       for pkg in $PACKAGES; do
         if ! dpkg -l | grep -q "ii  $pkg"; then
@@ -234,30 +229,6 @@ else
     fi
   done
 fi
-
-# # Configure firewall to allow the VM to connect to Cloud SQL
-# echo -e "${YELLOW}Configuring Cloud SQL firewall...${NC}"
-
-# # Add VM IP to Cloud SQL authorized networks with retries
-# MAX_FW_RETRIES=3
-# FW_RETRY_COUNT=0
-
-# while [ $FW_RETRY_COUNT -lt $MAX_FW_RETRIES ]; do
-#   if gcloud sql instances patch "$DB_INSTANCE_NAME" \
-#       --authorized-networks="$EXTERNAL_IP/32" 2>/dev/null; then
-#     echo -e "${GREEN}Cloud SQL firewall configured to allow access from VM ($EXTERNAL_IP).${NC}"
-#     break
-#   else
-#     FW_RETRY_COUNT=$((FW_RETRY_COUNT+1))
-#     if [ $FW_RETRY_COUNT -eq $MAX_FW_RETRIES ]; then
-#       echo -e "${RED}Failed to configure Cloud SQL firewall after $MAX_FW_RETRIES attempts.${NC}"
-#       echo -e "${YELLOW}You may need to manually add $EXTERNAL_IP to authorized networks in the Google Cloud Console.${NC}"
-#     else
-#       echo -e "${YELLOW}Failed to configure Cloud SQL firewall. Retrying in 5 seconds (Attempt $FW_RETRY_COUNT of $MAX_FW_RETRIES)...${NC}"
-#       sleep 5
-#     fi
-#   fi
-# done
 
 # Check if SSH connection to the VM works
 echo -e "${YELLOW}Checking SSH connection to the VM...${NC}"
@@ -410,28 +381,7 @@ export DB_DATABASE="\$DB_DATABASE"
 cd /tmp/tgportal_deploy
 echo -e "\${GREEN}Running setup script in the background...\${NC}"
 
-# Fork the process to allow the SSH session to complete
-{
-  # Run setup script and capture output
-  bash setup.sh > /tmp/setup_output.log 2>&1
-  
-  # Create a marker file to indicate completion
-  echo "Setup completed at \$(date)" > /tmp/setup_complete.txt
-  
-  # Check the supervisor status and save it
-  SUPERVISOR_STATUS=\$(sudo supervisorctl status tgportal | grep -o "RUNNING" || echo "NOT_RUNNING")
-  echo "Supervisor status: \$SUPERVISOR_STATUS" >> /tmp/setup_complete.txt
-} &
-
-# Don't wait for the background process
-echo -e "\${GREEN}Setup script running in background. Check /tmp/setup_output.log for details.\${NC}"
-echo -e "\${GREEN}When complete, check /tmp/setup_complete.txt for status.\${NC}"
-
-# Wait just a few seconds to make sure setup script has started
-sleep 5
-
-# Exit successfully to allow the deployment script to continue
-exit 0
+bash setup.sh
 EOL
 chmod +x "$TEMP_DIR/github_setup.sh"
 
