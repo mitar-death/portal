@@ -84,21 +84,11 @@ else
     --tags=http-server,https-server \
     --metadata=startup-script='#!/bin/bash
       # Update package lists
+      
       apt-get update
-      
-     # Install essential packages
-     PACKAGES="python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential"
-     PACKAGES="$PACKAGES zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev rsync postgresql-client"
-      
-      for pkg in $PACKAGES; do
-        if ! dpkg -l | grep -q "ii  $pkg"; then
-          echo "Installing $pkg..."
-          apt-get install -y $pkg
-        else
-          echo "$pkg is already installed."
-        fi
-      done
-      
+      # Install essential packages
+      apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential  zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev rsync postgresql-client
+
       # Create log directory for application
       mkdir -p /var/log/tgportal
       chmod 755 /var/log/tgportal
