@@ -18,18 +18,25 @@ APP_DIR=${APP_DIR:-"/home/$USER/tgportal"}
 
 # Get external IP for Nginx configuration if not provided
 EXTERNAL_IP=${EXTERNAL_IP:-$(curl -s http://checkip.amazonaws.com)}
+CLOUD_SQL_CONNECTION_NAME=${CLOUD_SQL_CONNECTION_NAME:-""}
 
-# Setup database
-echo "[1/6] Setting up PostgreSQL database..."
-if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw tgportal; then
-  echo "Creating PostgreSQL database and user..."
-  sudo -u postgres psql -c "CREATE DATABASE tgportal;"
-  sudo -u postgres psql -c "CREATE USER tgportal WITH PASSWORD 'tgportal_password';"
-  sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tgportal TO tgportal;"
-  echo "PostgreSQL database and user created successfully."
+# Check if we're using Cloud SQL (preferred) or local PostgreSQL
+if [ -n "$CLOUD_SQL_CONNECTION_NAME" ] || grep -q "CLOUD_SQL_CONNECTION_NAME" .env 2>/dev/null; then
+  echo -e "${GREEN}[1/6] Using Cloud SQL PostgreSQL database${NC}"
+  echo -e "${GREEN}No local PostgreSQL setup needed${NC}"
 else
-  echo "PostgreSQL database already exists. Ensuring user has proper permissions..."
-  sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tgportal TO tgportal;" || true
+  # Fallback to local PostgreSQL setup if needed
+  echo -e "${YELLOW}[1/6] Cloud SQL not detected, setting up local PostgreSQL database...${NC}"
+  if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw tgportal; then
+    echo "Creating PostgreSQL database and user..."
+    sudo -u postgres psql -c "CREATE DATABASE tgportal;"
+    sudo -u postgres psql -c "CREATE USER tgportal WITH PASSWORD 'tgportal_password';"
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tgportal TO tgportal;"
+    echo "PostgreSQL database and user created successfully."
+  else
+    echo "PostgreSQL database already exists. Ensuring user has proper permissions..."
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tgportal TO tgportal;" || true
+  fi
 fi
 
 # Setup application directory

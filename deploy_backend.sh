@@ -20,6 +20,14 @@ MACHINE_TYPE="e2-medium"
 VM_USERNAME="$USER"
 APP_DIR="/home/$VM_USERNAME/tgportal"
 
+# Cloud SQL PostgreSQL configuration
+DB_INSTANCE_NAME="tgportal-db"
+DB_TIER="db-g1-small"  # Smallest general-purpose instance
+DB_USERNAME="tgportal"
+DB_PASSWORD="tgportal-$(date +%s | head -c 8)" # Generate a simple unique password
+DB_DATABASE="tgportal"
+DB_REGION=$(echo "$ZONE" | sed 's/-.$//')  # Extract region from zone (e.g., us-central1-a -> us-central1)
+
 # GitHub configuration - update these with your repository details
 GITHUB_REPO=${GITHUB_REPO:-"https://github.com/mitar-death/portal"}
 GITHUB_BRANCH=${GITHUB_BRANCH:-"stable-without-redis"}
@@ -81,49 +89,24 @@ else
     --tags=http-server,https-server \
     --metadata=startup-script='#!/bin/bash
       # Update package lists
-       apt-get update
-
-    # Install PostgreSQL properly with explicit confirmation
-    echo "Installing PostgreSQL..."
-    DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql postgresql-contrib
-
-    # Ensure PostgreSQL is running
-    systemctl enable postgresql
-    systemctl start postgresql
-    
-    # Wait for PostgreSQL to initialize fully
-    echo "Waiting for PostgreSQL to initialize..."
-    counter=0
-    while ! sudo -u postgres psql -c "SELECT 1" >/dev/null 2>&1; do
-      counter=$((counter + 1))
-      if [ $counter -gt 30 ]; then
-        echo "PostgreSQL did not initialize properly. Manual intervention required."
-        break
-      fi
-      echo "Waiting for PostgreSQL to be ready... ($counter/30)"
-      sleep 2
-    done
-    
-    # Install other packages
-    PACKAGES="python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential"
-    PACKAGES="$PACKAGES zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev rsync"
-    
-    for pkg in $PACKAGES; do
-      if ! dpkg -l | grep -q "ii  $pkg"; then
-        echo "Installing $pkg..."
-        apt-get install -y $pkg
-      else
-        echo "$pkg is already installed."
-      fi
-    done
-    
-    # Create log directory for application
-    mkdir -p /var/log/tgportal
-    chmod 755 /var/log/tgportal
-    
-    # Fix postgresql permissions if needed
-    chown -R postgres:postgres /var/lib/postgresql/
-    chmod 700 /var/lib/postgresql/
+      apt-get update
+      
+     # Install essential packages - no PostgreSQL needed
+     PACKAGES="python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential"
+     PACKAGES="$PACKAGES zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev rsync"
+      
+      for pkg in $PACKAGES; do
+        if ! dpkg -l | grep -q "ii  $pkg"; then
+          echo "Installing $pkg..."
+          apt-get install -y $pkg
+        else
+          echo "$pkg is already installed."
+        fi
+      done
+      
+      # Create log directory for application
+      mkdir -p /var/log/tgportal
+      chmod 755 /var/log/tgportal
     '
   
   echo -e "${GREEN}Instance created successfully.${NC}"
@@ -151,6 +134,57 @@ fi
 # Get the external IP of the instance
 EXTERNAL_IP=$(gcloud compute instances describe "$INSTANCE_NAME" --zone="$ZONE" --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
 echo -e "${GREEN}Instance external IP: $EXTERNAL_IP${NC}"
+
+# Check if Cloud SQL instance exists
+echo -e "${YELLOW}Checking for Cloud SQL PostgreSQL instance...${NC}"
+if gcloud sql instances describe "$DB_INSTANCE_NAME" &> /dev/null; then
+  echo -e "${GREEN}Cloud SQL instance $DB_INSTANCE_NAME already exists.${NC}"
+  
+  # Get the instance connection name and IP
+  DB_CONNECTION_NAME=$(gcloud sql instances describe "$DB_INSTANCE_NAME" --format="value(connectionName)")
+  DB_HOST=$(gcloud sql instances describe "$DB_INSTANCE_NAME" --format="value(ipAddresses[0].ipAddress)")
+  
+  echo -e "${GREEN}Using existing database at $DB_HOST${NC}"
+else
+  echo -e "${YELLOW}Creating Cloud SQL PostgreSQL instance: $DB_INSTANCE_NAME${NC}"
+  
+  # Create the Cloud SQL instance
+  gcloud sql instances create "$DB_INSTANCE_NAME" \
+    --tier="$DB_TIER" \
+    --region="$DB_REGION" \
+    --database-version=POSTGRES_13 \
+    --storage-size=10GB \
+    --storage-type=SSD \
+    --backup-start-time="23:00" \
+    --availability-type=ZONAL \
+    --root-password="$DB_PASSWORD"
+  
+  # Get the instance connection name and IP
+  DB_CONNECTION_NAME=$(gcloud sql instances describe "$DB_INSTANCE_NAME" --format="value(connectionName)")
+  DB_HOST=$(gcloud sql instances describe "$DB_INSTANCE_NAME" --format="value(ipAddresses[0].ipAddress)")
+  
+  echo -e "${GREEN}Created Cloud SQL instance with IP: $DB_HOST${NC}"
+  
+  # Create database and user
+  echo -e "${YELLOW}Creating database and user...${NC}"
+  gcloud sql databases create "$DB_DATABASE" --instance="$DB_INSTANCE_NAME"
+  
+  # Create database user
+  gcloud sql users create "$DB_USERNAME" \
+    --instance="$DB_INSTANCE_NAME" \
+    --password="$DB_PASSWORD"
+  
+  echo -e "${GREEN}Database and user created successfully.${NC}"
+fi
+
+# Configure firewall to allow the VM to connect to Cloud SQL
+echo -e "${YELLOW}Configuring Cloud SQL firewall...${NC}"
+  
+# Add VM IP to Cloud SQL authorized networks
+gcloud sql instances patch "$DB_INSTANCE_NAME" \
+  --authorized-networks="$EXTERNAL_IP/32"
+  
+echo -e "${GREEN}Cloud SQL firewall configured to allow access from VM ($EXTERNAL_IP).${NC}"
 
 # Check if SSH connection to the VM works
 echo -e "${YELLOW}Checking SSH connection to the VM...${NC}"
@@ -194,13 +228,16 @@ TELEGRAM_API_ID=${TELEGRAM_API_ID:-"your_telegram_api_id"}
 TELEGRAM_API_HASH=${TELEGRAM_API_HASH:-"your_telegram_api_hash"}
 
 ENV=production
-# Database settings
+# Database settings - Cloud SQL PostgreSQL
 DB_TYPE=postgres
 DB_PORT=5432
-DB_USERNAME=tgportal
-DB_PASSWORD=tgportal_password
-DB_HOST=localhost
-DB_DATABASE=tgportal
+DB_USERNAME=$DB_USERNAME
+DB_PASSWORD=$DB_PASSWORD
+DB_HOST=$DB_HOST
+DB_DATABASE=$DB_DATABASE
+
+# Cloud SQL connection name (for socket connections if needed)
+CLOUD_SQL_CONNECTION_NAME=$DB_CONNECTION_NAME
 
 # FastAPI settings
 DEBUG=false
@@ -285,6 +322,7 @@ fi
 export EXTERNAL_IP="\$EXTERNAL_IP"
 export APP_DIR="\$APP_DIR"
 export VM_USERNAME="\$VM_USERNAME"
+export CLOUD_SQL_CONNECTION_NAME="\$CLOUD_SQL_CONNECTION_NAME"
 
 # Run the setup script
 cd /tmp/tgportal_deploy
