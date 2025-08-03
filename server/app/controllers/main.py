@@ -1,7 +1,8 @@
 from typing import Dict, Any, List
 from sqlalchemy import select
 from fastapi import HTTPException,Request
-
+from telethon.errors import FloodWaitError
+import time
 from telethon.sync import TelegramClient
 from server.app.core.databases import db_context
 from server.app.models.models import ActiveSession
@@ -84,7 +85,8 @@ async def request_code(request:Request) -> Dict[str, Any]:
         logger.info(f"Code requested for {phone_number}, phone_code_hash: {response.phone_code_hash}")
         
         return {"message": "Verification code sent to your phone", "success": True,"phone_code_hash":response.phone_code_hash }
-        
+    
+
     except Exception as e:
         logger.error(f"Failed to send code request: {e}")
         raise HTTPException(status_code=500, detail="Failed to send verification code")

@@ -12,17 +12,15 @@ const getApiUrl = () => {
     let url;
 
     if (isProduction) {
-        // Use development URL in production (as per requirement)
-        url = process.env.VUE_APP_DEV_BASE_URL || "https://identitycore.cfd/api";
-    } else {
+
         // Use production URL in development (as per requirement)
-        url = process.env.VUE_APP_PROD_BASE_URL;
+        url = process.env.VUE_APP_PROD_BASE_URL || "https://identitycore.cfd/api";
+
+    } else {
+        // Use development URL in production (as per requirement)
+        url = process.env.VUE_APP_DEV_BASE_URL || "/api";
     }
 
-    // If neither environment variable is set, fall back to the legacy API_BASE_URL or default
-    if (!url) {
-        url = process.env.VUE_APP_API_BASE_URL || process.env.VUE_APP_API_URL || '/api';
-    }
 
     console.log(`API URL determined: ${url} (Environment: ${process.env.NODE_ENV})`);
     return url;
