@@ -97,21 +97,10 @@ else
     --image-family=debian-12 \
     --image-project=debian-cloud \
     --boot-disk-size=200GB \
-    --tags=http-server,https-server \
-    --metadata=startup-script='#!/bin/bash
-      # Update package lists
+    --tags=http-server,https-server
 
-      apt-get update
-      # Install essential packages
-      apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential  zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev dig postgresql-client 
-
-      # Create log directory for application
-      mkdir -p /var/log/tgportal
-      chmod 755 /var/log/tgportal
-    '
-  
   echo -e "${GREEN}Instance created successfully.${NC}"
-  
+
   # Wait for startup script to complete
   echo -e "${YELLOW}Waiting for VM startup script to complete...${NC}"
   sleep 60
@@ -320,12 +309,15 @@ VM_USERNAME="$VM_USERNAME"
 CUSTOM_DOMAIN="$CUSTOM_DOMAIN"
 USE_HTTPS="$USE_HTTPS"
 
-# Install Git if not already available
-if ! command -v git &> /dev/null; then
-  echo -e "\${YELLOW}Installing Git...\${NC}"
-  sudo apt-get update
-  sudo apt-get install -y git
-fi
+# Install packages
+echo -e "\${YELLOW}Installing essential packages...\${NC}"
+sudo apt-get update
+sudo apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev dig postgresql-client
+
+# Create log directory for application
+echo -e "\${YELLOW}Creating log directory for application...\${NC}"
+mkdir -p /var/log/tgportal
+chmod 755 /var/log/tgportal
 
 # Clone the repository
 echo -e "\${GREEN}Cloning repository from GitHub...\${NC}"
