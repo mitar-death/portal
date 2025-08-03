@@ -225,6 +225,11 @@ else
   sudo supervisorctl start tgportal
 fi
 
+# Give supervisor a moment to start the application
+sleep 5
+echo -e "${YELLOW}Supervisor status after start/restart:${NC}"
+sudo supervisorctl status tgportal
+
 # Setup Nginx
 echo -e "${GREEN}[6/6] Setting up Nginx...${NC}"
 

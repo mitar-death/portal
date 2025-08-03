@@ -379,17 +379,22 @@ fi
 rm -rf /tmp/tgportal_deploy
 mkdir -p /tmp/tgportal_deploy
 
+# Create a temporary directory for configuration files
+mkdir -p /tmp/config
+
+# Copy environment file from parent script if it exists
+if [ -f /home/\$VM_USERNAME/.env.prod ]; then
+  cp /home/\$VM_USERNAME/.env.prod /tmp/config/.env.prod
+fi
+
 # Clone the repository
 echo -e "\${GREEN}Cloning from branch: \$BRANCH\${NC}"
-set -x  # Enable command echoing for debugging
 git clone --depth 1 --branch "\$BRANCH" "\$GITHUB_URL" /tmp/tgportal_deploy
-set +x  # Disable command echoing
 
 if [ ! -d "/tmp/tgportal_deploy/.git" ]; then
   echo -e "\${RED}Failed to clone repository. Check your GitHub token and repository URL.\${NC}"
   exit 1
 fi
-
 
 # Export variables for setup script
 export EXTERNAL_IP="\$EXTERNAL_IP"
@@ -401,10 +406,32 @@ export DB_USERNAME="\$DB_USERNAME"
 export DB_PASSWORD="\$DB_PASSWORD"
 export DB_DATABASE="\$DB_DATABASE"
 
-# Run the setup script
+# Run the setup script in the background to avoid hanging SSH session
 cd /tmp/tgportal_deploy
-echo -e "\${GREEN}Running setup script...\${NC}"
-bash setup.sh
+echo -e "\${GREEN}Running setup script in the background...\${NC}"
+
+# Fork the process to allow the SSH session to complete
+{
+  # Run setup script and capture output
+  bash setup.sh > /tmp/setup_output.log 2>&1
+  
+  # Create a marker file to indicate completion
+  echo "Setup completed at \$(date)" > /tmp/setup_complete.txt
+  
+  # Check the supervisor status and save it
+  SUPERVISOR_STATUS=\$(sudo supervisorctl status tgportal | grep -o "RUNNING" || echo "NOT_RUNNING")
+  echo "Supervisor status: \$SUPERVISOR_STATUS" >> /tmp/setup_complete.txt
+} &
+
+# Don't wait for the background process
+echo -e "\${GREEN}Setup script running in background. Check /tmp/setup_output.log for details.\${NC}"
+echo -e "\${GREEN}When complete, check /tmp/setup_complete.txt for status.\${NC}"
+
+# Wait just a few seconds to make sure setup script has started
+sleep 5
+
+# Exit successfully to allow the deployment script to continue
+exit 0
 EOL
 chmod +x "$TEMP_DIR/github_setup.sh"
 
@@ -412,6 +439,12 @@ chmod +x "$TEMP_DIR/github_setup.sh"
 if ! gcloud compute scp "$TEMP_DIR/github_setup.sh" "$INSTANCE_NAME:~/github_setup.sh" --zone="$ZONE"; then
   echo -e "${RED}Failed to copy setup script to VM. Aborting.${NC}"
   exit 1
+fi
+
+# Copy the environment file to the VM
+echo -e "${YELLOW}Copying environment file to VM...${NC}"
+if ! gcloud compute scp "$TEMP_DIR/config/.env.prod" "$INSTANCE_NAME:~/.env.prod" --zone="$ZONE"; then
+  echo -e "${RED}Failed to copy environment file to VM. Continuing anyway...${NC}"
 fi
 
 
@@ -440,7 +473,36 @@ bash ~/github_setup.sh
 echo -e "${YELLOW}Cleaning up local temporary files...${NC}"
 rm -rf "$TEMP_DIR"
 
-echo -e "${GREEN}Deployment complete!${NC}"
+echo -e "${GREEN}Deployment initiated!${NC}"
+
+# Wait for setup to complete on the VM
+echo -e "${YELLOW}Waiting for application setup to complete...${NC}"
+SETUP_COMPLETE=false
+MAX_WAIT=300  # 5 minutes
+WAIT_TIME=0
+WAIT_INTERVAL=10
+
+while [ $WAIT_TIME -lt $MAX_WAIT ]; do
+  # Check if the setup is complete
+  SETUP_STATUS=$(gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="cat /tmp/setup_complete.txt 2>/dev/null || echo 'Not complete'" 2>/dev/null)
+  
+  if [[ "$SETUP_STATUS" == *"Setup completed"* ]]; then
+    SETUP_COMPLETE=true
+    echo -e "${GREEN}Setup completed successfully.${NC}"
+    break
+  fi
+  
+  echo -e "${YELLOW}Setup still in progress. Waiting ${WAIT_INTERVAL}s (${WAIT_TIME}/${MAX_WAIT}s)...${NC}"
+  sleep $WAIT_INTERVAL
+  WAIT_TIME=$((WAIT_TIME + WAIT_INTERVAL))
+done
+
+if [ "$SETUP_COMPLETE" = false ]; then
+  echo -e "${YELLOW}Setup verification timed out. Continuing anyway...${NC}"
+fi
+
+# Give supervisor a moment to start the application
+sleep 5
 
 # Verify application is running
 echo -e "${YELLOW}Verifying application status...${NC}"
