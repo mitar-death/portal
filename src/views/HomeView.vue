@@ -193,7 +193,7 @@ const loadGroups = async () => {
   loading.value = true;
   try {
     // Use our auth interceptor instead of raw fetch
-    const resp = await fetchWithAuth(`https://104.154.111.44/api/telegram/groups`, {
+    const resp = await fetchWithAuth(`/api/telegram/groups`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'

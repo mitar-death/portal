@@ -196,7 +196,7 @@ async function requestCode() {
   loading.value = true;
   try {
     // Use our auth interceptor instead of raw fetch
-    const response = await fetchWithAuth(`https://104.154.111.44/api/auth/request-code`, {
+    const response = await fetchWithAuth(`/api/auth/request-code`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -257,7 +257,7 @@ async function verifyCode() {
   loading.value = true;
   try {
     // Use our auth interceptor instead of raw fetch
-    const response = await fetchWithAuth(`https://104.154.111.44/api/auth/verify-code`, {
+    const response = await fetchWithAuth(`/api/auth/verify-code`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

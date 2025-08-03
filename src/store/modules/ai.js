@@ -30,7 +30,7 @@ export default {
             if (!rootState.auth.token) return Promise.reject('Not authenticated')
 
             try {
-                const response = await fetch(`https://104.154.111.44/api/ai/accounts`, {
+                const response = await fetch(`/api/ai/accounts`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${rootState.auth.token}`
@@ -58,7 +58,7 @@ export default {
             if (!rootState.auth.token) return Promise.reject('Not authenticated')
 
             try {
-                const response = await fetch(`https://104.154.111.44/api/ai/accounts`, {
+                const response = await fetch(`/api/ai/accounts`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -106,7 +106,7 @@ export default {
             if (!rootState.auth.token) return Promise.reject('Not authenticated')
 
             try {
-                const response = await fetch(`https://104.154.111.44/api/ai/accounts`, {
+                const response = await fetch(`/api/ai/accounts`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -157,7 +157,7 @@ export default {
             if (!rootState.auth.token) return Promise.reject('Not authenticated')
 
             try {
-                const response = await fetch(`https://104.154.111.44/api/ai/accounts`, {
+                const response = await fetch(`/api/ai/accounts`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -207,7 +207,7 @@ export default {
             if (!rootState.auth.token) return Promise.reject('Not authenticated')
 
             try {
-                const response = await fetch(`https://104.154.111.44/api/ai/accounts/test`, {
+                const response = await fetch(`/api/ai/accounts/test`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -257,7 +257,7 @@ export default {
                     payload.password = password
                 }
 
-                const response = await fetch(`https://104.154.111.44/api/ai/accounts/login`, {
+                const response = await fetch(`/api/ai/accounts/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -310,7 +310,7 @@ export default {
             if (!rootState.auth.token) return Promise.reject('Not authenticated')
 
             try {
-                const response = await fetch(`https://104.154.111.44/api/ai/accounts/logout`, {
+                const response = await fetch(`/api/ai/accounts/logout`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -360,7 +360,7 @@ export default {
             if (!rootState.auth.token) return Promise.reject('Not authenticated')
 
             try {
-                const response = await fetch(`https://104.154.111.44/api/ai/accounts/cleanup-sessions`, {
+                const response = await fetch(`/api/ai/accounts/cleanup-sessions`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -408,7 +408,7 @@ export default {
             if (!rootState.auth.token) return Promise.reject('Not authenticated')
 
             try {
-                const response = await fetch(`https://104.154.111.44/api/ai/group-assignments`, {
+                const response = await fetch(`/api/ai/group-assignments`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${rootState.auth.token}`
@@ -442,7 +442,7 @@ export default {
             if (!rootState.auth.token) return Promise.reject('Not authenticated')
 
             try {
-                const response = await fetch(`https://104.154.111.44/api/ai/group-assignments`, {
+                const response = await fetch(`/api/ai/group-assignments`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

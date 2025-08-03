@@ -141,7 +141,7 @@ export default {
                 dispatch('telegram/clearGroups', null, { root: true })
 
                 // Call backend only after frontend is clean
-                const response = await fetchWithAuth(`https://104.154.111.44/api/auth/logout`, {
+                const response = await fetchWithAuth(`/api/auth/logout`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

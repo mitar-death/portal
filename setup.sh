@@ -179,7 +179,7 @@ else
     DEBUG=false
     HOST=0.0.0.0
     PORT=8030
-    SERVER_PORT=8030
+    PORT=8030
 
     # Backend URL for the frontend
     BACKEND_URL=http://${EXTERNAL_IP}
@@ -247,100 +247,109 @@ echo -e "${YELLOW}Supervisor status after start/restart:${NC}"
 sudo supervisorctl status tgportal
 
 # Setup Nginx
-echo -e "${GREEN}[6/6] Setting up Nginx...${NC}"
+echo -e "${RED}[6/6] Setting up Nginx...${NC}"
 
+ echo -e "${GREEN}Custom domain detected: $CUSTOM_DOMAIN${NC}"
 # Check if a custom domain is configured
 if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
   echo -e "${GREEN}Custom domain detected: $CUSTOM_DOMAIN${NC}"
-  echo -e "${GREEN}Setting up HTTPS with Let's Encrypt...${NC}"
+  echo -e "${GREEN}Setting up HTTPS with SSL certificate...${NC}"
+
+  # Create directories for SSL certificates
+  echo -e "${YELLOW}Creating SSL certificate directories...${NC}"
+  sudo mkdir -p /etc/letsencrypt/live/$CUSTOM_DOMAIN
+  sudo mkdir -p /etc/letsencrypt/archive/$CUSTOM_DOMAIN
   
-# Create symbolic link if it doesn't exist
-sudo ln -sf /etc/nginx/sites-available/tgportal /etc/nginx/sites-enabled/
-
-# Remove default site if it exists
-if [ -f /etc/nginx/sites-enabled/default ]; then
-  sudo rm /etc/nginx/sites-enabled/default
-fi
-
-# Validate and reload Nginx configuration
-if sudo nginx -t; then
-  echo -e "${GREEN}Nginx configuration is valid.${NC}"
-  sudo systemctl reload nginx
-else
-  echo -e "${RED}Nginx configuration is invalid. Please check manually.${NC}"
-  exit 1
-fi
-
-# Check if DNS is properly configured by checking if the domain resolves to the server IP
-SERVER_IP=$(curl -s http://checkip.amazonaws.com)
-echo -e "${YELLOW}Checking DNS configuration for $CUSTOM_DOMAIN...${NC}"
-echo -e "${YELLOW}Server IP: $SERVER_IP${NC}"
-
-# Try to resolve the domain with dig, host, or nslookup (whatever is available)
-if command -v dig &> /dev/null; then
-  DOMAIN_IP=$(dig +short $CUSTOM_DOMAIN | head -n 1)
-elif command -v host &> /dev/null; then
-  DOMAIN_IP=$(host $CUSTOM_DOMAIN | grep "has address" | head -n 1 | awk '{print $NF}')
-elif command -v nslookup &> /dev/null; then
-  DOMAIN_IP=$(nslookup $CUSTOM_DOMAIN | grep -A1 "Name:" | grep "Address:" | head -n 1 | awk '{print $2}')
-else
-  echo -e "${YELLOW}No DNS lookup tools available. Installing dnsutils...${NC}"
-  sudo apt-get update
-  sudo apt-get install -y dnsutils
-  DOMAIN_IP=$(dig +short $CUSTOM_DOMAIN | head -n 1)
-fi
-
-if [ -z "$DOMAIN_IP" ]; then
-  echo -e "${RED}Warning: Could not resolve $CUSTOM_DOMAIN to an IP address.${NC}"
-  echo -e "${RED}Please make sure your DNS is properly configured to point to $SERVER_IP${NC}"
-  echo -e "${YELLOW}Let's Encrypt validation may fail if DNS is not properly configured.${NC}"
-  
-  read -p "Do you want to continue with Let's Encrypt setup anyway? (y/n): " CONTINUE
-  if [[ ! "$CONTINUE" =~ ^[Yy]$ ]]; then
-    echo -e "${YELLOW}Skipping Let's Encrypt setup. You can run this script again later.${NC}"
-    exit 0
+  # Create Certificate and private key files
+  echo -e "${YELLOW}Creating SSL certificate and private key files...${NC}"
+  if [ -n "$DOMAIN_SSL_CERTIFICATE" ] && [ -n "$DOMAIN_SSL_PRIVATE_KEY" ]; then
+    # Create a temporary file for the certificate and private key
+    CERT_TEMP=$(mktemp)
+    KEY_TEMP=$(mktemp)
+    
+    # Write the certificate and key to temporary files
+    echo "$DOMAIN_SSL_CERTIFICATE" > "$CERT_TEMP"
+    echo "$DOMAIN_SSL_PRIVATE_KEY" > "$KEY_TEMP"
+    
+    # Create the necessary directories with proper ownership
+    sudo mkdir -p /etc/letsencrypt/archive/$CUSTOM_DOMAIN
+    sudo mkdir -p /etc/letsencrypt/live/$CUSTOM_DOMAIN
+    
+    # Copy the files to their destinations with proper permissions
+    sudo cp "$CERT_TEMP" /etc/letsencrypt/archive/$CUSTOM_DOMAIN/fullchain1.pem
+    sudo cp "$KEY_TEMP" /etc/letsencrypt/archive/$CUSTOM_DOMAIN/privkey1.pem
+    
+    # Remove temporary files
+    rm "$CERT_TEMP" "$KEY_TEMP"
+    
+    # Set proper permissions
+    sudo chmod 644 /etc/letsencrypt/archive/$CUSTOM_DOMAIN/fullchain1.pem
+    sudo chmod 600 /etc/letsencrypt/archive/$CUSTOM_DOMAIN/privkey1.pem
+    
+    # Create symlinks in live directory (what nginx will use)
+    sudo ln -sf /etc/letsencrypt/archive/$CUSTOM_DOMAIN/fullchain1.pem /etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem
+    sudo ln -sf /etc/letsencrypt/archive/$CUSTOM_DOMAIN/privkey1.pem /etc/letsencrypt/live/$CUSTOM_DOMAIN/privkey.pem
+    
+    # Verify the files exist and have correct permissions
+    if [ -f "/etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem" ] && [ -f "/etc/letsencrypt/live/$CUSTOM_DOMAIN/privkey.pem" ]; then
+      echo -e "${GREEN}SSL certificate files successfully created and linked${NC}"
+    else
+      echo -e "${RED}ERROR: SSL certificate files were not properly created${NC}"
+      ls -la /etc/letsencrypt/live/$CUSTOM_DOMAIN/
+      ls -la /etc/letsencrypt/archive/$CUSTOM_DOMAIN/
+      exit 1
+    fi
+    
+    echo -e "${GREEN}SSL certificates successfully installed${NC}"
+  else
+    echo -e "${RED}Error: DOMAIN_SSL_CERTIFICATE or DOMAIN_SSL_PRIVATE_KEY is not set.${NC}"
+    echo -e "${YELLOW}Please provide valid SSL certificate and private key in your environment variables.${NC}"
+    exit 1
   fi
-elif [ "$DOMAIN_IP" != "$SERVER_IP" ]; then
-  echo -e "${RED}Warning: Domain $CUSTOM_DOMAIN resolves to $DOMAIN_IP but this server's IP is $SERVER_IP${NC}"
-  echo -e "${RED}Let's Encrypt validation will likely fail. Please fix your DNS configuration.${NC}"
   
-  read -p "Do you want to continue with Let's Encrypt setup anyway? (y/n): " CONTINUE
-  if [[ ! "$CONTINUE" =~ ^[Yy]$ ]]; then
-    echo -e "${YELLOW}Skipping Let's Encrypt setup. You can run this script again later.${NC}"
-    exit 0
-  fi
-else
-  echo -e "${GREEN}DNS configuration looks good. Domain $CUSTOM_DOMAIN correctly points to $SERVER_IP${NC}"
-fi
-
-# Obtain SSL certificate using Certbot
-echo -e "${GREEN}Obtaining SSL certificate from Let's Encrypt...${NC}"
-sudo certbot --nginx -d "$CUSTOM_DOMAIN" --non-interactive --agree-tos --email "$EMAIL" --redirect || {
-  echo -e "${RED}Certbot failed to obtain SSL certificate.${NC}"
-  echo -e "${YELLOW}This might be due to:${NC}"
-  echo -e "${YELLOW}1. DNS not fully propagated yet${NC}"
-  echo -e "${YELLOW}2. Rate limits with Let's Encrypt${NC}"
-  echo -e "${YELLOW}3. Firewall issues${NC}"
-  echo -e "${YELLOW}Continuing with HTTP only. You can run this script again later.${NC}"
-  exit 1
+  # Create nginx configuration for HTTPS
+  echo -e "${YELLOW}Configuring Nginx for HTTPS...${NC}"
+  sudo tee /etc/nginx/sites-available/tgportal > /dev/null << EOL
+server {
+    listen 80;
+    server_name $CUSTOM_DOMAIN;
+    
+    # Redirect all HTTP requests to HTTPS
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
 }
 
-echo -e "${GREEN}SSL certificate successfully obtained and Nginx configured for HTTPS!${NC}"
-echo -e "${GREEN}Your site is now accessible at https://$CUSTOM_DOMAIN${NC}"
+server {
+    listen 443 ssl;
+    server_name $CUSTOM_DOMAIN;
 
-# Set up auto-renewal
-echo -e "${GREEN}Setting up automatic renewal of SSL certificates...${NC}"
-echo "0 0,12 * * * root python3 -c 'import random; import time; time.sleep(random.random() * 3600)' && certbot renew -q" | sudo tee -a /etc/crontab > /dev/null
-
-echo -e "${GREEN}HTTPS setup complete!${NC}"
+    # SSL certificate files
+    ssl_certificate /etc/letsencrypt/live/$CUSTOM_DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$CUSTOM_DOMAIN/privkey.pem;
+    
+    # SSL configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers 'EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH';
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    
+    # Proxy settings
+    location / {
+        proxy_pass http://localhost:8030;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
 EOL
-  
-    # Make the script executable
-    chmod +x "$APP_DIR/setup_https.sh"
-  fi
-  
-  # Run the HTTPS setup script
-  bash "$APP_DIR/setup_https.sh" "$CUSTOM_DOMAIN"
   
 else
   # Regular Nginx setup without HTTPS
@@ -409,5 +418,9 @@ fi
 echo -e "${GREEN}===============================================${NC}"
 echo -e "${GREEN}Setup completed successfully!${NC}"
 echo -e "${GREEN}===============================================${NC}"
-echo -e "${YELLOW}TG Portal backend is now running at:${NC} http://${EXTERNAL_IP}"
+if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
+  echo -e "${YELLOW}TG Portal backend is now running at:${NC} https://${CUSTOM_DOMAIN}"
+else
+  echo -e "${YELLOW}TG Portal backend is now running at:${NC} http://${EXTERNAL_IP}"
+fi
 echo -e "${GREEN}===============================================${NC}"

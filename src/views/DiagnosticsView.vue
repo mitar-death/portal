@@ -432,7 +432,7 @@ function formatTime(timestamp) {
 
 async function fetchDiagnostics() {
   try {
-    const response = await fetch(`https://104.154.111.44/api/diagnostics`);
+    const response = await fetch(`/api/diagnostics`);
     if (!response.ok) {
       throw new Error("Failed to fetch diagnostics");
     }
@@ -451,7 +451,7 @@ async function fetchDiagnostics() {
 async function reinitializeAI() {
   try {
     reinitializing.value = true;
-    const response = await fetch(`https://104.154.111.44/api/diagnostics/reinitialize`, {
+    const response = await fetch(`/api/diagnostics/reinitialize`, {
       method: "POST",
     });
 

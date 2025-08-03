@@ -359,7 +359,7 @@ async function monitorSelectedGroups() {
 
   loading.value = true;
   try {
-    const response = await fetch(`https://104.154.111.44/api/add/selected-groups`, {
+    const response = await fetch(`/api/add/selected-groups`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

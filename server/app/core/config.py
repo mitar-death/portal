@@ -13,13 +13,13 @@ class Settings(BaseSettings):
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-here")
     API_PREFIX: str = os.getenv("API_PREFIX", "/api")
     ENV: str = os.getenv("ENV", "development")
-    SERVER_PORT: int = int(os.getenv("SERVER_PORT", 8030))
+    PORT: int = int(os.getenv("PORT", 8030))
 
     # FastAPI server settings
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
     HOST: str = os.getenv("HOST", "0.0.0.0")
-    PORT: int = int(os.getenv("PORT", "8030"))
-    
+    SERVER_PORT: int = int(os.getenv("SERVER_PORT", "8030"))
+
     # Database
     table_prefix: str = "tgportal_"
     database_url: str = ""
