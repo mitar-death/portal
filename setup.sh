@@ -247,9 +247,8 @@ echo -e "${YELLOW}Supervisor status after start/restart:${NC}"
 sudo supervisorctl status tgportal
 
 # Setup Nginx
-echo -e "${RED}[6/6] Setting up Nginx...${NC}"
+echo -e "${GREEN}[6/6] Setting up Nginx...${NC}"
 
- echo -e "${GREEN}Custom domain detected: $CUSTOM_DOMAIN${NC}"
 # Check if a custom domain is configured
 if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
   echo -e "${GREEN}Custom domain detected: $CUSTOM_DOMAIN${NC}"
