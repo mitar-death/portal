@@ -217,7 +217,7 @@ DB_DATABASE=${DB_DATABASE}
 
 # FastAPI settings
 DEBUG=false
-HOST=127.0.0.1
+HOST=0.0.0.0
 PORT=8000
 SERVER_PORT=8000
 
@@ -249,7 +249,7 @@ else
   PYTHON_PATH=$(which python3 || echo "/usr/bin/python3")
   sudo tee /etc/supervisor/conf.d/tgportal.conf > /dev/null <<EOF
 [program:tgportal]
-command=$PYTHON_PATH -m uvicorn server.app.main:app --host=127.0.0.1 --port=8000 --workers 4
+command=$PYTHON_PATH -m uvicorn server.app.main:app --host=0.0.0.0 --port=8000 --workers 4
 directory=$APP_DIR
 user=$REAL_USER
 autostart=true
@@ -430,7 +430,7 @@ server {
     server_name ${EXTERNAL_IP};
 
     location / {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://0.0.0.0:8000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -469,7 +469,7 @@ server {
     server_name ${CUSTOM_DOMAIN:-${EXTERNAL_IP}};
 
     location / {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://0.0.0.0:8000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
