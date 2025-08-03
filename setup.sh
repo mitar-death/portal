@@ -298,37 +298,37 @@ if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
 
   # If we got here, we have valid SSL certificates
   sudo tee /etc/nginx/sites-available/tgportal > /dev/null << EOL
-server {
-    listen 80;
-    server_name $CUSTOM_DOMAIN;
-    
-    # Redirect all HTTP requests to HTTPS
-    location / {
-        return 301 https://\$host\$request_uri;
-    }
-}
+  server {
+      listen 80;
+      server_name $CUSTOM_DOMAIN;
+      
+      # Redirect all HTTP requests to HTTPS
+      location / {
+          return 301 https://\$host\$request_uri;
+      }
+  }
 
-server {
-    listen 443 ssl;
-    server_name $CUSTOM_DOMAIN;
+  server {
+      listen 443 ssl;
+      server_name $CUSTOM_DOMAIN;
 
-    # SSL certificate files
-    ssl_certificate $CERT_PATH;
-    ssl_certificate_key $KEY_PATH;
+      # SSL certificate files
+      ssl_certificate $CERT_PATH;
+      ssl_certificate_key $KEY_PATH;
 
 
-    # Proxy settings
-    location / {
-        proxy_pass http://127.0.0.1:8030;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-}
+      # Proxy settings
+      location / {
+          proxy_pass http://127.0.0.1:8030;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade \$http_upgrade;
+          proxy_set_header Connection "upgrade";
+          proxy_set_header Host \$host;
+          proxy_set_header X-Real-IP \$remote_addr;
+          proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto \$scheme;
+      }
+  }
 EOL
 
   # Create symbolic link if it doesn't exist
@@ -344,21 +344,21 @@ EOL
   else
     echo -e "${YELLOW}Creating Nginx configuration file...${NC}"
     sudo tee /etc/nginx/sites-available/tgportal > /dev/null << EOL
-server {
-    listen 80;
-    server_name ${EXTERNAL_IP};
+    server {
+        listen 80;
+        server_name ${EXTERNAL_IP};
 
-    location / {
-        proxy_pass http://localhost:8030;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        location / {
+            proxy_pass http://localhost:8030;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade \$http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto \$scheme;
+        }
     }
-}
 EOL
   fi
 
@@ -377,9 +377,7 @@ EOL
   else
     echo -e "${RED}WARNING: Nginx configuration is invalid. Please check manually.${NC}"
   fi
-else
-  # Regular Nginx setup without HTTPS
-  echo -e "${YELLOW}Setting up Nginx with HTTP only...${NC}"
+
 echo -e "${GREEN}Running database migrations...${NC}"
 export PYTHONPATH="$APP_DIR"
 echo -e "${GREEN}Running migrations with Poetry in virtual environment...${NC}"
