@@ -177,9 +177,9 @@ else
 
     # FastAPI settings
     DEBUG=false
-    HOST=0.0.0.0
-    PORT=8030
-    PORT=8030
+    HOST=127.0.0.1
+    PORT=8000
+    SERVER_PORT=8030
 
     # Backend URL for the frontend
     BACKEND_URL=http://${EXTERNAL_IP}
@@ -211,7 +211,7 @@ else
   PYTHON_PATH=$(which python3)
   sudo tee /etc/supervisor/conf.d/tgportal.conf > /dev/null << EOL
     [program:tgportal]
-    command=$PYTHON_PATH -m uvicorn server.app.main:app --host=0.0.0.0 --port=8030 --workers 4
+    command=$PYTHON_PATH -m uvicorn server.app.main:app --host=127.0.0.1 --port=8030 --workers 4
     directory=$APP_DIR
     user=$USER
     autostart=true

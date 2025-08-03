@@ -350,7 +350,7 @@ CLOUD_SQL_CONNECTION_NAME=$DB_CONNECTION_NAME
 
 # FastAPI settings
 DEBUG=false
-HOST=0.0.0.0
+HOST=127.0.0.1
 PORT=8030
 
 # Custom domain configuration

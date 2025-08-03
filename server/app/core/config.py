@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # FastAPI server settings
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
-    HOST: str = os.getenv("HOST", "0.0.0.0")
+    HOST: str = os.getenv("HOST", "127.0.0.1")
     SERVER_PORT: int = int(os.getenv("SERVER_PORT", "8030"))
 
     # Database
@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     TELEGRAM_API_ID: str = os.getenv("TELEGRAM_API_ID", "")
     TELEGRAM_API_HASH: str = os.getenv("TELEGRAM_API_HASH", "")
     
-    BACKEND_URL: str = os.getenv("BACKEND_URL", "http://0.0.0.0:8030")
+    BACKEND_URL: str = os.getenv("BACKEND_URL", "http://127.0.0.1:8030")
     FIREBASE_PROJECT_ID: str = os.getenv("FIREBASE_PROJECT_ID", "")
     FIREBASE_PROJECT_NUMBER: str = os.getenv("FIREBASE_PROJECT_NUMBER", "")
     
