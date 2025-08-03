@@ -1,7 +1,7 @@
 // telegram.js - Telegram module for Vuex store
 // Handles Telegram groups and related functionality
 
-const apiUrl = process.env.VUE_APP_API_URL || '/api';
+import { apiUrl } from '@/services/api-service';
 
 console.log(`Using API URL in telegram.js: ${apiUrl}`);
 export default {

@@ -397,7 +397,7 @@ const lastUpdated = ref("Never");
 const reinitializing = ref(false);
 const wsConnection = ref(null);
 const connectionStatus = ref("disconnected");
-const apiUrl = process.env.VUE_APP_API_URL || "/api";
+import { apiUrl } from '@/services/api-service';
 
 console.log(`Using API URL in DiagnosticsView: ${apiUrl}`);
 

@@ -82,8 +82,8 @@ const code = ref("");
 const phone_code_hash = ref(""); // Store phone code hash for verification
 const loading = ref(false);
 
-console.log("Using API URL in TelegramLogin:", process.env.VUE_APP_API_URL);
-
+import { apiUrl } from "@/services/api-service";
+console.log("Using API URL in TelegramLogin:", apiUrl);
 
 const snackbar = ref({
   show: false,
@@ -102,10 +102,12 @@ async function checkAuthStatus() {
   loading.value = true;
   try {
     const currentRoute = router.currentRoute.value;
-    
+
     // Skip actual API check if we have flags indicating auth issues
-    if (currentRoute.query.authChecked === 'true' || 
-        currentRoute.query.sessionExpired === 'true') {
+    if (
+      currentRoute.query.authChecked === "true" ||
+      currentRoute.query.sessionExpired === "true"
+    ) {
       console.log("Skipping API auth check due to redirect flags");
       // Just check local state
       if (store.getters["auth/isAuthenticated"]) {
@@ -115,17 +117,20 @@ async function checkAuthStatus() {
       }
       return;
     }
-    
+
     // First check local state for performance
     if (store.getters["auth/isAuthenticated"]) {
       step.value = "authenticated";
-      
+
       // Then verify with backend to ensure sync
       const isAuthenticated = await store.dispatch("auth/checkAuthStatus");
       if (!isAuthenticated) {
         // Backend says not authenticated but frontend thinks we are - handle mismatch
         step.value = "phone";
-        showSnackbar("Your session has expired. Please log in again.", "warning");
+        showSnackbar(
+          "Your session has expired. Please log in again.",
+          "warning"
+        );
       }
     } else {
       // Not authenticated locally, check with backend
@@ -153,13 +158,17 @@ async function checkAuthStatus() {
 function redirectToHome() {
   const currentRoute = router.currentRoute.value;
   const fromPath = currentRoute.query.from;
-  
+
   // Clear any auth flags when successfully navigating
   if (fromPath) {
     // Navigate to the original path but remove any auth flags to prevent future loops
     router.push({
       path: fromPath,
-      query: { ...currentRoute.query, authChecked: undefined, sessionExpired: undefined }
+      query: {
+        ...currentRoute.query,
+        authChecked: undefined,
+        sessionExpired: undefined,
+      },
     });
   } else {
     router.push("/");
@@ -177,7 +186,10 @@ async function logout() {
     console.error("Error during logout:", error);
     // Even if there's an error with the server, we still want to clear the local state
     // and allow the user to log in again
-    showSnackbar("Logged out locally, but there may have been an issue with the server", "warning");
+    showSnackbar(
+      "Logged out locally, but there may have been an issue with the server",
+      "warning"
+    );
     step.value = "phone";
   } finally {
     loading.value = false;
@@ -198,13 +210,17 @@ async function requestCode() {
   loading.value = true;
   try {
     // Use our auth interceptor instead of raw fetch
-    const response = await fetchWithAuth(`${apiUrl}/auth/request-code`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetchWithAuth(
+      `${apiUrl}/auth/request-code`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ phone_number: phone.value }),
       },
-      body: JSON.stringify({ phone_number: phone.value }),
-    }, { redirect: false }); // Don't auto-redirect during login flow
+      { redirect: false }
+    ); // Don't auto-redirect during login flow
 
     const data = await response.json();
 
@@ -212,12 +228,12 @@ async function requestCode() {
       if (data.action === "already_authorized") {
         // The user is already authorized on the backend
         showSnackbar("You are already logged in with Telegram", "success");
-        
+
         // First, ensure local state matches backend
         if (!store.getters["auth/isAuthenticated"]) {
           await store.dispatch("auth/checkAuthStatus");
         }
-        
+
         // Update UI to show authenticated state
         step.value = "authenticated";
       } else {
@@ -229,9 +245,13 @@ async function requestCode() {
       }
     } else {
       console.error("API Error:", data);
-      
+
       // Handle specific error scenarios
-      if (response.status === 400 && data.detail && data.detail.includes("No active login session")) {
+      if (
+        response.status === 400 &&
+        data.detail &&
+        data.detail.includes("No active login session")
+      ) {
         showSnackbar("Session expired. Please try again.", "warning");
         // Clear any existing auth state since there's a mismatch
         if (store.getters["auth/isAuthenticated"]) {
@@ -243,7 +263,10 @@ async function requestCode() {
           await store.dispatch("auth/logout");
         }
       } else {
-        showSnackbar(data.detail || "Failed to send verification code", "error");
+        showSnackbar(
+          data.detail || "Failed to send verification code",
+          "error"
+        );
       }
     }
   } catch (error) {
@@ -259,29 +282,33 @@ async function verifyCode() {
   loading.value = true;
   try {
     // Use our auth interceptor instead of raw fetch
-    const response = await fetchWithAuth(`${apiUrl}/auth/verify-code`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const response = await fetchWithAuth(
+      `${apiUrl}/auth/verify-code`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phone_number: phone.value,
+          code: code.value,
+          phone_code_hash: phone_code_hash.value, // Include the phone code hash
+        }),
       },
-      body: JSON.stringify({
-        phone_number: phone.value,
-        code: code.value,
-        phone_code_hash: phone_code_hash.value, // Include the phone code hash
-      }),
-    }, { redirect: false }); // Don't auto-redirect during login flow
+      { redirect: false }
+    ); // Don't auto-redirect during login flow
 
     const data = await response.json();
     console.log("Verify code response:", data);
 
     if (response.ok && data.success) {
       showSnackbar("Login successful!", "success");
-      
+
       // Clear any existing auth state first
       if (store.getters["auth/isAuthenticated"]) {
         await store.dispatch("auth/logout");
       }
-      
+
       // Then update with new auth data
       await store.dispatch("auth/loginWithTelegram", {
         user: data.user,
@@ -295,7 +322,7 @@ async function verifyCode() {
       emit("login-success", data.user);
     } else {
       console.error("Verification API Error:", data);
-      
+
       // Handle specific errors
       if (response.status === 401) {
         showSnackbar("Invalid verification code. Please try again.", "error");
@@ -304,9 +331,12 @@ async function verifyCode() {
       } else {
         showSnackbar(data.detail || "Invalid verification code", "error");
       }
-      
+
       // If there was a session mismatch, go back to phone input
-      if (data.error === "session_expired" || data.error === "session_not_found") {
+      if (
+        data.error === "session_expired" ||
+        data.error === "session_not_found"
+      ) {
         step.value = "phone";
       }
     }

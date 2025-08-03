@@ -147,7 +147,7 @@ const groups = ref([]);
 const loading = ref(false);
 const selectedGroup = ref(null);
 const isAuthenticated = computed(() => store.getters["auth/isAuthenticated"]);
-const apiUrl = process.env.VUE_APP_API_URL || '/api';
+import { apiUrl } from '@/services/api-service';
 
 console.log(`Using API URL in HomeView: ${apiUrl}`);
 // Check authentication on component mount

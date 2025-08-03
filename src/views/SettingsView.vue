@@ -108,7 +108,7 @@ const confirmDialog = ref(false);
 const confirmResetDialog = ref(false);
 const isResettingAI = ref(false);
 const resetStatus = ref(null);
-const apiUrl = process.env.VUE_APP_API_URL || "/api";
+import { apiUrl } from '@/services/api-service';
 
 console.log(`Using API URL in SettingsView: ${apiUrl}`);
 

@@ -209,9 +209,9 @@ const aiAccounts = computed(() => store.getters["ai/aiAccounts"] || []);
 const groupAssignments = computed(
   () => store.getters["ai/groupAssignments"] || []
 );
-const apiUrl = ref(process.env.VUE_APP_API_BASE_URL || "/api");
+import { apiUrl } from '@/services/api-service';
 
-console.log("API URL:", apiUrl.value);
+console.log("API URL in TelegramGroups.vue:", apiUrl);
 const loading = ref(false);
 const search = ref("");
 const dialog = ref(false);
@@ -361,7 +361,7 @@ async function monitorSelectedGroups() {
 
   loading.value = true;
   try {
-    const response = await fetch(`${apiUrl.value}/add/selected-groups`, {
+    const response = await fetch(`${apiUrl}/add/selected-groups`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

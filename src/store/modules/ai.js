@@ -1,6 +1,6 @@
 // ai.js - AI module for Vuex store
 
-const apiUrl = process.env.VUE_APP_API_BASE_URL || '/api';
+import { apiUrl } from '@/services/api-service';
 
 console.log("API URL in ai.js:", apiUrl);
 

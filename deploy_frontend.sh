@@ -129,5 +129,6 @@ firebase deploy --only hosting
 
 echo -e "${GREEN}Deployment complete! Your app should be live.${NC}"
 echo -e "${GREEN}If you need to set up API URLs, make sure to create a .env.production file with:${NC}"
-echo -e "${YELLOW}VUE_APP_API_URL=$BACKEND_URL/api${NC}" #backend URL from .env
+echo -e "${YELLOW}VUE_APP_DEV_BASE_URL=/api${NC}" # Development API URL
+echo -e "${YELLOW}VUE_APP_PROD_BASE_URL=$BACKEND_URL/api${NC}" # Production API URL
 echo -e "${YELLOW}VUE_APP_FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID${NC}" #firebase project ID from .env

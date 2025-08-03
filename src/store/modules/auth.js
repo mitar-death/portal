@@ -1,6 +1,7 @@
 // auth.js - Authentication module for Vuex store
 // Handles user authentication state and related actions
 import { fetchWithAuth } from '@/services/auth-interceptor'
+import { apiUrl } from '@/services/api-service'
 
 // Load stored authentication data from local storage
 const loadStoredAuth = () => {
@@ -14,7 +15,6 @@ const loadStoredAuth = () => {
 }
 
 const { user, token } = loadStoredAuth()
-const apiUrl = process.env.VUE_APP_API_URL || '/api';
 
 console.log(`Using API URL in auth.js: ${apiUrl}`);
 export default {
