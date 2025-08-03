@@ -287,7 +287,7 @@ if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
     
     echo -e "${GREEN}SSL certificates successfully installed${NC}"
   else
-    echo -e "${RED}Error: DOMAIN_SSL_CERTIFICATE or DOMAIN_SSL_PRIVATE_KEY is not set.${NC}"
+    echo -e "${YELLOW}Error: DOMAIN_SSL_CERTIFICATE or DOMAIN_SSL_PRIVATE_KEY is not set.${NC}"
     echo -e "${YELLOW}Using Certbot to generate SSL certificates...${NC}"
     
     # Check if the domain dns is set and can be reached by certbot
