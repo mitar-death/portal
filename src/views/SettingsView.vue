@@ -108,6 +108,9 @@ const confirmDialog = ref(false);
 const confirmResetDialog = ref(false);
 const isResettingAI = ref(false);
 const resetStatus = ref(null);
+const apiUrl = process.env.VUE_APP_API_URL || "/api";
+
+console.log(`Using API URL in SettingsView: ${apiUrl}`);
 
 const toggleDarkMode = (value) => {
   theme.global.name.value = value ? "dark" : "light";
@@ -131,7 +134,7 @@ const resetAIMessenger = async () => {
   resetStatus.value = null;
 
   try {
-    const response = await fetch(`/api/ai/reinitialize`, {
+    const response = await fetch(`${apiUrl}/ai/reinitialize`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

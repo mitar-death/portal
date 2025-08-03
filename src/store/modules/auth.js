@@ -14,7 +14,9 @@ const loadStoredAuth = () => {
 }
 
 const { user, token } = loadStoredAuth()
+const apiUrl = process.env.VUE_APP_API_URL || '/api';
 
+console.log(`Using API URL in auth.js: ${apiUrl}`);
 export default {
     namespaced: true,
 
@@ -52,7 +54,7 @@ export default {
 
             try {
                 // Use our auth interceptor service instead of raw fetch
-                const response = await fetchWithAuth("/api/auth/status", {
+                const response = await fetchWithAuth(`${apiUrl}/auth/status`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
@@ -141,7 +143,7 @@ export default {
                 dispatch('telegram/clearGroups', null, { root: true })
 
                 // Call backend only after frontend is clean
-                const response = await fetchWithAuth(`/api/auth/logout`, {
+                const response = await fetchWithAuth(`${apiUrl}/auth/logout`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

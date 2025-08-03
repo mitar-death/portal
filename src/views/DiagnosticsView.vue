@@ -397,6 +397,9 @@ const lastUpdated = ref("Never");
 const reinitializing = ref(false);
 const wsConnection = ref(null);
 const connectionStatus = ref("disconnected");
+const apiUrl = process.env.VUE_APP_API_URL || "/api";
+
+console.log(`Using API URL in DiagnosticsView: ${apiUrl}`);
 
 const isSystemHealthy = computed(() => {
   if (!diagnostics.value || !diagnostics.value.ai_status) return false;
@@ -432,7 +435,7 @@ function formatTime(timestamp) {
 
 async function fetchDiagnostics() {
   try {
-    const response = await fetch(`/api/diagnostics`);
+    const response = await fetch(`${apiUrl}/diagnostics`);
     if (!response.ok) {
       throw new Error("Failed to fetch diagnostics");
     }
@@ -451,7 +454,7 @@ async function fetchDiagnostics() {
 async function reinitializeAI() {
   try {
     reinitializing.value = true;
-    const response = await fetch(`/api/diagnostics/reinitialize`, {
+    const response = await fetch(`${apiUrl}/diagnostics/reinitialize`, {
       method: "POST",
     });
 

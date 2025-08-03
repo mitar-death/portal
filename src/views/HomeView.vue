@@ -147,7 +147,9 @@ const groups = ref([]);
 const loading = ref(false);
 const selectedGroup = ref(null);
 const isAuthenticated = computed(() => store.getters["auth/isAuthenticated"]);
+const apiUrl = process.env.VUE_APP_API_URL || '/api';
 
+console.log(`Using API URL in HomeView: ${apiUrl}`);
 // Check authentication on component mount
 onMounted(async () => {
   try {
@@ -193,7 +195,7 @@ const loadGroups = async () => {
   loading.value = true;
   try {
     // Use our auth interceptor instead of raw fetch
-    const resp = await fetchWithAuth(`/api/telegram/groups`, {
+    const resp = await fetchWithAuth(`${apiUrl}/telegram/groups`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'

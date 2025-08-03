@@ -209,7 +209,9 @@ const aiAccounts = computed(() => store.getters["ai/aiAccounts"] || []);
 const groupAssignments = computed(
   () => store.getters["ai/groupAssignments"] || []
 );
+const apiUrl = ref(process.env.VUE_APP_API_BASE_URL || "/api");
 
+console.log("API URL:", apiUrl.value);
 const loading = ref(false);
 const search = ref("");
 const dialog = ref(false);
@@ -359,7 +361,7 @@ async function monitorSelectedGroups() {
 
   loading.value = true;
   try {
-    const response = await fetch(`/api/add/selected-groups`, {
+    const response = await fetch(`${apiUrl.value}/add/selected-groups`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

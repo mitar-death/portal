@@ -12,7 +12,7 @@ module.exports = defineConfig({
     port: 8080,
     proxy: {
       '/api': {
-        target: "http://127.0.0.1:8030", // Use the backend URL from .env
+        target: "http://0.0.0.0:8030", // Use the backend URL from .env
         changeOrigin: true,
         // Don't rewrite the path since our API already expects /api prefix
         pathRewrite: null

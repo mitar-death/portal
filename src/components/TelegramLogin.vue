@@ -82,6 +82,8 @@ const code = ref("");
 const phone_code_hash = ref(""); // Store phone code hash for verification
 const loading = ref(false);
 
+console.log("Using API URL in TelegramLogin:", process.env.VUE_APP_API_URL);
+
 
 const snackbar = ref({
   show: false,
@@ -196,7 +198,7 @@ async function requestCode() {
   loading.value = true;
   try {
     // Use our auth interceptor instead of raw fetch
-    const response = await fetchWithAuth(`/api/auth/request-code`, {
+    const response = await fetchWithAuth(`${apiUrl}/auth/request-code`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -257,7 +259,7 @@ async function verifyCode() {
   loading.value = true;
   try {
     // Use our auth interceptor instead of raw fetch
-    const response = await fetchWithAuth(`/api/auth/verify-code`, {
+    const response = await fetchWithAuth(`${apiUrl}/auth/verify-code`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

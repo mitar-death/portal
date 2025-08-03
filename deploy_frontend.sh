@@ -8,7 +8,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-
 # Load environment variables from .env file if it exists
 if [ -f ".env.production" ]; then
   # Create a temporary file for sourcing
@@ -31,6 +30,8 @@ if [ -f ".env.production" ]; then
   rm "$ENV_TEMP"
   echo -e "${GREEN}Loaded environment variables from .env file${NC}"
 fi
+
+export NODE_ENV="production"
 
 
 echo -e "${GREEN}Building and deploying TG Portal frontend${NC}"
