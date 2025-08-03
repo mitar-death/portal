@@ -236,28 +236,28 @@ else
 fi
 
 # Configure firewall to allow the VM to connect to Cloud SQL
-echo -e "${YELLOW}Configuring Cloud SQL firewall...${NC}"
+# echo -e "${YELLOW}Configuring Cloud SQL firewall...${NC}"
 
-# Add VM IP to Cloud SQL authorized networks with retries
-MAX_FW_RETRIES=3
-FW_RETRY_COUNT=0
+# # Add VM IP to Cloud SQL authorized networks with retries
+# MAX_FW_RETRIES=3
+# FW_RETRY_COUNT=0
 
-while [ $FW_RETRY_COUNT -lt $MAX_FW_RETRIES ]; do
-  if gcloud sql instances patch "$DB_INSTANCE_NAME" \
-      --authorized-networks="$EXTERNAL_IP/32" 2>/dev/null; then
-    echo -e "${GREEN}Cloud SQL firewall configured to allow access from VM ($EXTERNAL_IP).${NC}"
-    break
-  else
-    FW_RETRY_COUNT=$((FW_RETRY_COUNT+1))
-    if [ $FW_RETRY_COUNT -eq $MAX_FW_RETRIES ]; then
-      echo -e "${RED}Failed to configure Cloud SQL firewall after $MAX_FW_RETRIES attempts.${NC}"
-      echo -e "${YELLOW}You may need to manually add $EXTERNAL_IP to authorized networks in the Google Cloud Console.${NC}"
-    else
-      echo -e "${YELLOW}Failed to configure Cloud SQL firewall. Retrying in 5 seconds (Attempt $FW_RETRY_COUNT of $MAX_FW_RETRIES)...${NC}"
-      sleep 5
-    fi
-  fi
-done
+# while [ $FW_RETRY_COUNT -lt $MAX_FW_RETRIES ]; do
+#   if gcloud sql instances patch "$DB_INSTANCE_NAME" \
+#       --authorized-networks="$EXTERNAL_IP/32" 2>/dev/null; then
+#     echo -e "${GREEN}Cloud SQL firewall configured to allow access from VM ($EXTERNAL_IP).${NC}"
+#     break
+#   else
+#     FW_RETRY_COUNT=$((FW_RETRY_COUNT+1))
+#     if [ $FW_RETRY_COUNT -eq $MAX_FW_RETRIES ]; then
+#       echo -e "${RED}Failed to configure Cloud SQL firewall after $MAX_FW_RETRIES attempts.${NC}"
+#       echo -e "${YELLOW}You may need to manually add $EXTERNAL_IP to authorized networks in the Google Cloud Console.${NC}"
+#     else
+#       echo -e "${YELLOW}Failed to configure Cloud SQL firewall. Retrying in 5 seconds (Attempt $FW_RETRY_COUNT of $MAX_FW_RETRIES)...${NC}"
+#       sleep 5
+#     fi
+#   fi
+# done
 
 # Check if SSH connection to the VM works
 echo -e "${YELLOW}Checking SSH connection to the VM...${NC}"
