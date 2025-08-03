@@ -413,36 +413,7 @@ bash ~/github_setup.sh
 echo -e "${YELLOW}Cleaning up local temporary files...${NC}"
 rm -rf "$TEMP_DIR"
 
-echo -e "${GREEN}Deployment initiated!${NC}"
-
-# Wait for setup to complete on the VM
-echo -e "${YELLOW}Waiting for application setup to complete...${NC}"
-SETUP_COMPLETE=false
-MAX_WAIT=300  # 5 minutes
-WAIT_TIME=0
-WAIT_INTERVAL=10
-
-while [ $WAIT_TIME -lt $MAX_WAIT ]; do
-  # Check if the setup is complete
-  SETUP_STATUS=$(gcloud compute ssh "$INSTANCE_NAME" --zone="$ZONE" --command="cat /tmp/setup_complete.txt 2>/dev/null || echo 'Not complete'" 2>/dev/null)
-  
-  if [[ "$SETUP_STATUS" == *"Setup completed"* ]]; then
-    SETUP_COMPLETE=true
-    echo -e "${GREEN}Setup completed successfully.${NC}"
-    break
-  fi
-  
-  echo -e "${YELLOW}Setup still in progress. Waiting ${WAIT_INTERVAL}s (${WAIT_TIME}/${MAX_WAIT}s)...${NC}"
-  sleep $WAIT_INTERVAL
-  WAIT_TIME=$((WAIT_TIME + WAIT_INTERVAL))
-done
-
-if [ "$SETUP_COMPLETE" = false ]; then
-  echo -e "${YELLOW}Setup verification timed out. Continuing anyway...${NC}"
-fi
-
-# Give supervisor a moment to start the application
-sleep 5
+sleep 10
 
 # Verify application is running
 echo -e "${YELLOW}Verifying application status...${NC}"
