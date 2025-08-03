@@ -147,6 +147,7 @@ const groups = ref([]);
 const loading = ref(false);
 const selectedGroup = ref(null);
 const isAuthenticated = computed(() => store.getters["auth/isAuthenticated"]);
+const backendUrl = process.env.BACKEND_URL || 'http://localhost:8030'; 
 
 // Check authentication on component mount
 onMounted(async () => {
@@ -193,7 +194,7 @@ const loadGroups = async () => {
   loading.value = true;
   try {
     // Use our auth interceptor instead of raw fetch
-    const resp = await fetchWithAuth("/api/telegram/groups", {
+    const resp = await fetchWithAuth(`${backendUrl}/api/telegram/groups`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'

@@ -4,6 +4,8 @@
 import store from '@/store';
 import router from '@/router';
 
+const backendUrl = process.env.BACKEND_URL || 'http://localhost:8030';
+
 /**
  * Handles authentication errors from API responses
  * @param {Response} response - The fetch API response object

@@ -223,6 +223,7 @@ const selectedAIAccount = ref(null);
 const assignmentActive = ref(true);
 const assignmentLoading = ref(false);
 const groupsToAssign = ref([]);
+const backendUrl = ref(process.env.BACKEND_URL || "http://localhost:8030");
 
 const headers = [
   { text: "Title", value: "title" },
@@ -360,7 +361,7 @@ async function monitorSelectedGroups() {
 
   loading.value = true;
   try {
-    const response = await fetch("/api/add/selected-groups", {
+    const response = await fetch(`${backendUrl.value}/api/add/selected-groups`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

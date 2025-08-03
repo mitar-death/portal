@@ -81,6 +81,7 @@ const phone = ref("");
 const code = ref("");
 const phone_code_hash = ref(""); // Store phone code hash for verification
 const loading = ref(false);
+const backendUrl = ref(process.env.BACKEND_URL || "http://localhost:8030"); // Use environment variable or default to localhost
 const snackbar = ref({
   show: false,
   text: "",
@@ -194,7 +195,7 @@ async function requestCode() {
   loading.value = true;
   try {
     // Use our auth interceptor instead of raw fetch
-    const response = await fetchWithAuth("/api/auth/request-code", {
+    const response = await fetchWithAuth(`${backendUrl.value}/api/auth/request-code`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -255,7 +256,7 @@ async function verifyCode() {
   loading.value = true;
   try {
     // Use our auth interceptor instead of raw fetch
-    const response = await fetchWithAuth("/api/auth/verify-code", {
+    const response = await fetchWithAuth(`${backendUrl.value}/api/auth/verify-code`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

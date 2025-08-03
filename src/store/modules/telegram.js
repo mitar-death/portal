@@ -1,6 +1,6 @@
 // telegram.js - Telegram module for Vuex store
 // Handles Telegram groups and related functionality
-
+const backendUrl = process.env.BACKEND_URL || 'http://localhost:8030';
 export default {
     namespaced: true,
 
@@ -31,7 +31,7 @@ export default {
             if (!rootState.auth.token) return Promise.reject('Not authenticated')
 
             try {
-                const response = await fetch('/api/telegram/groups', {
+                const response = await fetch(`${backendUrl}/api/telegram/groups`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${rootState.auth.token}`
@@ -64,7 +64,7 @@ export default {
             if (!rootState.auth.token) return Promise.reject('Not authenticated')
 
             try {
-                const response = await fetch('/api/keywords', {
+                const response = await fetch(`${backendUrl}/api/keywords`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${rootState.auth.token}`
@@ -93,7 +93,7 @@ export default {
             if (!rootState.auth.token) return Promise.reject('Not authenticated')
 
             try {
-                const response = await fetch('/api/add/keywords', {
+                const response = await fetch(`${backendUrl}/api/add/keywords`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -124,7 +124,7 @@ export default {
             if (!rootState.auth.token) return Promise.reject('Not authenticated')
 
             try {
-                const response = await fetch('/api/delete/keywords', {
+                const response = await fetch(`${backendUrl}/api/delete/keywords`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
