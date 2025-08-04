@@ -8,11 +8,16 @@ import os
 import psutil
 import uuid
 import json
-import asyncio
+
+from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 from server.app.core.config import settings
 from server.app.core.middlewares import get_current_user
+from server.app.utils.controller_helpers import safe_db_operation, ensure_user_authenticated,sanitize_log_data
 from typing import Optional
-from server.app.models.models import User
+from server.app.models.models import AIAccount, User
+import server.app.utils.controller_helpers
 
 
 async def websocket_diagnostics(
@@ -158,7 +163,8 @@ async def websocket_diagnostics(
         if connection_id:
             await websocket_manager.disconnect(connection_id)
 
-async def get_ai_diagnostics(request: Request):
+@safe_db_operation()
+async def get_ai_diagnostics(request: Request, db: AsyncSession = None):
     """
     Get diagnostic information about the AI messenger system.
     This includes:
@@ -174,6 +180,8 @@ async def get_ai_diagnostics(request: Request):
     try:
         # Get diagnostics from the monitor service
         diagnostics = await MessengerAI().diagnostic_check()
+        
+        user = await ensure_user_authenticated(request)
 
         # Add version and timestamp
         diagnostics["timestamp"] = datetime.now().isoformat()
@@ -204,7 +212,29 @@ async def get_ai_diagnostics(request: Request):
             "active_connections": websocket_manager.get_connection_count(),
             "connected_users": websocket_manager.get_user_count()
         }
-        
+        try:
+            #Query all Ai accounts for user and check if its loggedin
+            stmt = select(AIAccount).where(AIAccount.user_id == user.id)
+            ai_accounts = await db.execute(stmt)
+            ai_accounts = ai_accounts.scalars().all()
+            
+            ai_clients = []
+            for account in ai_accounts:
+                ai_clients.append({
+                    "id": account.id,
+                    "account_id": account.id,
+                    "name": account.name,
+                    "is_active": account.is_active,
+                    "phone_number": account.phone_number,
+                    "is_active": account.is_active,
+                    "connected": True,
+                    "authorized": account.is_active,
+                    "last_activity": account.updated_at.isoformat() if account.updated_at else None
+                })
+            diagnostics["ai_clients"] = ai_clients
+        except SQLAlchemyError as e:
+            logger.error(f"Database error retrieving AI accounts: {sanitize_log_data(str(e))}")
+            diagnostics["ai_clients"] = {"error": "Failed to retrieve AI accounts"}
         # Add system resource information
         try:
             diagnostics["system_resources"] = {

@@ -39,84 +39,90 @@
               responding to messages automatically.
             </v-alert>
 
-            <v-list v-else two-line>
-              <v-list-item v-for="account in aiAccounts" :key="account.id">
+            <v-row v-else>
+              <v-col v-for="account in aiAccounts" :key="account.id" cols="12" md="6" lg="4">
+              <v-card elevation="2" class="mb-4">
+                <v-list-item three-line>
                 <v-list-item-avatar>
                   <v-icon :color="account.is_active ? 'success' : 'grey'">
-                    {{
-                      account.is_active
-                        ? "mdi-account-check"
-                        : "mdi-account-off"
-                    }}
+                  {{ account.is_active ? "mdi-account-check" : "mdi-account-off" }}
                   </v-icon>
                 </v-list-item-avatar>
 
                 <v-list-item-content>
-                  <v-list-item-title>{{ account.name }}</v-list-item-title>
+                  <v-list-item-title class="text-h6">{{ account.name }}</v-list-item-title>
                   <v-list-item-subtitle>
-                    {{ account.phone_number }}
-                    <v-chip
-                      v-if="account.session_status === 'authorized'"
-                      x-small
-                      color="success"
-                      class="ml-2"
-                    >
-                      Authenticated
-                    </v-chip>
-                    <v-chip
-                      v-else-if="account.session_status === 'unauthorized'"
-                      x-small
-                      color="warning"
-                      class="ml-2"
-                    >
-                      Login Required
-                    </v-chip>
-                    <v-chip
-                      v-else-if="account.session_status === 'error'"
-                      x-small
-                      color="error"
-                      class="ml-2"
-                    >
-                      Error
-                    </v-chip>
+                  +{{ account.phone_number }}
                   </v-list-item-subtitle>
-                </v-list-item-content>
-
-                <v-list-item-action>
-                  <v-switch
-                    v-model="account.is_active"
-                    @update:model-value="toggleAccountStatus(account)"
+                  <div class="mt-2">
+                  <v-chip
+                    v-if="account.session_status === 'authorized'"
+                    x-small
                     color="success"
-                    hide-details
-                  ></v-switch>
-                </v-list-item-action>
-
-                <v-list-item-action>
-                  <v-btn icon @click="testAccount(account.id)">
-                    <v-icon color="primary">mdi-test-tube</v-icon>
-                  </v-btn>
-                </v-list-item-action>
-
-                <v-list-item-action>
-                  <v-btn
-                    v-if="account.session_status !== 'authorized'"
-                    icon
-                    @click="showLoginDialogForAccount(account)"
                   >
-                    <v-icon color="primary">mdi-login</v-icon>
-                  </v-btn>
-                  <v-btn v-else icon @click="logoutAccount(account)">
-                    <v-icon color="warning">mdi-logout</v-icon>
-                  </v-btn>
-                </v-list-item-action>
+                    Authenticated
+                  </v-chip>
+                  <v-chip
+                    v-else-if="account.session_status === 'unauthorized'"
+                    x-small
+                    color="warning"
+                  >
+                    Login Required
+                  </v-chip>
+                  <v-chip
+                    v-else-if="account.session_status === 'error'"
+                    x-small
+                    color="error"
+                  >
+                    Error
+                  </v-chip>
+                  </div>
+                </v-list-item-content>
+                </v-list-item>
 
-                <v-list-item-action>
-                  <v-btn icon @click="confirmDeleteAccount(account)">
-                    <v-icon color="red">mdi-delete</v-icon>
-                  </v-btn>
-                </v-list-item-action>
-              </v-list-item>
-            </v-list>
+                <v-divider></v-divider>
+
+                <v-card-actions>
+                <v-switch
+                  v-model="account.is_active"
+                  @update:model-value="toggleAccountStatus(account)"
+                  color="success"
+                  hide-details
+                  label="Active"
+                  class="ml-2"
+                ></v-switch>
+                <v-spacer></v-spacer>
+
+                <v-btn small icon @click="testAccount(account.id)" title="Test Account">
+                  <v-icon color="primary">mdi-test-tube</v-icon>
+                </v-btn>
+
+                <v-btn
+                  small
+                  icon
+                  @click="showLoginDialogForAccount(account)"
+                  v-if="account.session_status !== 'authorized'"
+                  title="Login"
+                >
+                  <v-icon color="primary">mdi-login</v-icon>
+                </v-btn>
+                <v-btn
+                  small
+                  icon
+                  @click="logoutAccount(account)"
+                  v-else
+                  title="Logout"
+                >
+                  <v-icon color="warning">mdi-logout</v-icon>
+                </v-btn>
+
+                <v-btn small icon @click="confirmDeleteAccount(account)" title="Delete">
+                  <v-icon color="red">mdi-delete</v-icon>
+                </v-btn>
+                </v-card-actions>
+              </v-card>
+              </v-col>
+            </v-row>
           </v-card-text>
         </v-card>
       </v-col>
@@ -326,7 +332,7 @@
             >
               Request Verification Code
             </v-btn>
-            <v-btn v-else color="info" @click="testAccount(accountForLogin.id)">
+            <v-btn v-else color="info" @click="testAccount(accountForLogin.id, true)">
               Test Connection
             </v-btn>
           </div>
@@ -510,24 +516,70 @@ const codeForm = ref(null);
 // Computed properties
 const aiAccounts = computed(() => store.getters["ai/aiAccounts"]);
 
-// Methods
-const fetchAIAccounts = async () => {
-  loading.value = true;
-  try {
-    await store.dispatch("ai/fetchAIAccounts");
+// Get account session status from localStorage or API
+const getAccountSessionStatus = async (account, forceRefresh = false) => {
+  // Check if we have a cached result and it's not a forced refresh
+  if (!forceRefresh) {
+    const cachedStatus = getAccountStatusFromCache(account.id);
+    if (cachedStatus) {
+      account.session_status = cachedStatus.is_authorized
+        ? "authorized"
+        : "unauthorized";
+      return cachedStatus.is_authorized;
+    }
+  }
+  
+  // If no cache or force refresh, check via API
+  return await checkAccountSessionStatus(account);
+};
 
-    // Check session status for each account
-    for (const account of aiAccounts.value) {
-      await checkAccountSessionStatus(account);
+// Get account status from localStorage cache
+const getAccountStatusFromCache = (accountId) => {
+  try {
+    const cacheKey = `ai_account_status_${accountId}`;
+    const cachedData = localStorage.getItem(cacheKey);
+    
+    if (cachedData) {
+      const parsedData = JSON.parse(cachedData);
+      
+      // Check if cache is still valid (24 hours)
+      const now = new Date().getTime();
+      const cacheTime = parsedData.timestamp;
+      const cacheAge = now - cacheTime;
+      const cacheExpiration = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+      
+      if (cacheAge < cacheExpiration) {
+        return parsedData;
+      } else {
+        // Clear expired cache
+        localStorage.removeItem(cacheKey);
+      }
     }
   } catch (error) {
-    console.error("Error fetching accounts:", error);
-  } finally {
-    loading.value = false;
+    console.error("Error reading from localStorage:", error);
+    // Clear potentially corrupted cache
+    localStorage.removeItem(`ai_account_status_${accountId}`);
+  }
+  
+  return null;
+};
+
+// Save account status to localStorage
+const saveAccountStatusToCache = (accountId, status) => {
+  try {
+    const cacheKey = `ai_account_status_${accountId}`;
+    const cacheData = {
+      ...status,
+      timestamp: new Date().getTime()
+    };
+    
+    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+  } catch (error) {
+    console.error("Error saving to localStorage:", error);
   }
 };
 
-// Check if an account has a valid session
+// Check if an account has a valid session via API
 const checkAccountSessionStatus = async (account) => {
   try {
     // Test connection to determine if account is authorized
@@ -535,6 +587,10 @@ const checkAccountSessionStatus = async (account) => {
     account.session_status = result.is_authorized
       ? "authorized"
       : "unauthorized";
+    
+    // Save the result to cache
+    saveAccountStatusToCache(account.id, result);
+    
     return result.is_authorized;
   } catch (error) {
     console.error(
@@ -555,11 +611,20 @@ const saveNewAccount = async () => {
 
   saving.value = true;
   try {
-    await store.dispatch("ai/createAIAccount", newAccount);
+    const result = await store.dispatch("ai/createAIAccount", newAccount);
 
     // Reset form and close dialog
     form.value.reset();
     showNewAccountDialog.value = false;
+    
+    // If we have an account ID in the result, initialize its cache
+    if (result && result.data && result.data.account_id) {
+      saveAccountStatusToCache(result.data.account_id, {
+        success: true,
+        is_authorized: false,
+        message: "Account created, authentication required"
+      });
+    }
   } catch (error) {
     console.error("Error creating account:", error);
       // Display validation error from the server
@@ -595,6 +660,10 @@ const deleteAccount = async () => {
   deleting.value = true;
   try {
     await store.dispatch("ai/deleteAIAccount", accountToDelete.value.id);
+    
+    // Remove the account from localStorage cache
+    localStorage.removeItem(`ai_account_status_${accountToDelete.value.id}`);
+    
     showDeleteDialog.value = false;
   } catch (error) {
     console.error("Error deleting account:", error);
@@ -603,15 +672,31 @@ const deleteAccount = async () => {
   }
 };
 
-const testAccount = async (accountId) => {
+const testAccount = async (accountId, forceRefresh = true) => {
   try {
     // Store the account ID for later use if we need to log in
     accountForLogin.value = { id: accountId };
 
-    // Test the account
-    const result = await store.dispatch("ai/testAIAccount", accountId);
+    // Find the account object
+    const account = aiAccounts.value.find(acc => acc.id === accountId);
+    
+    // Test the account with force refresh (skip cache)
+    let result;
+    if (account) {
+      await getAccountSessionStatus(account, forceRefresh); // Force refresh from API by default
+      // Get the fresh result after forced API call
+      result = await store.dispatch("ai/testAIAccount", accountId);
+    } else {
+      // Fallback if account not found in local state
+      result = await store.dispatch("ai/testAIAccount", accountId);
+    }
+    
     console.log("Test result:", result);
     Object.assign(testResult, result);
+    
+    // Update the cache with the fresh result
+    saveAccountStatusToCache(accountId, result);
+    
     showTestResultDialog.value = true;
   } catch (error) {
     console.error("Error testing account:", error);
@@ -633,6 +718,12 @@ const loginFromTestDialog = () => {
 };
 
 const showLoginDialogForAccount = (account) => {
+  // First get the latest status from cache
+  const cachedStatus = getAccountStatusFromCache(account.id);
+  if (cachedStatus) {
+    account.session_status = cachedStatus.is_authorized ? "authorized" : "unauthorized";
+  }
+  
   accountForLogin.value = account;
   showLoginDialog.value = true;
   verificationCode.value = "";
@@ -648,6 +739,10 @@ const logoutAccount = async (account) => {
 const confirmLogout = async () => {
   try {
     await store.dispatch("ai/logoutAIAccount", accountForLogout.value.id);
+    
+    // Clear the cache for this account
+    localStorage.removeItem(`ai_account_status_${accountForLogout.value.id}`);
+    
     // Session status will be updated in the fetchAIAccounts call triggered by the action
     showLogoutDialog.value = false;
   } catch (error) {
@@ -662,6 +757,12 @@ const cleanupAllSessions = async () => {
 const confirmCleanup = async () => {
   try {
     await store.dispatch("ai/cleanupAISessions");
+    
+    // Clear all account status caches
+    aiAccounts.value.forEach(account => {
+      localStorage.removeItem(`ai_account_status_${account.id}`);
+    });
+    
     // Session status will be updated in the fetchAIAccounts call triggered by the action
     showCleanupDialog.value = false;
   } catch (error) {
@@ -720,8 +821,20 @@ const verifyCode = async () => {
       // Successfully verified
       showCodeVerificationDialog.value = false;
 
+      // Update the cache with the new authorized status
+      saveAccountStatusToCache(accountForLogin.value.id, {
+        success: true,
+        is_authorized: true,
+        message: "Account authenticated successfully"
+      });
+
       // Refresh the accounts list
-      await fetchAIAccounts();
+      await store.dispatch("ai/fetchAIAccounts");
+      
+      // Update account statuses from cache
+      for (const account of aiAccounts.value) {
+        await getAccountSessionStatus(account, account.id === accountForLogin.value.id);
+      }
     } else if (result.data.action === "password_required") {
       // Two-factor authentication is required
       twoFactorRequired.value = true;
@@ -734,7 +847,20 @@ const verifyCode = async () => {
 };
 
 // Lifecycle hooks
-onMounted(() => {
-  fetchAIAccounts();
+onMounted(async () => {
+  // Load accounts from store first for quick UI rendering
+  await store.dispatch("ai/fetchAIAccounts");
+  
+  // Then check their status (from cache when available)
+  loading.value = true;
+  try {
+    for (const account of aiAccounts.value) {
+      await getAccountSessionStatus(account, false); // Don't force refresh
+    }
+  } catch (error) {
+    console.error("Error checking account statuses:", error);
+  } finally {
+    loading.value = false;
+  }
 });
 </script>

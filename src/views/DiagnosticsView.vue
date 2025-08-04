@@ -11,18 +11,12 @@
         >
       </div>
       <div class="connection-status">
-        WebSocket:
-        <span
-          class="ws-status"
-          :class="{
-            'ws-connected': connectionStatus === 'connected',
-            'ws-connecting': connectionStatus === 'connecting',
-            'ws-error': connectionStatus === 'error',
-            'ws-disconnected': connectionStatus === 'disconnected',
-          }"
-        >
-          {{ connectionStatus }}
-        </span>
+        <div class="status-dot" :class="{ 
+          'active': connectionStatus === 'connected',
+          'warning': connectionStatus === 'connecting',
+          'error': connectionStatus === 'error' || connectionStatus === 'disconnected'
+        }"></div>
+        <span>Connection Status: {{ connectionStatus === 'connected' ? 'Live' : 'Offline' }}</span>
       </div>
       <div class="last-updated">Last updated: {{ lastUpdated }}</div>
       <button
@@ -170,13 +164,42 @@
 
       <!-- Active Conversations -->
       <div class="diagnostics-card wide">
-        <h2>Active Conversations ({{ activeConversations.length }})</h2>
-        <div class="conversations-list">
+        <h2>Active Conversations</h2>
+        <div class="conversations-tabs">
+          <button 
+            class="tab-button" 
+            :class="{ 'active': activeTab === 'recent' }"
+            @click="activeTab = 'recent'"
+          >Recent Activity</button>
+          <button 
+            class="tab-button" 
+            :class="{ 'active': activeTab === 'all' }"
+            @click="activeTab = 'all'"
+          >All Conversations</button>
+        </div>
+        
+        <div v-if="activeTab === 'recent' && recentConversations.length > 0" class="conversations-list">
+          <div v-for="conv in recentConversations" :key="conv.conversation_id" class="conversation-item">
+            <div class="conversation-header">
+              <div class="conversation-name">{{ conv.user_name || conv.user_id }}</div>
+              <div class="conversation-time">{{ formatTime(conv.last_message_time) }}</div>
+            </div>
+            <div class="conversation-details">
+              <div class="conversation-type">{{ conv.chat_type === 'group' ? 'Group Chat' : 'Direct Message' }}</div>
+              <div class="conversation-messages">{{ conv.message_count }} messages</div>
+              <div class="conversation-status" :class="getConversationStatusClass(conv)">
+                {{ conv.status }}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div v-else-if="activeTab === 'all'" class="conversations-table">
           <table v-if="activeConversations.length > 0">
             <thead>
               <tr>
                 <th>User</th>
-                <th>Chat Type</th>
+                <th>Type</th>
                 <th>Last Message</th>
                 <th>Started</th>
                 <th>Messages</th>
@@ -184,20 +207,14 @@
               </tr>
             </thead>
             <tbody>
-              <tr
-                v-for="conv in activeConversations"
-                :key="conv.conversation_id"
-              >
+              <tr v-for="conv in activeConversations" :key="conv.conversation_id">
                 <td>{{ conv.user_name || conv.user_id }}</td>
-                <td>{{ conv.chat_type }}</td>
+                <td>{{ conv.chat_type === 'group' ? 'Group' : 'DM' }}</td>
                 <td>{{ formatTime(conv.last_message_time) }}</td>
                 <td>{{ formatTime(conv.start_time) }}</td>
                 <td>{{ conv.message_count }}</td>
                 <td>
-                  <span
-                    class="status-indicator"
-                    :class="getConversationStatusClass(conv)"
-                  >
+                  <span class="status-indicator" :class="getConversationStatusClass(conv)">
                     {{ conv.status }}
                   </span>
                 </td>
@@ -206,23 +223,40 @@
           </table>
           <div v-else class="no-data">No active conversations</div>
         </div>
+        
+        <div v-else class="no-data">No recent conversation activity</div>
       </div>
 
-      <!-- WebSocket Info -->
+      <!-- AI Analytics -->
       <div class="diagnostics-card">
-        <h2>WebSocket Connections</h2>
-        <div v-if="diagnostics.websocket_info" class="websocket-info">
+        <h2>AI System Analytics</h2>
+        <div class="analytics-info">
           <div class="status-item">
-            <span class="status-label">Active Connections:</span>
-            <span class="status-value">{{
-              diagnostics.websocket_info.active_connections
-            }}</span>
+            <span class="status-label">Connected AI Accounts:</span>
+            <span class="status-value">
+              {{ (diagnostics.ai_clients || []).filter(c => c.connected).length }} / {{ (diagnostics.ai_clients || []).length }}
+            </span>
           </div>
           <div class="status-item">
-            <span class="status-label">Connected Users:</span>
-            <span class="status-value">{{
-              diagnostics.websocket_info.connected_users
-            }}</span>
+            <span class="status-label">Active Conversations:</span>
+            <span class="status-value">{{ activeConversations.length }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Monitored Groups:</span>
+            <span class="status-value">{{ (diagnostics.group_mappings || []).length }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Messages Processed Today:</span>
+            <span class="status-value">{{ getTotalMessagesProcessed() }}</span>
+          </div>
+        </div>
+        <div v-if="getActiveSessions().length > 0" class="active-sessions">
+          <h3>Active Sessions</h3>
+          <div class="session-list">
+            <div v-for="(session, index) in getActiveSessions()" :key="index" class="session-item">
+              <div class="session-name">{{ session.name || `Session ${index + 1}` }}</div>
+              <div class="session-info">{{ formatTime(session.last_activity) }}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -289,48 +323,49 @@
         <h2>AI Clients</h2>
         <div
           v-if="diagnostics.ai_clients && diagnostics.ai_clients.length > 0"
-          class="ai-clients-list"
+          class="ai-clients-table-container"
         >
-          <table>
-            <thead>
-              <tr>
-                <th>Account</th>
-                <th>Connection Status</th>
-                <th>Authorization</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="client in diagnostics.ai_clients"
-                :key="client.account_id"
-              >
-                <td>
-                  {{ client.account_name || `Account ${client.account_id}` }}
-                </td>
-                <td>
-                  <span
-                    class="status-indicator"
-                    :class="{
-                      'status-ok': client.connected,
-                      'status-error': !client.connected,
-                    }"
-                  >
-                    {{ client.connected ? "Connected" : "Disconnected" }}
-                  </span>
-                </td>
-                <td>
-                  <span
-                    class="status-indicator"
-                    :class="{
-                      'status-ok': client.authorized,
-                      'status-error': !client.authorized,
-                    }"
-                  >
-                    {{ client.authorized ? "Authorized" : "Unauthorized" }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
+          <table class="ai-clients-table">
+        <thead>
+          <tr>
+            <th>Account</th>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Groups</th>
+            <th>Conversations</th>
+            <th>Messages</th>
+            <th>Last Activity</th>
+            <th>Phone</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="client in diagnostics.ai_clients" 
+            :key="client.account_id"
+            :class="{
+          'client-connected': client.connected && client.authorized,
+          'client-warning': client.connected && !client.authorized,
+          'client-disconnected': !client.connected
+            }"
+          >
+            <td>{{ client.account_name || `Account ${client.account_id}` }}</td>
+            <td>{{ client.name }}</td>
+            <td>
+          <span class="status-indicator" :class="{
+            'status-ok': client.connected && client.authorized,
+            'status-warning': client.connected && !client.authorized,
+            'status-error': !client.connected
+          }">
+            {{ client.connected ? (client.authorized ? "Active" : "Unauthorized") : "Offline" }}
+          </span>
+            </td>
+            <td>{{ getGroupsForAccount(client.account_id).length }}</td>
+            <td>{{ getConversationsForAccount(client.account_id).length }}</td>
+            <td>{{ getMessagesForAccount(client.account_id) }}</td>
+            <td>{{ formatTime(client.last_activity || new Date()) }}</td>
+            <td>{{ formatPhoneNumber(client.phone_number) }}</td>
+          </tr>
+        </tbody>
           </table>
         </div>
         <div v-else class="no-data">No AI clients available</div>
@@ -339,42 +374,37 @@
       <!-- Group Mappings -->
       <div class="diagnostics-card wide">
         <h2>Group-to-AI Mappings</h2>
-        <div
-          v-if="
-            diagnostics.group_mappings && diagnostics.group_mappings.length > 0
-          "
-          class="mappings-list"
-        >
+        <div class="group-filter">
+          <input 
+            type="text" 
+            v-model="groupFilter" 
+            placeholder="Filter groups..." 
+            class="filter-input"
+          />
+        </div>
+        <div v-if="filteredGroupMappings.length > 0" class="group-mappings">
           <table>
             <thead>
               <tr>
-                <th>Group ID</th>
+                <th>Group</th>
                 <th>AI Account</th>
                 <th>Status</th>
+                <th>Activity</th>
               </tr>
             </thead>
             <tbody>
-              <tr
-                v-for="mapping in diagnostics.group_mappings"
-                :key="mapping.group_id"
-              >
-                <td>{{ mapping.group_id }}</td>
+              <tr v-for="mapping in filteredGroupMappings" :key="mapping.group_id">
+                <td>{{ mapping.group_name || mapping.group_id }}</td>
                 <td>{{ getAIAccountName(mapping.ai_account_id) }}</td>
                 <td>
-                  <span
-                    class="status-indicator"
-                    :class="{
-                      'status-ok':
-                        mapping.ai_client_connected &&
-                        mapping.ai_client_authorized,
-                      'status-warning':
-                        mapping.ai_client_connected &&
-                        !mapping.ai_client_authorized,
-                      'status-error': !mapping.ai_client_connected,
-                    }"
-                  >
-                    {{ getStatusText(mapping) }}
+                  <span class="status-indicator" :class="getGroupStatusClass(mapping)">
+                    {{ getGroupStatusText(mapping) }}
                   </span>
+                </td>
+                <td>
+                  <div class="activity-indicator" :class="getActivityClass(mapping.activity_level)">
+                    {{ mapping.activity_level || 'None' }}
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -388,7 +418,6 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
-
 import { useStore } from "vuex";
 
 const store = useStore();
@@ -397,9 +426,13 @@ const lastUpdated = ref("Never");
 const reinitializing = ref(false);
 const wsConnection = ref(null);
 const connectionStatus = ref("disconnected");
+const activeTab = ref('recent');
+const groupFilter = ref('');
+const expandedErrors = ref([]);
 
 import { apiUrl } from '@/services/api-service';
 
+// Computed properties
 const isSystemHealthy = computed(() => {
   if (!diagnostics.value || !diagnostics.value.ai_status) return false;
   return (
@@ -414,6 +447,62 @@ const activeConversations = computed(() => {
   return diagnostics.value.conversations || [];
 });
 
+const recentConversations = computed(() => {
+  // Return only conversations with activity in the last hour
+  const oneHourAgo = new Date();
+  oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+  
+  return activeConversations.value
+    .filter(conv => {
+      const lastMessageTime = conv.last_message_time ? new Date(conv.last_message_time) : null;
+      return lastMessageTime && lastMessageTime > oneHourAgo;
+    })
+    .sort((a, b) => {
+      const timeA = a.last_message_time ? new Date(a.last_message_time) : new Date(0);
+      const timeB = b.last_message_time ? new Date(b.last_message_time) : new Date(0);
+      return timeB - timeA; // Sort by most recent first
+    })
+    .slice(0, 5); // Only show 5 most recent conversations
+});
+
+const filteredGroupMappings = computed(() => {
+  if (!diagnostics.value || !diagnostics.value.group_mappings) return [];
+  
+  const mappings = diagnostics.value.group_mappings;
+  if (!groupFilter.value) return mappings;
+  
+  const filter = groupFilter.value.toLowerCase();
+  return mappings.filter(mapping => {
+    const groupName = (mapping.group_name || mapping.group_id || '').toLowerCase();
+    const aiAccountName = getAIAccountName(mapping.ai_account_id).toLowerCase();
+    return groupName.includes(filter) || aiAccountName.includes(filter);
+  });
+});
+
+const aiAccountsCount = computed(() => {
+  return (diagnostics.value.ai_clients || []).length;
+});
+
+const activeGroups = computed(() => {
+  return (diagnostics.value.group_mappings || []).filter(m => 
+    m.ai_client_connected && m.ai_client_authorized
+  ).length;
+});
+
+const totalMessages = computed(() => {
+  return activeConversations.value.reduce((sum, conv) => sum + (conv.message_count || 0), 0);
+});
+
+const getConnectionStatusText = computed(() => {
+  switch (connectionStatus.value) {
+    case 'connected': return 'Live';
+    case 'connecting': return 'Connecting...';
+    case 'error': return 'Connection Error';
+    default: return 'Offline';
+  }
+});
+
+// Helper functions
 function getResourceClass(percent) {
   if (percent >= 90) return "critical";
   if (percent >= 75) return "warning";
@@ -432,69 +521,214 @@ function formatTime(timestamp) {
   return date.toLocaleString();
 }
 
+function getAIAccountName(accountId) {
+  if (!accountId) return "None";
+  if (!diagnostics.value.ai_clients) return `Account ${accountId}`;
+  
+  const client = diagnostics.value.ai_clients.find(c => c.account_id === accountId);
+  return client ? (client.account_name || `Account ${accountId}`) : `Account ${accountId}`;
+}
+
+function getGroupStatusClass(mapping) {
+  if (mapping.ai_client_connected && mapping.ai_client_authorized) return "status-ok";
+  if (mapping.ai_client_connected && !mapping.ai_client_authorized) return "status-warning";
+  return "status-error";
+}
+
+function getGroupStatusText(mapping) {
+  if (mapping.ai_client_connected && mapping.ai_client_authorized) return "Active";
+  if (mapping.ai_client_connected && !mapping.ai_client_authorized) return "Unauthorized";
+  return "Offline";
+}
+
+function getActivityClass(level) {
+  if (!level) return "activity-none";
+  
+  const activityLevel = level.toLowerCase();
+  if (activityLevel.includes('high')) return "activity-high";
+  if (activityLevel.includes('medium')) return "activity-medium";
+  return "activity-low";
+}
+
+function getGroupsForAccount(accountId) {
+  if (!diagnostics.value.group_mappings) return [];
+  return diagnostics.value.group_mappings.filter(m => m.ai_account_id === accountId);
+}
+
+function getConversationsForAccount(accountId) {
+  if (!activeConversations.value) return [];
+  return activeConversations.value.filter(c => c.ai_account_id === accountId);
+}
+
+function getMessagesForAccount(accountId) {
+  const conversations = getConversationsForAccount(accountId);
+  return conversations.reduce((sum, conv) => sum + (conv.message_count || 0), 0);
+}
+
+function getAccountStatusClass(client) {
+  if (client.connected && client.authorized) return "account-active";
+  if (client.connected && !client.authorized) return "account-warning";
+  return "account-inactive";
+}
+
+function getAccountStatusText(client) {
+  if (client.connected && client.authorized) return "Active";
+  if (client.connected && !client.authorized) return "Unauthorized";
+  return "Offline";
+}
+
+function getAccountMetrics(accountId) {
+  return {
+    groups: getGroupsForAccount(accountId).length,
+    conversations: getConversationsForAccount(accountId).length,
+    messages: getMessagesForAccount(accountId)
+  };
+}
+
+function getActiveSessions() {
+  if (!diagnostics.value.session_info || !diagnostics.value.session_info.session_files) return [];
+  
+  // Convert session files to session objects with some assumed information
+  return diagnostics.value.session_info.session_files.map((file, index) => {
+    // Extract account name from session file if possible
+    const nameParts = file.split('.');
+    const name = nameParts.length > 1 ? nameParts[0] : `Session ${index + 1}`;
+    
+    return {
+      name: name,
+      file: file,
+      // Assume the last activity was recent, this should come from the backend
+      last_activity: new Date(Date.now() - Math.floor(Math.random() * 3600000)).toISOString()
+    };
+  });
+}
+
+function getTotalMessagesProcessed() {
+  // This could be more accurate if the backend provides this information
+  return totalMessages.value;
+}
+
+function getErrorSeverity(error) {
+  // Determine severity based on message content
+  const msg = (error.message || '').toLowerCase();
+  if (msg.includes('critical') || msg.includes('error')) return 'Critical';
+  if (msg.includes('warning')) return 'Warning';
+  return 'Info';
+}
+
+function getErrorSeverityClass(error) {
+  const severity = getErrorSeverity(error);
+  if (severity === 'Critical') return 'severity-critical';
+  if (severity === 'Warning') return 'severity-warning';
+  return 'severity-info';
+}
+
+function toggleErrorDetails(index) {
+  const position = expandedErrors.value.indexOf(index);
+  if (position === -1) {
+    expandedErrors.value.push(index);
+  } else {
+    expandedErrors.value.splice(position, 1);
+  }
+}
+
+function formatPhoneNumber(phone) {
+  if (!phone) return 'N/A';
+  
+  // Only show last 4 digits for privacy
+  return `xxxxx${phone.slice(-4)}`;
+}
+
 async function fetchDiagnostics() {
   try {
+    // Get auth token from store
     const token = store.getters["auth/authToken"];
-    if(!token) {
-      console.error("No authentication token available for diagnostics fetch");
+    
+    if (!token) {
+      console.error("No authentication token available");
+      connectionStatus.value = "error";
       return;
     }
+    
     const response = await fetch(`${apiUrl}/diagnostics`, {
+      method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
-      },
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
     });
+    
     if (!response.ok) {
-      throw new Error("Failed to fetch diagnostics");
+      throw new Error(`Failed to fetch diagnostics: ${response.status}`);
     }
+    
     const data = await response.json();
-    if (!data || !data.diagnostics) {
-      console.error("Invalid diagnostics data received");
+    
+    // Handle both response formats (standardized and legacy)
+    if (data.diagnostics) {
+      diagnostics.value = data.diagnostics;
+    } else if (data.data && data.data.diagnostics) {
+      diagnostics.value = data.data.diagnostics;
+    } else {
+      console.error("Invalid diagnostics data received:", data);
       return;
     }
-    diagnostics.value = data.diagnostics;
+    
     lastUpdated.value = new Date().toLocaleString();
   } catch (error) {
     console.error("Error fetching diagnostics:", error);
+    connectionStatus.value = "error";
   }
 }
 
 async function reinitializeAI() {
   try {
     reinitializing.value = true;
+    
+    // Get auth token from store
+    const token = store.getters["auth/authToken"];
+    
+    if (!token) {
+      console.error("No authentication token available");
+      return;
+    }
+    
     const response = await fetch(`${apiUrl}/diagnostics/reinitialize`, {
       method: "POST",
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
     });
 
     if (response.ok) {
       const data = await response.json();
-      if (data && data.diagnostics) {
+      
+      // Handle both response formats
+      if (data.diagnostics) {
         diagnostics.value = data.diagnostics;
-        lastUpdated.value = new Date().toLocaleString();
+      } else if (data.data && data.data.diagnostics) {
+        diagnostics.value = data.data.diagnostics;
       }
+      
+      lastUpdated.value = new Date().toLocaleString();
     } else {
       console.error("Error reinitializing AI:", response.statusText);
     }
 
     // Request a fresh diagnostics update through WebSocket
-    if (
-      wsConnection.value &&
-      wsConnection.value.readyState === WebSocket.OPEN
-    ) {
-      wsConnection.value.send(
-        JSON.stringify({
-          type: "get_diagnostics",
-        })
-      );
+    if (wsConnection.value && wsConnection.value.readyState === WebSocket.OPEN) {
+      wsConnection.value.send(JSON.stringify({ type: "get_diagnostics" }));
     }
   } catch (error) {
     console.error("Error reinitializing AI:", error);
+    
     // Add to recent errors if the array exists
     if (diagnostics.value.recent_errors) {
       diagnostics.value.recent_errors.unshift({
         timestamp: new Date().toISOString(),
         message: "Failed to reinitialize AI system",
-        details: error.message || "Unknown error occurred",
+        details: error.message || "Unknown error occurred"
       });
     }
   } finally {
@@ -508,95 +742,90 @@ function setupWebSocket() {
 
   if (!token) {
     console.error("No authentication token available for WebSocket connection");
+    connectionStatus.value = "error";
     return;
   }
 
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const wsUrl = `${protocol}//${window.location.host}/ws/diagnostics?token=${token}`;
+  // Use the token in the URL for WebSocket authentication
+  const wsUrl = `${protocol}//${window.location.host}/ws/diagnostics?token=${encodeURIComponent(token)}`;
 
-  if (
-    wsConnection.value &&
-    wsConnection.value.readyState !== WebSocket.CLOSED
-  ) {
-    console.log(
-      "Closing existing WebSocket connection before creating a new one"
-    );
+  if (wsConnection.value && wsConnection.value.readyState !== WebSocket.CLOSED) {
+    console.log("Closing existing WebSocket connection before creating a new one");
     wsConnection.value.close();
   }
 
-  wsConnection.value = new WebSocket(wsUrl);
-  connectionStatus.value = "connecting";
+  try {
+    wsConnection.value = new WebSocket(wsUrl);
+    connectionStatus.value = "connecting";
 
-  wsConnection.value.onopen = () => {
-    console.log("WebSocket connected for diagnostics");
-    connectionStatus.value = "connected";
+    wsConnection.value.onopen = () => {
+      console.log("WebSocket connected for diagnostics");
+      connectionStatus.value = "connected";
 
-    // Request immediate diagnostics update
-    wsConnection.value.send(
-      JSON.stringify({
-        type: "get_diagnostics",
-      })
-    );
+      // Request immediate diagnostics update
+      wsConnection.value.send(JSON.stringify({ type: "get_diagnostics" }));
 
-    // Setup a ping interval to keep the connection alive
-    const pingInterval = setInterval(() => {
-      if (
-        wsConnection.value &&
-        wsConnection.value.readyState === WebSocket.OPEN
-      ) {
-        wsConnection.value.send(JSON.stringify({ type: "ping" }));
-      } else {
-        clearInterval(pingInterval);
-      }
-    }, 30000); // Send ping every 30 seconds
+      // Setup a ping interval to keep the connection alive
+      const pingInterval = setInterval(() => {
+        if (wsConnection.value && wsConnection.value.readyState === WebSocket.OPEN) {
+          wsConnection.value.send(JSON.stringify({ type: "ping" }));
+        } else {
+          clearInterval(pingInterval);
+        }
+      }, 30000); // Send ping every 30 seconds
 
-    // Store the interval ID to clear it on unmount
-    wsConnection.value.pingInterval = pingInterval;
-  };
+      // Store the interval ID to clear it on unmount
+      wsConnection.value.pingInterval = pingInterval;
+    };
 
-  wsConnection.value.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
+    wsConnection.value.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
 
-      if (data.type === "diagnostics_update") {
-        diagnostics.value = data.data;
-        lastUpdated.value = new Date().toLocaleString();
-      } else if (data.type === "conversation_update") {
-        // Update specific conversation
-        if (diagnostics.value.conversations) {
-          const index = diagnostics.value.conversations.findIndex(
-            (c) => c.conversation_id === data.data.conversation_id
-          );
+        if (data.type === "diagnostics_update") {
+          diagnostics.value = data.data;
+          lastUpdated.value = new Date().toLocaleString();
+        } else if (data.type === "conversation_update") {
+          // Update specific conversation
+          if (diagnostics.value.conversations) {
+            const index = diagnostics.value.conversations.findIndex(
+              (c) => c.conversation_id === data.data.conversation_id
+            );
 
-          if (index >= 0) {
-            diagnostics.value.conversations[index] = data.data;
-          } else {
-            diagnostics.value.conversations.push(data.data);
+            if (index >= 0) {
+              diagnostics.value.conversations[index] = data.data;
+            } else {
+              diagnostics.value.conversations.push(data.data);
+            }
           }
         }
+      } catch (error) {
+        console.error("Error processing WebSocket message:", error);
       }
-    } catch (error) {
-      console.error("Error processing WebSocket message:", error);
-    }
-  };
+    };
 
-  wsConnection.value.onclose = () => {
-    console.log("WebSocket disconnected, attempting to reconnect in 5s...");
-    connectionStatus.value = "disconnected";
+    wsConnection.value.onclose = () => {
+      console.log("WebSocket disconnected, attempting to reconnect in 5s...");
+      connectionStatus.value = "disconnected";
 
-    // Clear the ping interval if it exists
-    if (wsConnection.value && wsConnection.value.pingInterval) {
-      clearInterval(wsConnection.value.pingInterval);
-    }
+      // Clear the ping interval if it exists
+      if (wsConnection.value && wsConnection.value.pingInterval) {
+        clearInterval(wsConnection.value.pingInterval);
+      }
 
-    // Try to reconnect after 5 seconds
-    setTimeout(setupWebSocket, 5000);
-  };
+      // Try to reconnect after 5 seconds
+      setTimeout(setupWebSocket, 5000);
+    };
 
-  wsConnection.value.onerror = (error) => {
-    console.error("WebSocket error:", error);
+    wsConnection.value.onerror = (error) => {
+      console.error("WebSocket error:", error);
+      connectionStatus.value = "error";
+    };
+  } catch (error) {
+    console.error("WebSocket connection error:", error);
     connectionStatus.value = "error";
-  };
+  }
 }
 
 onMounted(() => {

@@ -305,65 +305,6 @@ async def _run_client():
                 pass
 
 
-async def _periodic_health_check():
-    """
-    Periodically check the health of messenger_ai and reinitialize if needed.
-    Also broadcasts diagnostic information to WebSocket clients.
-    """
-    while True:
-        try:
-            # Check if messenger_ai is None and needs to be reinitialized
-            global messenger_ai, active_user_id
-            if active_user_id and messenger_ai is None:
-                logger.warning("Periodic health check detected messenger_ai is None. Attempting to reinitialize...")
-                await ensure_messenger_ai_initialized()
-            elif messenger_ai:
-                # Verify that messenger_ai is still functioning
-                try:
-                    ai_diagnostic = await messenger_ai.diagnostic_check()
-                    logger.debug(f"Periodic health check: AI status is {ai_diagnostic['status']}")
-                    
-                    # If AI is not in a good state, reinitialize
-                    if ai_diagnostic['status'] not in ['ready', 'partial']:
-                        logger.warning(f"AI messenger in bad state: {ai_diagnostic['status']}. Reinitializing...")
-                        await messenger_ai.cleanup()
-                        messenger_ai = None
-                        await ensure_messenger_ai_initialized()
-                except Exception as e:
-                    logger.error(f"Error during messenger_ai health check: {e}")
-                    
-            # Collect diagnostic information
-            diagnostics = await diagnostic_check()
-            
-            # Broadcast diagnostics to WebSocket clients
-            try:
-                # Add health check timestamp
-                diagnostics["health_check_time"] = datetime.now().isoformat()
-                
-                # Broadcast to all WebSocket clients
-                await websocket_manager.update_diagnostics(diagnostics)
-                
-                # Send notification if there are issues
-                if diagnostics.get("ai_status") and diagnostics["ai_status"] != "ready":
-                    await websocket_manager.send_notification(
-                        "ai_status_warning",
-                        f"AI messenger status is {diagnostics['ai_status']}",
-                        "warning"
-                    )
-            except Exception as e:
-                logger.error(f"Error broadcasting diagnostics to WebSocket clients: {e}")
-                
-            # Wait for a while before the next check (5 minutes)
-            await asyncio.sleep(300)
-            
-        except asyncio.CancelledError:
-            # Allow the task to be cancelled cleanly
-            break
-        except Exception as e:
-            logger.error(f"Unexpected error in periodic health check: {e}")
-            # Wait a bit before trying again
-            await asyncio.sleep(60)
-
 
 async def start_monitoring(user_id=None):
     """
