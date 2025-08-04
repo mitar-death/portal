@@ -13,31 +13,52 @@ class ConnectionManager:
         self._lock = asyncio.Lock()
         
     async def connect(self, websocket: WebSocket, connection_id: str, user_id: Optional[str] = None):
-        await websocket.accept()
-        self.active_connections[connection_id] = websocket
-        
-        if user_id:
-            await self._add_user_connection(user_id, connection_id)
+        """
+        Connect a new WebSocket client and register it with a unique connection ID
+        """
+        try:
+            await websocket.accept()
+            self.active_connections[connection_id] = websocket
             
-        logger.info(f"WebSocket connected: {connection_id}, user: {user_id}")
+            if user_id:
+                await self._add_user_connection(user_id, connection_id)
+                
+            logger.info(f"WebSocket connected: {connection_id}, user: {user_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error connecting WebSocket: {e}", exc_info=True)
+            return False
         
     async def disconnect(self, connection_id: str):
-        if connection_id in self.active_connections:
-            websocket = self.active_connections.pop(connection_id)
-            
-            # Remove from user connections if applicable
-            if connection_id in self.connection_user:
-                user_id = self.connection_user[connection_id]
+        """
+        Disconnect a WebSocket client and clean up its registration
+        """
+        try:
+            if connection_id in self.active_connections:
+                # Don't need to close the WebSocket here - it's likely already closed
+                # or will be closed by FastAPI
+                self.active_connections.pop(connection_id)
                 
-                async with self._lock:
-                    if user_id in self.user_connections:
-                        self.user_connections[user_id].discard(connection_id)
-                        if not self.user_connections[user_id]:
-                            del self.user_connections[user_id]
-                            
-                    del self.connection_user[connection_id]
+                # Remove from user connections if applicable
+                if connection_id in self.connection_user:
+                    user_id = self.connection_user[connection_id]
                     
-            logger.info(f"WebSocket disconnected: {connection_id}")
+                    async with self._lock:
+                        if user_id in self.user_connections:
+                            self.user_connections[user_id].discard(connection_id)
+                            if not self.user_connections[user_id]:
+                                del self.user_connections[user_id]
+                                
+                        del self.connection_user[connection_id]
+                        
+                logger.info(f"WebSocket disconnected: {connection_id}")
+                return True
+            else:
+                logger.warning(f"Attempted to disconnect non-existent WebSocket: {connection_id}")
+                return False
+        except Exception as e:
+            logger.error(f"Error disconnecting WebSocket {connection_id}: {e}", exc_info=True)
+            return False
     
     async def _add_user_connection(self, user_id: str, connection_id: str):
         async with self._lock:
@@ -61,11 +82,32 @@ class ConnectionManager:
             await self.send_personal_message(message, connection_id)
     
     async def send_json(self, connection_id: str, data: dict):
+        """
+        Send a JSON message to a specific WebSocket connection
+        """
         try:
+            if connection_id not in self.active_connections:
+                logger.warning(f"Attempted to send message to non-existent connection: {connection_id}")
+                return False
+                
+            # Convert the data to a JSON string
             message = json.dumps(data)
-            await self.send_personal_message(message, connection_id)
+            
+            # Get the WebSocket connection
+            websocket = self.active_connections[connection_id]
+            
+            # Send the message
+            await websocket.send_text(message)
+            return True
         except Exception as e:
-            logger.error(f"Error sending JSON via WebSocket: {e}")
+            logger.error(f"Error sending JSON via WebSocket {connection_id}: {e}", exc_info=True)
+            
+            # If the error suggests the connection is dead, clean it up
+            if "connection is closed" in str(e).lower() or "disconnected" in str(e).lower():
+                logger.info(f"Connection appears to be closed, cleaning up: {connection_id}")
+                await self.disconnect(connection_id)
+            
+            return False
     
     async def send_json_to_user(self, user_id: str, data: dict):
         try:
@@ -75,11 +117,39 @@ class ConnectionManager:
             logger.error(f"Error sending JSON to user via WebSocket: {e}")
     
     async def broadcast_json(self, data: dict):
+        """
+        Broadcast a JSON message to all connected WebSocket clients
+        """
         try:
+            if not self.active_connections:
+                logger.debug("No active connections for broadcast")
+                return
+                
+            # Convert the data to a JSON string
             message = json.dumps(data)
-            await self.broadcast(message)
+            
+            # Store connection IDs that failed so we can clean them up after the broadcast
+            failed_connections = []
+            
+            # Send to all connections
+            for connection_id, websocket in list(self.active_connections.items()):
+                try:
+                    await websocket.send_text(message)
+                except Exception as e:
+                    logger.error(f"Failed to send to connection {connection_id}: {e}")
+                    failed_connections.append(connection_id)
+            
+            # Clean up failed connections
+            for connection_id in failed_connections:
+                await self.disconnect(connection_id)
+                
+            if failed_connections:
+                logger.info(f"Cleaned up {len(failed_connections)} failed connections during broadcast")
+                
+            return True
         except Exception as e:
-            logger.error(f"Error broadcasting JSON via WebSocket: {e}")
+            logger.error(f"Error broadcasting JSON: {e}", exc_info=True)
+            return False
     
     async def send_notification(self, event_type: str, message: str, level: str = "info", details: Any = None):
         """Send a notification to all connected clients"""
@@ -103,11 +173,40 @@ class ConnectionManager:
     
     async def update_diagnostics(self, diagnostics_data: dict):
         """Send updated diagnostics to all connected clients"""
-        message = {
-            "type": "diagnostics_update",
-            "data": diagnostics_data
-        }
-        await self.broadcast_json(message)
+        try:
+            # Ensure diagnostics_data is a valid dictionary
+            if not isinstance(diagnostics_data, dict):
+                logger.error(f"Invalid diagnostics data type: {type(diagnostics_data)}")
+                return
+                
+            # Always add a timestamp if it doesn't exist
+            if "timestamp" not in diagnostics_data:
+                diagnostics_data["timestamp"] = datetime.now().isoformat()
+                
+            # Add connection information
+            if "websocket_info" not in diagnostics_data:
+                diagnostics_data["websocket_info"] = {}
+                
+            diagnostics_data["websocket_info"].update({
+                "active_connections": self.get_connection_count(),
+                "connected_users": self.get_user_count(),
+                "last_update": datetime.now().isoformat()
+            })
+                
+            message = {
+                "type": "diagnostics_update",
+                "data": diagnostics_data,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+            # Only broadcast if there are active connections
+            if self.active_connections:
+                await self.broadcast_json(message)
+                logger.debug(f"Broadcasting diagnostics update to {len(self.active_connections)} connections")
+            else:
+                logger.debug("No active WebSocket connections for diagnostics update")
+        except Exception as e:
+            logger.error(f"Error broadcasting diagnostics update: {e}", exc_info=True)
         
     async def add_chat_message(self, message_data: dict):
         """Add a new chat message to the real-time activity monitor"""

@@ -1,0 +1,34 @@
+[MASTER]
+ignore=tests,.venv,storage,migrations
+jobs = 1  # Number of parallel jobs to use
+persistent = yes  # Save reports for later comparison
+
+[MESSAGES CONTROL]
+disable =
+    missing-function-docstring,
+    unused-argument,
+    keyword-arg-before-vararg,
+    too-many-ancestors,
+    protected-access,
+    C0114,  # Missing module docstring
+    C0103,  # Class constant UPPER_CASE naming style
+    E0401,  # Missing module
+    W0718,  # broad-exception-caught
+    R0903,  # Too few public methods
+    C0115,  # Missing class docstring
+    R0914,
+    R0912,
+    ; W1203,  # logging-fstring-interpolation
+
+[REPORTS]
+output-format = colorized  # Use colored output in terminals
+reports = no  # Disable full reports to keep logs concise
+
+[FORMAT]
+max-line-length = 110  # Match black's line length
+
+[TYPECHECK]
+ignored-modules = fastapi, requests  # Modules that pylint cannot import in static analysis
+
+[LOGGING]
+logging-modules = loguru

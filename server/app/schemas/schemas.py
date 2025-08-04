@@ -11,7 +11,7 @@ class User(BaseModel):
 class TelegramGroup(BaseModel):
     id: int
     title: str
-    member_count: int
+    member_count: int = 0  # Default to 0 if None
     description: Optional[str] = None
     username: Optional[str] = None
     is_channel: bool = False

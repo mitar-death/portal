@@ -9,6 +9,7 @@ from server.app.core.middlewares import get_current_user
 from datetime import datetime
 import asyncio
 import json
+import uuid
 
 # Create a separate router for WebSocket endpoints
 ws_router = APIRouter()
@@ -41,8 +42,12 @@ async def diagnostics_websocket(websocket: WebSocket):
         await websocket.close(code=1008, reason="Authentication error")
         return
     
+    # Generate a unique connection ID
+    connection_id = str(uuid.uuid4())
+    user_id = str(user.id)
+    
     # Register the connection with the WebSocket manager
-    connection_id = await websocket_manager.connect(websocket, user.id)
+    await websocket_manager.connect(websocket, connection_id, user_id)
     
     # Send immediate diagnostics data
     try:
@@ -105,7 +110,8 @@ async def diagnostics_websocket(websocket: WebSocket):
         logger.error(f"WebSocket error: {e}")
     finally:
         # Clean up the connection
-        await websocket_manager.disconnect(connection_id, user.id)
+        if connection_id:
+            await websocket_manager.disconnect(connection_id)
 
 @ws_router.websocket("/ws/chat-activity")
 async def chat_activity_websocket(websocket: WebSocket):
@@ -133,8 +139,12 @@ async def chat_activity_websocket(websocket: WebSocket):
         await websocket.close(code=1008, reason="Authentication error")
         return
     
+    # Generate a unique connection ID
+    connection_id = str(uuid.uuid4())
+    user_id = str(user.id)
+    
     # Register the connection with the WebSocket manager
-    connection_id = await websocket_manager.connect(websocket, user.id)
+    await websocket_manager.connect(websocket, connection_id, user_id)
     
     try:
         # Keep the connection alive and process any client messages
@@ -149,4 +159,5 @@ async def chat_activity_websocket(websocket: WebSocket):
         logger.error(f"WebSocket error: {e}")
     finally:
         # Clean up the connection
-        await websocket_manager.disconnect(connection_id, user.id)
+        if connection_id:
+            await websocket_manager.disconnect(connection_id)

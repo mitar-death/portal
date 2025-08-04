@@ -94,7 +94,6 @@
                 <v-list-item-action>
                   <v-btn icon @click="testAccount(account.id)">
                     <v-icon color="primary">mdi-test-tube</v-icon>
-                    Test
                   </v-btn>
                 </v-list-item-action>
 
@@ -105,18 +104,15 @@
                     @click="showLoginDialogForAccount(account)"
                   >
                     <v-icon color="primary">mdi-login</v-icon>
-                    Login
                   </v-btn>
                   <v-btn v-else icon @click="logoutAccount(account)">
                     <v-icon color="warning">mdi-logout</v-icon>
-                    Logout
                   </v-btn>
                 </v-list-item-action>
 
                 <v-list-item-action>
                   <v-btn icon @click="confirmDeleteAccount(account)">
                     <v-icon color="red">mdi-delete</v-icon>
-                    Delete
                   </v-btn>
                 </v-list-item-action>
               </v-list-item>
@@ -130,6 +126,15 @@
     <v-dialog v-model="showNewAccountDialog" max-width="600px">
       <v-card>
         <v-card-title>Add New AI Messenger Account</v-card-title>
+        <v-alert
+          v-if="validationError"
+          type="error"
+          dismissible
+          @click:close="validationError = ''"
+          class="mb-4 m-3"
+        >
+          {{ validationError }}
+        </v-alert>
         <v-card-text>
           <v-form ref="form" v-model="valid" lazy-validation>
             <v-text-field
@@ -475,7 +480,7 @@ const showDeleteDialog = ref(false);
 const showTestResultDialog = ref(false);
 const showLoginDialog = ref(false);
 const showCodeVerificationDialog = ref(false);
-
+const validationError = ref("");
 const newAccount = reactive({
   name: "",
   phone_number: "",
@@ -542,6 +547,8 @@ const checkAccountSessionStatus = async (account) => {
 };
 
 const saveNewAccount = async () => {
+  validationError.value = '';
+
   if (!form.value.validate()) {
     return;
   }
@@ -555,6 +562,9 @@ const saveNewAccount = async () => {
     showNewAccountDialog.value = false;
   } catch (error) {
     console.error("Error creating account:", error);
+      // Display validation error from the server
+      validationError.value = error || "Validation error";
+
   } finally {
     saving.value = false;
   }
@@ -600,6 +610,7 @@ const testAccount = async (accountId) => {
 
     // Test the account
     const result = await store.dispatch("ai/testAIAccount", accountId);
+    console.log("Test result:", result);
     Object.assign(testResult, result);
     showTestResultDialog.value = true;
   } catch (error) {
@@ -675,7 +686,7 @@ const requestLoginCode = async () => {
       // Close the login dialog and open the code verification dialog
       showLoginDialog.value = false;
       showCodeVerificationDialog.value = true;
-    } else if (result.action === "already_authorized") {
+    } else if (result.data.action === "already_authorized") {
       // If already authorized, just close the dialog
       showLoginDialog.value = false;
     }
@@ -711,7 +722,7 @@ const verifyCode = async () => {
 
       // Refresh the accounts list
       await fetchAIAccounts();
-    } else if (result.action === "password_required") {
+    } else if (result.data.action === "password_required") {
       // Two-factor authentication is required
       twoFactorRequired.value = true;
     }

@@ -2,12 +2,30 @@ from fastapi import HTTPException, Request
 from server.app.core.logging import logger
 from server.app.services.monitor import set_active_user_id
 from server.app.services.telegram import get_client
+from server.app.core.databases import db_context
+from server.app.models.models import User
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import SQLAlchemyError
+from typing import Dict, Any, Optional
+from server.app.utils.controller_helpers import (
+    safe_db_operation,
+    sanitize_log_data,
+    standardize_response
+)
 
-
-async def check_auth_status(request: Request):
+@safe_db_operation()
+async def check_auth_status(request: Request, db: AsyncSession = None) -> Dict[str, Any]:
     """
     Check the current Telegram authentication status.
     Returns whether the user is authenticated and if the client is connected.
+    
+    Args:
+        request: The HTTP request
+        db: Database session (injected by decorator)
+        
+    Returns:
+        Dict with connection status, authorization status, and user info if available
     """
     try:
         # Get the Telegram client
@@ -36,12 +54,6 @@ async def check_auth_status(request: Request):
                     "phone": me.phone
                 }
                 
-                # Find or create the user in the database
-                from server.app.core.databases import db_context
-                from server.app.models.models import User
-                from sqlalchemy import select
-                
-                db = db_context.get()
                 # Check if user already exists
                 tg_id = str(me.id)
                 stmt = select(User).where(User.telegram_id == tg_id)
@@ -54,11 +66,20 @@ async def check_auth_status(request: Request):
                     logger.info(f"Set active user ID to {user.id} based on authenticated Telegram user")
         
         # Return the status
-        return {
-            "is_connected": is_connected,
-            "is_authorized": is_authorized,
-            "user_info": user_info
-        }
+        return standardize_response(
+            {
+                "is_connected": is_connected,
+                "is_authorized": is_authorized,
+                "user_info": user_info
+            },
+            "Authentication status retrieved successfully"
+        )
+    except HTTPException as e:
+        # Pass through HTTP exceptions
+        raise e
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in check_auth_status: {sanitize_log_data(str(e))}")
+        raise HTTPException(status_code=500, detail="Database error")
     except Exception as e:
-        logger.error(f"Error checking authentication status: {e}")
-        raise HTTPException(status_code=500, detail=f"Error checking authentication status: {str(e)}")
+        logger.error(f"Error in check_auth_status: {sanitize_log_data(str(e))}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred")

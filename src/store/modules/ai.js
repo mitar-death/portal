@@ -48,8 +48,10 @@ export default {
                 }
 
                 const data = await response.json()
-                commit('SET_AI_ACCOUNTS', data.accounts)
-                return data.accounts
+                const accounts = data.data.accounts || []
+
+                commit('SET_AI_ACCOUNTS', accounts)
+                return accounts
             } catch (error) {
                 console.error('Error fetching AI accounts:', error)
                 return Promise.reject(error)
@@ -89,10 +91,10 @@ export default {
                     return result
                 } else {
                     dispatch('ui/showSnackbar', {
-                        text: result.error || 'Failed to create account',
+                        text: result.message || 'Failed to create account',
                         color: 'error'
                     }, { root: true })
-                    return Promise.reject(result.error)
+                    return Promise.reject(result.message)
                 }
             } catch (error) {
                 console.error('Error creating AI account:', error)
@@ -159,7 +161,7 @@ export default {
             if (!rootState.auth.token) return Promise.reject('Not authenticated')
 
             try {
-                const response = await fetch(`${apiUrl}/ai/accounts`, {
+                const response = await fetch(`${apiUrl}/ai/accounts/delete`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -228,7 +230,12 @@ export default {
                     throw new Error('Failed to test AI account')
                 }
 
-                const result = await response.json()
+                const data = await response.json()
+                const result = {
+                    success: data.success,
+                    is_authorized: data.data.is_authorized,
+                    message: data.message,
+                }
                 return result
             } catch (error) {
                 console.error('Error testing AI account:', error)
@@ -276,9 +283,9 @@ export default {
                     throw new Error('Failed to login AI account')
                 }
 
-                const result = await response.json()
+                const data = await response.json()
 
-                if (result.success) {
+                if (data.success) {
                     if (action === 'request_code') {
                         dispatch('ui/showSnackbar', {
                             text: 'Verification code sent. Please check your Telegram app.',
@@ -292,14 +299,14 @@ export default {
                     }
                 } else {
                     dispatch('ui/showSnackbar', {
-                        text: result.error || 'Login action failed',
+                        text: data.data.details || 'Login action failed',
                         color: 'error'
                     }, { root: true })
                 }
 
-                return result
+                return data
             } catch (error) {
-                console.error('Error in AI account login process:', error)
+                console.error('Error in AI account login process:', error.details)
                 dispatch('ui/showSnackbar', {
                     text: 'An error occurred during the login process',
                     color: 'error'
@@ -343,13 +350,13 @@ export default {
                     return result
                 } else {
                     dispatch('ui/showSnackbar', {
-                        text: result.error || 'Failed to logout account',
+                        text: result.message || 'Failed to logout account',
                         color: 'error'
                     }, { root: true })
-                    return Promise.reject(result.error)
+                    return Promise.reject(result.message)
                 }
             } catch (error) {
-                console.error('Error logging out AI account:', error)
+                console.error('Error logging out AI account:', error.details)
                 dispatch('ui/showSnackbar', {
                     text: 'An error occurred while logging out the account',
                     color: 'error'
@@ -390,10 +397,10 @@ export default {
                     return result
                 } else {
                     dispatch('ui/showSnackbar', {
-                        text: result.error || 'Failed to cleanup sessions',
+                        text: result.message || 'Failed to cleanup sessions',
                         color: 'error'
                     }, { root: true })
-                    return Promise.reject(result.error)
+                    return Promise.reject(result.message)
                 }
             } catch (error) {
                 console.error('Error cleaning up AI sessions:', error)
@@ -426,11 +433,11 @@ export default {
                 }
 
                 const data = await response.json()
-                commit('SET_GROUP_ASSIGNMENTS', data.groups || [])
+                commit('SET_GROUP_ASSIGNMENTS', data.data.groups || [])
 
                 // Also update AI accounts if they were returned
-                if (data.ai_accounts) {
-                    commit('SET_AI_ACCOUNTS', data.ai_accounts)
+                if (data.data.ai_accounts) {
+                    commit('SET_AI_ACCOUNTS', data.data.ai_accounts)
                 }
 
                 return data

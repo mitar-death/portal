@@ -555,20 +555,24 @@ async def _periodic_health_check():
             # Get the latest diagnostics
             diagnostics = await diagnostic_check()
             
-            # Update all connected WebSocket clients
-            await websocket_manager.update_diagnostics(diagnostics)
+            # Add timestamp
+            diagnostics["timestamp"] = datetime.now().isoformat()
+            diagnostics["health_check_time"] = datetime.now().isoformat()
             
-            # Log any critical issues
-            if not diagnostics["ai_status"]["is_initialized"]:
-                logger.warning("AI messenger is not initialized during health check")
-                error_tracker.add_error("AI messenger is not initialized", 
-                                        "The AI messenger system is not properly initialized and may not be functioning correctly")
-                
-            # Check system resources
+            # Add system resource information
             try:
                 cpu_percent = psutil.cpu_percent()
                 memory_percent = psutil.virtual_memory().percent
+                disk_percent = psutil.disk_usage('/').percent
                 
+                diagnostics["system_resources"] = {
+                    "cpu_percent": cpu_percent,
+                    "memory_percent": memory_percent,
+                    "disk_usage_percent": disk_percent,
+                    "process_memory_mb": psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
+                }
+                
+                # Log resource warnings
                 if cpu_percent > 90:
                     logger.warning(f"High CPU usage detected: {cpu_percent}%")
                     error_tracker.add_error(f"High CPU usage: {cpu_percent}%", 
@@ -580,9 +584,22 @@ async def _periodic_health_check():
                                           "System may experience out-of-memory errors")
             except Exception as e:
                 logger.error(f"Error checking system resources: {e}")
+                diagnostics["system_resources"] = {"error": str(e)}
+            
+            # Update all connected WebSocket clients
+            try:
+                await websocket_manager.update_diagnostics(diagnostics)
+            except Exception as e:
+                logger.error(f"Error updating WebSocket clients with diagnostics: {e}")
+            
+            # Log any critical issues
+            if not diagnostics["ai_status"]["is_initialized"]:
+                logger.warning("AI messenger is not initialized during health check")
+                error_tracker.add_error("AI messenger is not initialized", 
+                                      "The AI messenger system is not properly initialized and may not be functioning correctly")
                 
         except Exception as e:
-            logger.error(f"Error in periodic health check: {e}")
+            logger.error(f"Error in periodic health check: {e}", exc_info=True)
             error_tracker.add_error("Health check failed", str(e))
             
         # Wait before the next check

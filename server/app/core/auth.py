@@ -1,7 +1,7 @@
 """
 Authentication utilities for the API.
 """
-from fastapi import Depends, HTTPException, status, Header
+from fastapi import Depends, HTTPException, status, Header, Request
 from sqlalchemy import select
 from typing import Optional
 from server.app.core.databases import AsyncSessionLocal
@@ -108,3 +108,28 @@ async def get_current_user(token: str):
     except Exception as e:
         logger.error(f"WebSocket authentication error: {str(e)}")
         return None
+
+
+async def require_auth(request: Request) -> User:
+    """
+    Ensure that a request has an authenticated user.
+
+    Args:
+        request (Request): FastAPI request object.
+
+    Raises:
+        HTTPException: If the user is not authenticated.
+
+    Returns:
+        User: Authenticated user object from request.
+    """
+    # Try to get user from both request.user and request.state.user
+    user = getattr(request, "user", None) or getattr(request.state, "user", None)
+    logger.debug(f"User: {user}")
+    
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
+        )
+    return user

@@ -27,6 +27,16 @@ loguru = "^0.7.3"
 google-generativeai = "^0.8.5"
 psutil = "^7.0.0"
 
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+black = "^25.1.0"
+isort = "^6.0.1"
+pytest-cov = "^6.1.0"
+pre-commit = "^4.2.0"
+pylint = "^3.3.6"
+
+
 [tool.poetry.scripts]
 app = "server.app.main:run"
 serve = "uvicorn server.app.main:app --reload"

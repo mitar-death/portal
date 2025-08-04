@@ -1,38 +1,37 @@
-from typing import Dict, Any, List
-from sqlalchemy import select
-from fastapi import HTTPException,Request
-from telethon.errors import FloodWaitError
-import time
-from telethon.sync import TelegramClient
-from server.app.core.databases import db_context
-from server.app.models.models import ActiveSession
-from server.app.models.models import SelectedGroup, User,Keywords
-from server.app.core.config import settings
-from server.app.core.logging import logger
-from server.app.services.monitor import stop_monitoring
-from server.app.services.monitor import keywords, start_monitoring,start_health_check_task
-from server.app.services.monitor import set_active_user_id
-
-from typing import Dict, Any, List
-from sqlalchemy import select
-from fastapi import HTTPException,Request
-
-from telethon.sync import TelegramClient
-from server.app.core.databases import db_context
-from server.app.models.models import ActiveSession
-from server.app.models.models import SelectedGroup, User
-from server.app.core.config import settings
-from server.app.core.logging import logger
 import os
-
-from server.app.services.telegram import get_client
-# We'll connect the client when needed
-async def request_code(request:Request) -> Dict[str, Any]:
+from typing import Dict, Any, List, Optional
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException, Request
+from server.app.core.databases import db_context
+from server.app.models.models import ActiveSession, SelectedGroup, User, Keywords, Group
+from server.app.core.logging import logger
+from server.app.services.monitor import stop_monitoring, start_monitoring, start_health_check_task
+from server.app.services.monitor import set_active_user_id
+from server.app.services.telegram import session_path, session_dir
+from server.app.utils.controller_helpers import (
+    ensure_client_connected,
+    ensure_user_authenticated,
+    ensure_telegram_authorized,
+    safe_db_operation,
+    sanitize_log_data,
+    standardize_response
+)
+@safe_db_operation()
+async def request_code(request: Request, db: AsyncSession = None) -> Dict[str, Any]:
     """
     Request a login code from Telegram for the given phone number.
+    
+    Args:
+        request: The HTTP request
+        db: Database session (injected by decorator)
+        
+    Returns:
+        Dict with response data
+        
+    Raises:
+        HTTPException: For validation or Telegram errors
     """
-
-    db = db_context.get()
     user = getattr(request.state, "user", None)
     
     try:
@@ -41,20 +40,18 @@ async def request_code(request:Request) -> Dict[str, Any]:
         if not phone_number:
             raise HTTPException(status_code=400, detail="Phone number is required")
             
-        logger.info(f"Requesting code for phone number: {phone_number}")
-        client = get_client()
-        # Ensure client is connected
-        if not client.is_connected():
-            await client.connect()
+        logger.info(f"Requesting code for phone number: {sanitize_log_data(phone_number)}")
+        
+        # Get and connect client
+        client = await ensure_client_connected()
         
         if await client.is_user_authorized():
-            logger.info(f"User already authorized with phone {phone_number}")
-            return {
-                "success": True, 
-                "message": "Already authorized",
-                "action": "already_authorized",
-                "phone_code_hash": "" # Empty hash since no code is needed
-            }
+            logger.info("User already authorized")
+            return standardize_response(
+                {"action": "already_authorized", "phone_code_hash": ""},
+                "Already authorized"
+            )
+            
         session_id = f"session_{phone_number}"
         response = await client.send_code_request(phone_number)
 
@@ -81,26 +78,38 @@ async def request_code(request:Request) -> Dict[str, Any]:
         
         await db.commit()
         
+        # Don't log the full phone_code_hash
+        logger.info(f"Code requested successfully")
         
-        logger.info(f"Code requested for {phone_number}, phone_code_hash: {response.phone_code_hash}")
-        
-        return {"message": "Verification code sent to your phone", "success": True,"phone_code_hash":response.phone_code_hash }
-    
-
+        return standardize_response(
+            {"phone_code_hash": response.phone_code_hash},
+            "Verification code sent to your phone"
+        )
     except Exception as e:
-        logger.error(f"Failed to send code request: {e}")
+        if isinstance(e, HTTPException):
+            raise
+        logger.error(f"Failed to send code request: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to send verification code")
 
 
-async def verify_code(phone_number: str, code: str, phone_code_hash: str) -> Dict[str, Any]:
+@safe_db_operation()
+async def verify_code(phone_number: str, code: str, phone_code_hash: str, db: AsyncSession = None) -> Dict[str, Any]:
     """
     Verify the code provided by the user.
+    
+    Args:
+        phone_number: The phone number
+        code: The verification code
+        phone_code_hash: The hash received from request_code
+        db: Database session (injected by decorator)
+    
+    Returns:
+        Dict with user data and authentication token
+    
+    Raises:
+        HTTPException: If verification fails
     """
-    db = db_context.get()
-    client = get_client()
-    # Ensure client is connected
-    if not client.is_connected():
-        await client.connect()
+    client = await ensure_client_connected()
     
     # Check if we have an active session
     stmt = select(ActiveSession).where(ActiveSession.phone_number == phone_number)
@@ -111,40 +120,53 @@ async def verify_code(phone_number: str, code: str, phone_code_hash: str) -> Dic
         raise HTTPException(status_code=400, detail="No active login session found")
     
     try:
-        response = await client.sign_in(phone=phone_number, code =code,phone_code_hash=phone_code_hash)
-        logger.info(f"User {response} verified successfully")
+        response = await client.sign_in(phone=phone_number, code=code, phone_code_hash=phone_code_hash)
+        logger.info(f"Authentication successful with Telegram")
        
         session.verified = True
         db.add(session)
         await db.commit()
             
         # Check if user exists in database
-        user_stmt = select(User).where(User.phone_number == phone_number)
+        user_stmt = select(User).where(User.telegram_id == str(response.id))
         user_result = await db.execute(user_stmt)
         user = user_result.scalars().first()
-        tg_id = str(response.id)
         
         if not user:
-            # Create a new user
-            user = User(
-                telegram_id=tg_id,  
-                username=response.username if response.username else None,
-                first_name=response.first_name if response.first_name else "User",
-                last_name=response.last_name if response.last_name else None,
-                phone_number=phone_number
-            )
-            db.add(user)
+            # Check if there's a user with this phone number
+            phone_user_stmt = select(User).where(User.phone_number == phone_number)
+            phone_user_result = await db.execute(phone_user_stmt)
+            user = phone_user_result.scalars().first()
+            
+            if user:
+                # Update existing user with Telegram ID
+                user.telegram_id = str(response.id)
+                user.username = response.username if response.username else user.username
+                user.first_name = response.first_name if response.first_name else user.first_name
+                user.last_name = response.last_name if response.last_name else user.last_name
+                db.add(user)
+            else:
+                # Create a new user
+                user = User(
+                    telegram_id=str(response.id),  
+                    username=response.username if response.username else None,
+                    first_name=response.first_name if response.first_name else "User",
+                    last_name=response.last_name if response.last_name else None,
+                    phone_number=phone_number
+                )
+                db.add(user)
+                
             await db.commit()
             await db.refresh(user)
             
-        token = f"token_{user.id}"
+        token = f"token_{response.id}"
             
         user_data = {
             "id": user.id,
             "username": user.username,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "phone_number": user.phone_number
+            "phone_number": sanitize_log_data(user.phone_number)
         }
         
         # Set this user as the active user for the monitoring service
@@ -154,7 +176,7 @@ async def verify_code(phone_number: str, code: str, phone_code_hash: str) -> Dic
         if monitoring_started:
             logger.info("Telegram message monitoring started successfully")
         else:
-            logger.warning("Failed to start Telegram message monitoring. Login may be required.")
+            logger.warning("Failed to start Telegram message monitoring")
         
         # Start the health check task for real-time diagnostics
         await start_health_check_task()
@@ -169,30 +191,36 @@ async def verify_code(phone_number: str, code: str, phone_code_hash: str) -> Dic
             "token": token
         }
     except Exception as e:
-        if not isinstance(e, HTTPException):
-            logger.error(f"Failed to verify code: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to verify code: {str(e)}")
-        raise e
+        if isinstance(e, HTTPException):
+            raise
+        logger.error(f"Failed to verify code: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to verify code: {str(e)}")
 
-async def get_user_groups(request) -> List[Dict[str, Any]]:
+@safe_db_operation()
+async def get_user_groups(request: Request, db: AsyncSession = None) -> List[Dict[str, Any]]:
     """
     Fetch the user's Telegram groups using the current authenticated Telegram session.
     Also saves or updates group information in the database.
-    """
-    db = db_context.get()
-    user = getattr(request.state, "user", None)
-    client = get_client()
-    # Ensure client is connected
-    if not client.is_connected():
-        await client.connect()
     
-    if not await client.is_user_authorized():
-        raise HTTPException(status_code=401, detail="Telegram session not authorized")
+    Args:
+        request: The HTTP request
+        db: Database session (injected by decorator)
+        
+    Returns:
+        List of group data dictionaries
+        
+    Raises:
+        HTTPException: For authentication or Telegram API errors
+    """
+    user = await ensure_user_authenticated(request)
+    client = await ensure_client_connected()
+    await ensure_telegram_authorized(client)
+    
+    groups = []
     
     try:
         # Fetch actual groups from Telegram
         dialogs = await client.get_dialogs()
-        groups = []
         
         for dialog in dialogs:
             entity = dialog.entity
@@ -202,118 +230,85 @@ async def get_user_groups(request) -> List[Dict[str, Any]]:
                 group_data = {
                     "id": entity.id,
                     "title": entity.title,
-                    "member_count": getattr(entity, 'participants_count', 0),
+                    "member_count": getattr(entity, 'participants_count', 0) or 0,  # Ensure it's never None
                     "description": getattr(entity, 'about', None),
                     "username": getattr(entity, 'username', None),
                     "is_channel": hasattr(entity, 'broadcast') and entity.broadcast
                 }
                 groups.append(group_data)
                 
-                # Save or update group in database if user is authenticated
-                if user:
-                    # Check if group already exists in the database
-                    from server.app.models.models import Group
-                    stmt = select(Group).where(
-                        Group.user_id == user.id,
-                        Group.telegram_id == entity.id
-                    )
-                    result = await db.execute(stmt)
-                    existing_group = result.scalars().first()
-                    
-                    if existing_group:
-                        # Update existing group with latest info
-                        existing_group.title = entity.title
-                        existing_group.username = getattr(entity, 'username', None)
-                        existing_group.description = getattr(entity, 'about', None)
-                        existing_group.member_count = getattr(entity, 'participants_count', 0)
-                        existing_group.is_channel = hasattr(entity, 'broadcast') and entity.broadcast
-                        db.add(existing_group)
-                    else:
-                        # Create new group
-                        new_group = Group(
-                            user_id=user.id,
-                            telegram_id=entity.id,
-                            title=entity.title,
-                            username=getattr(entity, 'username', None),
-                            description=getattr(entity, 'about', None),
-                            member_count=getattr(entity, 'participants_count', 0),
-                            is_channel=hasattr(entity, 'broadcast') and entity.broadcast
-                        )
-                        db.add(new_group)
-                        
-                        # Also add a record with the -100 prefixed ID for compatibility
-                        str_id = str(entity.id)
-                        if not str_id.startswith('-100'):
-                            try:
-                                # Try to convert the prefixed ID to an integer
-                                prefixed_str = f"-100{str_id}"
-                                prefixed_id = int(prefixed_str)
-                                logger.info(f"Storing additional group record with prefixed ID: {prefixed_id}")
-                                prefixed_group = Group(
-                                    user_id=user.id,
-                                    telegram_id=prefixed_id,
-                                    title=f"{entity.title} (prefixed ID)",
-                                    username=getattr(entity, 'username', None),
-                                    description=getattr(entity, 'about', None),
-                                    member_count=getattr(entity, 'participants_count', 0),
-                                    is_channel=hasattr(entity, 'broadcast') and entity.broadcast
-                                )
-                                db.add(prefixed_group)
-                            except ValueError as e:
-                                logger.error(f"Could not convert prefixed ID to integer: {e}")
+                # Save or update group in database
+                stmt = select(Group).where(
+                    Group.user_id == user.id,
+                    Group.telegram_id == entity.id
+                )
+                result = await db.execute(stmt)
+                existing_group = result.scalars().first()
                 
-            # Commit all changes to the database
-            if user:
-                await db.commit()
+                if existing_group:
+                    # Update existing group with latest info
+                    existing_group.title = entity.title
+                    existing_group.username = getattr(entity, 'username', None)
+                    existing_group.description = getattr(entity, 'about', None)
+                    existing_group.member_count = getattr(entity, 'participants_count', 0)
+                    existing_group.is_channel = hasattr(entity, 'broadcast') and entity.broadcast
+                    db.add(existing_group)
+                else:
+                    # Create new group
+                    new_group = Group(
+                        user_id=user.id,
+                        telegram_id=entity.id,
+                        title=entity.title,
+                        username=getattr(entity, 'username', None),
+                        description=getattr(entity, 'about', None),
+                        member_count=getattr(entity, 'participants_count', 0),
+                        is_channel=hasattr(entity, 'broadcast') and entity.broadcast
+                    )
+                    db.add(new_group)
         
-        logger.info(f"Retrieved {len(groups)} groups for user {user.id if user else 'unknown'}")
+        # Commit all group updates at once
+        await db.commit()
+        logger.info(f"Retrieved {len(groups)} groups for user {user.id}")
         return groups
         
     except Exception as e:
         logger.error(f"Failed to fetch groups: {e}")
-        # Try to commit any partial changes that were successful
-        if user:
-            try:
-                await db.commit()
-            except Exception as commit_error:
-                logger.error(f"Error committing partial group data: {commit_error}")
-                await db.rollback()
-        
-        # Return any groups we were able to get from Telegram even if DB operations failed
+        # If we already have some groups from Telegram, return those even if database operations failed
         if groups:
             logger.info(f"Returning {len(groups)} groups despite database error")
             return groups
-        
-        # If we couldn't get any groups, raise an exception
         raise HTTPException(status_code=500, detail=f"Failed to fetch groups: {str(e)}")
 
 
-async def monitor_groups(request,selected_groups: Dict[str, Any]) -> List[Dict[str, Any]]: 
+@safe_db_operation()
+async def monitor_groups(request: Request, selected_groups: Dict[str, Any], db: AsyncSession = None) -> List[Dict[str, Any]]: 
     """
     Add selected Telegram groups for monitoring.
+    
+    Args:
+        request: The HTTP request
+        selected_groups: Dictionary containing group IDs to monitor
+        db: Database session (injected by decorator)
+        
+    Returns:
+        List of group data dictionaries
+        
+    Raises:
+        HTTPException: For authentication or Telegram API errors
     """
-    db = db_context.get()
-    client =  get_client()
-    user = getattr(request.state, "user", None)
-    if not user:
-        raise HTTPException(status_code=401, detail="User not authenticated")
+    user = await ensure_user_authenticated(request)
+    client = await ensure_client_connected()
+    await ensure_telegram_authorized(client)
         
     logger.info(f"Adding selected groups for user {user.id} with group IDs: {selected_groups.group_ids}")
     
-    # Ensure client is connected
-    if not client.is_connected():
-        await client.connect()
-    
-    if not await client.is_user_authorized():
-        raise HTTPException(status_code=401, detail="Telegram session not authorized")
-    
     try:
         groups = []
-
+        # Process groups in batches to improve performance
         for group_id in selected_groups.group_ids:
             # Create selectedGroups relationship if it doesn't exist
             selected_group_stmt = select(SelectedGroup).where(
-                SelectedGroup.user_id == int(user.id),
+                SelectedGroup.user_id == user.id,
                 SelectedGroup.group_id == str(group_id)
             )
             selected_group_result = await db.execute(selected_group_stmt)
@@ -325,49 +320,62 @@ async def monitor_groups(request,selected_groups: Dict[str, Any]) -> List[Dict[s
                     group_id=str(group_id)  # Explicitly convert to string to match model definition
                 )
                 db.add(selected_group)
-                await db.commit()
             
-            # Fetch the group details from Telegram to ensure it matches the TelegramGroup schema
-            # try:
-            #     entity = await client.get_entity(group_id)
-            #     group_data = {
-            #         "id": entity.id,
-            #         "title": entity.title,
-            #         "member_count": getattr(entity, 'participants_count', 0),
-            #         "description": getattr(entity, 'about', None),
-            #         "username": getattr(entity, 'username', None),
-            #         "is_channel": hasattr(entity, 'broadcast') and entity.broadcast
-            #     }
-            #     groups.append(group_data)
-            # except Exception as e:
-            #     # If we can't get the entity, add minimal data that satisfies the schema
-            #     logger.warning(f"Could not get entity for group {group_id}: {e}")
-            #     groups.append({
-            #         "id": group_id,
-            #         "title": f"Group {group_id}",
-            #         "member_count": 0,
-            #         "is_channel": False
-            #     })
+            # Fetch the group details from Telegram to ensure it matches the schema
+            try:
+                entity = await client.get_entity(int(group_id))
+                group_data = {
+                    "id": entity.id,
+                    "title": entity.title,
+                    "member_count": getattr(entity, 'participants_count', 0) or 0,  # Ensure it's never None
+                    "description": getattr(entity, 'about', None),
+                    "username": getattr(entity, 'username', None),
+                    "is_channel": hasattr(entity, 'broadcast') and entity.broadcast
+                }
+                logger.info(f"Adding group {group_data['title']} ({group_data['id']}) for monitoring")
+                groups.append(group_data)
+            except Exception as e:
+                # If we can't get the entity, add minimal data that satisfies the schema
+                logger.warning(f"Could not get entity for group {group_id}: {e}")
+                groups.append({
+                    "id": int(group_id) if isinstance(group_id, str) and group_id.isdigit() else 0,
+                    "title": f"Group {group_id}",
+                    "member_count": 0,  # Ensure this is always an integer, never None
+                    "description": None,
+                    "username": None,
+                    "is_channel": False
+                })
         
-        # logger.info(f"Added {len(groups)} groups for monitoring for user {user.id}")
+        # Commit all changes at once for better performance
+        await db.commit()
+        logger.info(f"Added {len(groups)} groups for monitoring for user {user.id}")
+
+        # Restart monitoring with updated group selections (uncomment if needed)
+        await set_active_user_id(user.id)
+        await start_monitoring(user.id)
         
-        # Restart monitoring with updated group selections
-        # await start_monitoring(user.id)
         return groups
         
     except Exception as e:
         logger.error(f"Failed to add selected groups: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to add selected groups: {str(e)}")
 
-async def get_keywords_controller(request: Request) -> Dict[str, Any]:
+@safe_db_operation()
+async def get_keywords_controller(request: Request, db: AsyncSession = None) -> Dict[str, Any]:
     """
     Get the list of keywords for message filtering.
+    
+    Args:
+        request: The HTTP request
+        db: Database session (injected by decorator)
+        
+    Returns:
+        Dict with keywords data
+        
+    Raises:
+        HTTPException: For database or authentication errors
     """
-    db = db_context.get()
-    user = getattr(request.state, "user", None)
-
-    if not user:
-        raise HTTPException(status_code=401, detail="User not authenticated")
+    user = await ensure_user_authenticated(request)
 
     try:
         # Execute a proper SQLAlchemy query using the ORM
@@ -378,27 +386,33 @@ async def get_keywords_controller(request: Request) -> Dict[str, Any]:
         # Get the keywords list or empty list if no record exists
         keywords_list = user_keywords.keywords if user_keywords else []
         
-        return {
-            "message": "Keywords fetched successfully",
-            "success": True,
-            "data": {
+        return standardize_response(
+            {
                 "keywords": keywords_list,
                 "count": len(keywords_list)
-            }
-        }
+            },
+            "Keywords fetched successfully"
+        )
     except Exception as e:
         logger.error(f"Failed to fetch keywords: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch keywords: {str(e)}")
 
-async def add_keywords_controller(request: Request) -> Dict[str, Any]:
+@safe_db_operation()
+async def add_keywords_controller(request: Request, db: AsyncSession = None) -> Dict[str, Any]:
     """
     Adds new keywords for message filtering.
+    
+    Args:
+        request: The HTTP request
+        db: Database session (injected by decorator)
+        
+    Returns:
+        Dict with updated keywords data
+        
+    Raises:
+        HTTPException: For validation or database errors
     """
-    db = db_context.get()
-    user = getattr(request.state, "user", None)
-
-    if not user:
-        raise HTTPException(status_code=401, detail="User not authenticated")
+    user = await ensure_user_authenticated(request)
 
     try:
         # Get request body
@@ -433,30 +447,32 @@ async def add_keywords_controller(request: Request) -> Dict[str, Any]:
                 if user_keywords.add_keyword(keyword):
                     added_count += 1
                     logger.info(f"Added keyword: {keyword}")
+        
         if added_count > 0:
             await db.commit()
         
         # Refresh the keywords from the database to ensure we're returning the latest data
         await db.refresh(user_keywords)
         
-        monitoring_started = await start_monitoring()
-        if monitoring_started:
-            logger.info("Telegram message monitoring started successfully")
-        else:
-            logger.warning("Failed to start Telegram message monitoring. Login may be required.")
-        
-        # Start the health check task for real-time diagnostics
-        await start_health_check_task()
-        logger.info("Health check monitoring task started")
+        # Only restart monitoring if keywords were actually added
+        if added_count > 0:
+            monitoring_started = await start_monitoring()
+            if monitoring_started:
+                logger.info("Telegram message monitoring started successfully")
+            else:
+                logger.warning("Failed to start Telegram message monitoring. Login may be required.")
+            
+            # Start the health check task for real-time diagnostics
+            await start_health_check_task()
+            logger.info("Health check monitoring task started")
     
-        return {
-            "message": f"{added_count} keywords added successfully", 
-            "success": True,
-            "data": {
+        return standardize_response(
+            {
                 "keywords": user_keywords.keywords,
                 "added_count": added_count
-            }
-        }
+            },
+            f"{added_count} keywords added successfully"
+        )
     except ValueError as e:
         # Handle JSON parsing errors
         logger.error(f"Invalid request body: {e}")
@@ -465,21 +481,23 @@ async def add_keywords_controller(request: Request) -> Dict[str, Any]:
         logger.error(f"Failed to add keywords: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to add keywords: {str(e)}")
 
-async def logout_telegram(request) -> Dict[str, Any]:
+@safe_db_operation()
+async def logout_telegram(request: Request, db: AsyncSession = None) -> Dict[str, Any]:
     """
     Log out the user from Telegram and clear the session.
+    
+    Args:
+        request: The HTTP request
+        db: Database session (injected by decorator)
+        
+    Returns:
+        Dict with logout status
+        
+    Raises:
+        HTTPException: For logout errors
     """
-    db = db_context.get()
-    user = getattr(request.state, "user", None)
-    
-    if not user:
-        raise HTTPException(status_code=401, detail="User not authenticated")
-    client = await get_client()
-    # Stop monitoring before logout
-    
-    # Ensure client is connected
-    if not client.is_connected():
-        await client.connect()
+    user = await ensure_user_authenticated(request)
+    client = await ensure_client_connected()
     
     try:
         # Reset the active user ID in the monitor service
@@ -500,31 +518,24 @@ async def logout_telegram(request) -> Dict[str, Any]:
             await db.commit()
         
         # Delete the Telethon session file
-        # try:
-        #     # Get the session file path
-        #     user_session_path = str(session_dir / f"user_session_{user.id}.session")
-        #     default_session_path = str(session_dir / "user_session.session")
-            
-        #     # Check if user-specific session exists and delete it
-        #     if os.path.exists(user_session_path):
-        #         os.remove(user_session_path)
-        #         logger.info(f"Deleted user-specific session file: {user_session_path}")
-            
-        #     # Also check if the default session exists and delete it
-        #     if os.path.exists(default_session_path):
-        #         os.remove(default_session_path)
-        #         logger.info(f"Deleted default session file: {default_session_path}")
-                
-        #     # Check for and delete any additional session files that might exist
-        #     for session_file in session_dir.glob("*.session"):
-        #         if str(session_file).startswith(str(session_dir / "user_session")):
-        #             os.remove(session_file)
-        #             logger.info(f"Deleted session file: {session_file}")
-        # except Exception as e:
-        #     logger.error(f"Error deleting session file: {e}")
-        #     # Continue with logout even if file deletion fails
+        try:
+            # Check if user-specific session exists and delete it
+            if os.path.exists(session_path):
+                os.remove(session_path)
+                logger.info(f"Deleted user-specific session file: {session_path}")
+
+            # Check for and delete any additional session files that might exist
+            for session_file in os.listdir(session_dir):
+                if session_file.startswith("user_session") and session_file.endswith(".session"):
+                    file_path = os.path.join(session_dir, session_file)
+                    os.remove(file_path)
+                    logger.info(f"Deleted session file: {file_path}")
+                    
+        except Exception as e:
+            logger.error(f"Error deleting session file: {e}")
+            # Continue with logout even if file deletion fails
         
-        return {"message": "Successfully logged out", "success": True}
+        return standardize_response({}, "Successfully logged out")
         
     except Exception as e:
         logger.error(f"Failed to log out: {e}")

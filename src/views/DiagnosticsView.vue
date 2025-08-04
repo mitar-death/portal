@@ -397,9 +397,8 @@ const lastUpdated = ref("Never");
 const reinitializing = ref(false);
 const wsConnection = ref(null);
 const connectionStatus = ref("disconnected");
-import { apiUrl } from '@/services/api-service';
 
-console.log(`Using API URL in DiagnosticsView: ${apiUrl}`);
+import { apiUrl } from '@/services/api-service';
 
 const isSystemHealthy = computed(() => {
   if (!diagnostics.value || !diagnostics.value.ai_status) return false;
@@ -435,7 +434,16 @@ function formatTime(timestamp) {
 
 async function fetchDiagnostics() {
   try {
-    const response = await fetch(`${apiUrl}/diagnostics`);
+    const token = store.getters["auth/authToken"];
+    if(!token) {
+      console.error("No authentication token available for diagnostics fetch");
+      return;
+    }
+    const response = await fetch(`${apiUrl}/diagnostics`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     if (!response.ok) {
       throw new Error("Failed to fetch diagnostics");
     }
@@ -496,7 +504,7 @@ async function reinitializeAI() {
 
 function setupWebSocket() {
   // Get the authentication token from the store
-  const token = store.getters["auth/getToken"];
+  const token = store.getters["auth/authToken"];
 
   if (!token) {
     console.error("No authentication token available for WebSocket connection");

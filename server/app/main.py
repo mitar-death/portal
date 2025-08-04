@@ -106,14 +106,15 @@ app.add_middleware(
     max_age=600,  # Cache preflight requests for 10 minutes
 )
 
-# Include API routers with a prefix
-app.include_router(router)
-app.include_router(ws_router)
 
 # Middlewares - add in reverse order (last added is executed first)
 app.add_middleware(AuthMiddleware)  # Will be executed last
 app.add_middleware(RequestLoggingMiddleware)  # Will be executed third
 app.add_middleware(DBSessionMiddleware)  # Will be executed second
+
+# Include API routers with a prefix
+app.include_router(router)
+app.include_router(ws_router)
 
 # Add exception handlers
 app.add_exception_handler(HTTPException, app_exception_handler)  

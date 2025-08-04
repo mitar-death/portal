@@ -78,7 +78,7 @@ export default {
                 const data = await response.json();
                 console.log('Auth status:', data);
 
-                if (data.is_authorized && data.user_info) {
+                if (data.data.is_authorized && data.data.user_info) {
                     // If backend is authenticated but frontend is not,
                     // update the frontend state
                     const localUser = JSON.parse(localStorage.getItem('tgportal_user'));
@@ -86,13 +86,13 @@ export default {
 
                     if (!localUser || !localToken) {
                         // Generate a token based on user id
-                        const token = `token_${data.user_info.id}`;
+                        const token = `token_${data.data.user_info.id}`;
                         const user = {
-                            id: data.user_info.id,
-                            username: data.user_info.username,
-                            first_name: data.user_info.first_name,
-                            last_name: data.user_info.last_name,
-                            phone_number: data.user_info.phone
+                            id: data.data.user_info.id,
+                            username: data.data.user_info.username,
+                            first_name: data.data.user_info.first_name,
+                            last_name: data.data.user_info.last_name,
+                            phone_number: data.data.user_info.phone
                         };
 
                         // Update local storage and state
@@ -130,7 +130,8 @@ export default {
             commit('SET_AUTH', { user, token })
 
             return Promise.resolve()
-        }, async logout({ commit, dispatch, rootState }) {
+        },
+        async logout({ commit, dispatch, rootState }) {
             try {
                 // Always clear local storage and state first to prevent UI issues
                 localStorage.removeItem('tgportal_user')

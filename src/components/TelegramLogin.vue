@@ -327,7 +327,7 @@ async function verifyCode() {
       if (response.status === 401) {
         showSnackbar("Invalid verification code. Please try again.", "error");
       } else if (response.status >= 500) {
-        showSnackbar("Server error. Please try again later.", "error");
+        showSnackbar(`Server error: ${data.detail} Please try again later.`, "error");
       } else {
         showSnackbar(data.detail || "Invalid verification code", "error");
       }

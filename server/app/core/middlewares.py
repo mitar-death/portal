@@ -49,6 +49,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
             
         # Check for valid authorization header
         auth_header = request.headers.get("Authorization")
+        if auth_header is None:
+            logger.info("No Authorization header found")
+            return Response(status_code=401, content="Unauthorized")
         logger.info(f"Authorization header: {request.headers}")
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header.split(" ")[1]
@@ -63,10 +66,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
                         if not user:
                             return Response(status_code=401, content="Unauthorized")
                         logger.info(f"Authenticated user: {user.id}")
-                        # Set the authenticated user in the request state
-                        request.state.user = user
-                        
-                        # Update the active user ID in the monitor service
+                       
+                        # Set the authenticated user in the request
+                        request.scope["user"] = user
+                        request.state.user = user 
                         await set_active_user_id(user.id)
                 except Exception as e:
                     logger.error(f"Authentication error: {str(e)}")
