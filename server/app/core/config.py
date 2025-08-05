@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     DB_HOST: str = os.getenv("DB_HOST", "localhost")
     DB_DATABASE: str = os.getenv("DB_DATABASE", "tgportal")
     GOOGLE_STUDIO_API_KEY: str = os.getenv("GOOGLE_STUDIO_API_KEY", "")
+    
+    #REDIS
+    REDIS_HOST= os.getenv("REDIS_HOST", "localhost")
+    REDIS_PORT= int(os.getenv("REDIS_PORT", 6379))
+    REDIS_DB= int(os.getenv("REDIS_DB", 0))
+    REDIS_PASSWORD= os.getenv("REDIS_PASSWORD", None) 
     # Telegram
     TELEGRAM_API_ID: str = os.getenv("TELEGRAM_API_ID", "")
     TELEGRAM_API_HASH: str = os.getenv("TELEGRAM_API_HASH", "")

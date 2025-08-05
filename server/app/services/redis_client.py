@@ -1,6 +1,11 @@
 import redis
+from server.app.core.config import settings 
 
 
+redis_host = settings.REDIS_HOST
+redis_port = settings.REDIS_PORT
+redis_db = settings.REDIS_DB
+redis_password = settings.REDIS_PASSWORD
 
 def init_redis(decode_responses=False):
     """
@@ -14,10 +19,10 @@ def init_redis(decode_responses=False):
         Redis: Redis connection instance
     """
     return redis.Redis(
-        host='host.docker.internal',
-        port=6379,
-        db=0,
+        host=redis_host,
+        port=redis_port,
+        db=redis_db,
         decode_responses=decode_responses,
-        password=None  # Set your Redis password if required
+        password=redis_password
     )
 

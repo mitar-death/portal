@@ -63,6 +63,10 @@ DB_USERNAME=${DB_USERNAME:-"tgportal"}
 DB_PASSWORD=${DB_PASSWORD:-"tgportal_password"}
 DB_DATABASE=${DB_DATABASE:-"tgportal"}
 
+REDIS_HOST=${REDIS_HOST:-"localhost"}
+REDIS_PORT=${REDIS_PORT:-6379}
+REDIS_PASSWORD=${REDIS_PASSWORD:-""}
+
 CUSTOM_DOMAIN=${CUSTOM_DOMAIN:-""}
 USE_HTTPS=${USE_HTTPS:-"false"}
 
@@ -97,6 +101,40 @@ else
     info "Database ${DB_DATABASE} already exists. Ensuring privileges..."
     sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${DB_DATABASE} TO ${DB_USERNAME};" || true
   fi
+fi
+
+if [[ -n "$REDIS_HOST" && "$REDIS_HOST" != "localhost" ]]; then
+  info "Using external Redis host: $REDIS_HOST"
+else
+  info "Using local Redis server."
+
+  #--- Setup Redis Server ----------
+  info "Setting up local Redis server..."
+  if ! command -v redis-server &>/dev/null; then
+    info "Redis server not found; installing..."
+    sudo apt-get update
+    sudo apt-get install -y redis-server
+  else
+    info "Redis server already installed."
+  fi
+
+  # --Configure for redis server--
+  if [[ -n "$REDIS_PASSWORD" ]]; then
+    info "Configuring Redis with password..."
+    sudo sed -i "s/^# requirepass .*/requirepass ${REDIS_PASSWORD}/" /etc/redis/redis.conf
+    sudo sed -i "s/^requirepass .*/requirepass ${REDIS_PASSWORD}/" /etc/redis/redis.conf
+  else
+    info "No Redis password set; ensuring password protection is disabled..."
+    sudo sed -i "s/^requirepass .*/#&/" /etc/redis/redis.conf
+  fi
+fi
+
+# Start Redis service if not running
+if ! systemctl is-active --quiet redis-server; then
+  info "Starting Redis server..."
+  sudo systemctl start redis-server
+else
+  info "Redis server is already running."
 fi
 
 # ---------- Application directory & files ----------

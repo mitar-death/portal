@@ -98,12 +98,17 @@ app = FastAPI(
 # Set up CORS - allow all origins during development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "localhost", 
+        "http://localhost:8080", 
+        "http://127.0.0.1:8080",
+        "https://gen-lang-client-0560055117.web.app" 
+    ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["*"],
-    max_age=600,  # Cache preflight requests for 10 minutes
+    max_age=600,  
 )
 
 

@@ -28,6 +28,10 @@ DB_PASSWORD="tgportal-$(date +%s | head -c 8)" # Generate a simple unique passwo
 DB_DATABASE="tgportal"
 DB_REGION=$(echo "$ZONE" | sed 's/-.$//')  # Extract region from zone (e.g., us-central1-a -> us-central1)
 
+REDIS_HOST=${REDIS_HOST:-"localhost"}
+REDIS_PORT=${REDIS_PORT:-6379}
+REDIS_PASSWORD=${REDIS_PASSWORD:-""}
+
 # GitHub configuration - update these with your repository details
 GITHUB_REPO=${GITHUB_REPO:-"https://github.com/mitar-death/portal"}
 GITHUB_BRANCH=${GITHUB_BRANCH:-"stable-without-redis"}
@@ -276,6 +280,10 @@ DB_PASSWORD=$DB_PASSWORD
 DB_HOST=$DB_HOST
 DB_DATABASE=$DB_DATABASE
 
+REDIS_HOST=$REDIS_HOST
+REDIS_PORT=$REDIS_PORT
+REDIS_PASSWORD=$REDIS_PASSWORD
+
 # Cloud SQL connection name (for socket connections if needed)
 CLOUD_SQL_CONNECTION_NAME=$DB_CONNECTION_NAME
 
@@ -313,7 +321,7 @@ USE_HTTPS="$USE_HTTPS"
 # Install packages
 echo -e "\${YELLOW}Installing essential packages...\${NC}"
 sudo apt-get update -y
-sudo apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev postgresql-client dnsutils netcat-openbsd
+sudo apt-get install -y python3-pip python3-venv git supervisor nginx certbot python3-certbot-nginx curl wget build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev libbz2-dev postgresql-client dnsutils netcat-openbsd  redis-server
 
 # Clone the repository
 echo -e "\${GREEN}Cloning repository from GitHub...\${NC}"
