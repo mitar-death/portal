@@ -32,10 +32,10 @@ class Settings(BaseSettings):
     GOOGLE_STUDIO_API_KEY: str = os.getenv("GOOGLE_STUDIO_API_KEY", "")
     
     #REDIS
-    REDIS_HOST= os.getenv("REDIS_HOST", "localhost")
-    REDIS_PORT= int(os.getenv("REDIS_PORT", 6379))
-    REDIS_DB= int(os.getenv("REDIS_DB", 0))
-    REDIS_PASSWORD= os.getenv("REDIS_PASSWORD", None) 
+    REDIS_HOST: str = os.getenv("REDIS_HOST", "localhost")
+    REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
+    REDIS_DB: int = int(os.getenv("REDIS_DB", 0))
+    REDIS_PASSWORD: str = os.getenv("REDIS_PASSWORD", None)
     # Telegram
     TELEGRAM_API_ID: str = os.getenv("TELEGRAM_API_ID", "")
     TELEGRAM_API_HASH: str = os.getenv("TELEGRAM_API_HASH", "")
@@ -45,9 +45,7 @@ class Settings(BaseSettings):
     FIREBASE_PROJECT_NUMBER: str = os.getenv("FIREBASE_PROJECT_NUMBER", "")
     
     
-    # JWT
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
-    
+  
     def get_database_url(self) -> str:
         """
         Constructs and returns a database URL if individual components are provided,

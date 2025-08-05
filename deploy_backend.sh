@@ -31,6 +31,7 @@ DB_REGION=$(echo "$ZONE" | sed 's/-.$//')  # Extract region from zone (e.g., us-
 REDIS_HOST=${REDIS_HOST:-"localhost"}
 REDIS_PORT=${REDIS_PORT:-6379}
 REDIS_PASSWORD=${REDIS_PASSWORD:-""}
+REDIS_DB=${REDIS_DB:-0}
 
 # GitHub configuration - update these with your repository details
 GITHUB_REPO=${GITHUB_REPO:-"https://github.com/mitar-death/portal"}
@@ -282,6 +283,7 @@ DB_DATABASE=$DB_DATABASE
 
 REDIS_HOST=$REDIS_HOST
 REDIS_PORT=$REDIS_PORT
+REDIS_DB=$REDIS_DB
 REDIS_PASSWORD=$REDIS_PASSWORD
 
 # Cloud SQL connection name (for socket connections if needed)
@@ -380,6 +382,10 @@ export CUSTOM_DOMAIN="\$CUSTOM_DOMAIN"
 export USE_HTTPS="\$USE_HTTPS"
 export DOMAIN_SSL_CERTIFICATE="\$DOMAIN_SSL_CERTIFICATE"
 export DOMAIN_SSL_PRIVATE_KEY="\$DOMAIN_SSL_PRIVATE_KEY"
+export REDIS_HOST="\$REDIS_HOST"
+export REDIS_PORT="\$REDIS_PORT"
+export REDIS_DB="\$REDIS_DB"
+export REDIS_PASSWORD="\$REDIS_PASSWORD"
 
 # Run the setup script in the background to avoid hanging SSH session
 cd /tmp/tgportal_deploy
@@ -421,6 +427,10 @@ export CUSTOM_DOMAIN='$CUSTOM_DOMAIN'
 export USE_HTTPS='$USE_HTTPS'
 export DOMAIN_SSL_CERTIFICATE='$DOMAIN_SSL_CERTIFICATE'
 export DOMAIN_SSL_PRIVATE_KEY='$DOMAIN_SSL_PRIVATE_KEY'
+export REDIS_HOST='$REDIS_HOST'
+export REDIS_PORT='$REDIS_PORT'
+export REDIS_DB='$REDIS_DB'
+export REDIS_PASSWORD='$REDIS_PASSWORD'
 bash ~/github_setup.sh
 " || {
   echo -e "${RED}Deployment failed. Please check the logs for more information.${NC}"

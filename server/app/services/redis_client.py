@@ -23,6 +23,6 @@ def init_redis(decode_responses=False):
         port=redis_port,
         db=redis_db,
         decode_responses=decode_responses,
-        password=redis_password
+        password=redis_password if redis_password != "None" else None
     )
 
