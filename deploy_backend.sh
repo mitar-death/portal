@@ -160,8 +160,8 @@ else
   gcloud sql instances create "$DB_INSTANCE_NAME" \
     --tier="$DB_TIER" \
     --region="$DB_REGION" \
-    --database-version=POSTGRES_13 \
-    --storage-size=10GB \
+    --database-version=POSTGRES_17 \
+    --storage-size=50GB \
     --storage-type=SSD \
     --backup-start-time="23:00" \
     --availability-type=ZONAL \
