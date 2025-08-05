@@ -225,7 +225,7 @@ async function requestCode() {
     const data = await response.json();
 
     if (response.ok) {
-      if (data.action === "already_authorized") {
+      if (data.data.action === "already_authorized") {
         // The user is already authorized on the backend
         showSnackbar("You are already logged in with Telegram", "success");
 
@@ -240,8 +240,8 @@ async function requestCode() {
         // Normal flow - code was sent
         showSnackbar("Verification code sent to your phone", "success");
         step.value = "code";
-        phone_code_hash.value = data.phone_code_hash;
-        console.log("Received phone_code_hash:", data.phone_code_hash);
+        phone_code_hash.value = data.data.phone_code_hash;
+        console.log("Received phone_code_hash:", data.data.phone_code_hash);
       }
     } else {
       console.error("API Error:", data);
@@ -249,8 +249,8 @@ async function requestCode() {
       // Handle specific error scenarios
       if (
         response.status === 400 &&
-        data.detail &&
-        data.detail.includes("No active login session")
+        data.message &&
+        data.message.includes("No active login session")
       ) {
         showSnackbar("Session expired. Please try again.", "warning");
         // Clear any existing auth state since there's a mismatch
@@ -264,7 +264,7 @@ async function requestCode() {
         }
       } else {
         showSnackbar(
-          data.detail || "Failed to send verification code",
+          data.message || "Failed to send verification code",
           "error"
         );
       }
@@ -311,15 +311,15 @@ async function verifyCode() {
 
       // Then update with new auth data
       await store.dispatch("auth/loginWithTelegram", {
-        user: data.user,
-        token: data.token,
+        user: data.data.user,
+        token: data.data.token,
       });
 
       // Update UI to show authenticated state
       step.value = "authenticated";
 
       // Emit success event to parent
-      emit("login-success", data.user);
+      emit("login-success", data.data.user);
     } else {
       console.error("Verification API Error:", data);
 
@@ -327,15 +327,15 @@ async function verifyCode() {
       if (response.status === 401) {
         showSnackbar("Invalid verification code. Please try again.", "error");
       } else if (response.status >= 500) {
-        showSnackbar(`Server error: ${data.detail} Please try again later.`, "error");
+        showSnackbar(`Server error: ${data.message} Please try again later.`, "error");
       } else {
-        showSnackbar(data.detail || "Invalid verification code", "error");
+        showSnackbar(data.message || "Invalid verification code", "error");
       }
 
       // If there was a session mismatch, go back to phone input
       if (
-        data.error === "session_expired" ||
-        data.error === "session_not_found"
+        data.message.includes("session_expired") ||
+        data.message.includes("session_not_found")
       ) {
         step.value = "phone";
       }

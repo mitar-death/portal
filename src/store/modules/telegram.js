@@ -102,7 +102,7 @@ export default {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${rootState.auth.token}`
                     },
-                    credentials: 'include',
+
                     body: JSON.stringify({ keywords: [keyword] })
                 })
 
@@ -133,7 +133,7 @@ export default {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${rootState.auth.token}`
                     },
-                    credentials: 'include',
+
                     body: JSON.stringify({ keywords: [keyword] })
                 })
 

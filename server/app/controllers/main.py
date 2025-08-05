@@ -184,12 +184,14 @@ async def verify_code(phone_number: str, code: str, phone_code_hash: str, db: As
     
         logger.info(f"Set active user ID to {user.id} during login")
            
-        return {
-            "message": "Successfully logged in",
-            "success": True,
-            "user": user_data,
-            "token": token
-        }
+        return standardize_response(
+            {
+                "action": "login_success",
+                "user": user_data,
+                "token": token
+            },
+           "Successfully logged in",
+        )
     except Exception as e:
         if isinstance(e, HTTPException):
             raise

@@ -21,7 +21,7 @@ async def ai_test(request:Request):
     return await test_ai_controller(request)
 
 
-@main_routes.post('/auth/request-code', tags=['Auth'], response_model=Dict[str, Any])
+@main_routes.post('/auth/request-code', response_model=Dict[str, Any])
 async def request_login_code(
     request: Request,
     ):

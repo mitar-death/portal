@@ -7,5 +7,5 @@ export default createVuetify({
     components,
     directives,
     icons: { defaultSet: 'mdi', aliases, sets: { mdi } },
-    theme: { defaultTheme: 'light' }
+    theme: { defaultTheme: 'dark' }
 })

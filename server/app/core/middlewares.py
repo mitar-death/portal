@@ -49,12 +49,14 @@ class AuthMiddleware(BaseHTTPMiddleware):
             
         # Check for valid authorization header
         auth_header = request.headers.get("Authorization")
-        if auth_header is None:
-            logger.info("No Authorization header found")
-            return Response(status_code=401, content="Unauthorized")
-        logger.info(f"Authorization header: {request.headers}")
+        # if auth_header is None:
+        #     logger.info("No Authorization header found")
+        #     return Response(status_code=401, content="Unauthorized") 
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header.split(" ")[1]
+            if not token or token.strip() == "":
+                logger.info("No token found or empty token")
+                return Response(status_code=401, content="Unauthorized")
             if token.startswith("token_"):
                 try: 
                     user_id = int(token.split("token_")[1])

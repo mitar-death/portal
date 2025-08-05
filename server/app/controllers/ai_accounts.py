@@ -8,6 +8,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, List, Any, Optional
 from telethon import TelegramClient
+from teleredis import RedisSession
+from server.app.services.redis_client import init_redis
 from telethon.errors import SessionPasswordNeededError, PhoneCodeInvalidError
 from server.app.utils.controller_helpers import (
     ensure_client_connected,
@@ -564,3 +566,16 @@ async def login_ai_account(request: Request, db: AsyncSession = None) -> Dict[st
                 await client.disconnect()
             except Exception:
                 pass
+
+
+def __init_telegram_client(api_id, api_hash):
+    """
+
+    Args:
+        api_id (str): The application ID for the Telegram API.
+        api_hash (str): The application hash for the Telegram API.
+    """
+    redis_connection = init_redis(decode_responses=False)
+    redis_session = RedisSession("session_name", redis_connection=redis_connection)
+    client = TelegramClient(redis_session, api_id, api_hash)
+    return client

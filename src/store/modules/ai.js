@@ -68,7 +68,7 @@ export default {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${rootState.auth.token}`
                     },
-                    credentials: 'include',
+
                     body: JSON.stringify(newAccount)
                 })
 
@@ -116,7 +116,7 @@ export default {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${rootState.auth.token}`
                     },
-                    credentials: 'include',
+
                     body: JSON.stringify({
                         account_id: accountId,
                         is_active: isActive
@@ -167,7 +167,7 @@ export default {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${rootState.auth.token}`
                     },
-                    credentials: 'include',
+
                     body: JSON.stringify({
                         account_id: accountId
                     })
@@ -217,7 +217,7 @@ export default {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${rootState.auth.token}`
                     },
-                    credentials: 'include',
+
                     body: JSON.stringify({
                         account_id: accountId
                     })
@@ -272,7 +272,7 @@ export default {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${rootState.auth.token}`
                     },
-                    credentials: 'include',
+
                     body: JSON.stringify(payload)
                 })
 
@@ -325,7 +325,7 @@ export default {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${rootState.auth.token}`
                     },
-                    credentials: 'include',
+
                     body: JSON.stringify({
                         account_id: accountId
                     })
@@ -457,7 +457,7 @@ export default {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${rootState.auth.token}`
                     },
-                    credentials: 'include',
+
                     body: JSON.stringify({
                         group_id: groupId,
                         ai_account_id: aiAccountId,
