@@ -171,6 +171,7 @@ async def verify_code(phone_number: str, code: str, phone_code_hash: str, db: As
         
         # Set this user as the active user for the monitoring service
         await set_active_user_id(user.id)
+        logger.info(f"Set active user ID to {user.id} during login")
         
         monitoring_started = await start_monitoring()
         if monitoring_started:
@@ -182,7 +183,6 @@ async def verify_code(phone_number: str, code: str, phone_code_hash: str, db: As
         await start_health_check_task()
         logger.info("Health check monitoring task started")
     
-        logger.info(f"Set active user ID to {user.id} during login")
            
         return standardize_response(
             {

@@ -319,7 +319,13 @@ async function verifyCode() {
       step.value = "authenticated";
 
       // Emit success event to parent
-      emit("login-success", data.data.user);
+      // emit("login-success", data.data.user);
+      router.push({
+        path: "/",
+        query: {
+          authChecked: true
+        }
+      });
     } else {
       console.error("Verification API Error:", data);
 

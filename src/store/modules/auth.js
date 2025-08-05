@@ -133,7 +133,19 @@ export default {
         },
         async logout({ commit, dispatch, rootState }) {
             try {
-                // Always clear local storage and state first to prevent UI issues
+                // Call backend only after frontend is clean
+                const response = await fetchWithAuth(`${apiUrl}/auth/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${rootState.token}`
+                    }
+                }, { redirect: false, clearAuth: false }); // No need to handle auth errors during logout
+
+                if (!response.ok) {
+                    console.error('Logout API call failed:', response.statusText)
+                    // No need to reject since we've already cleared frontend state
+                }
                 localStorage.removeItem('tgportal_user')
                 localStorage.removeItem('tgportal_token')
 
@@ -142,19 +154,6 @@ export default {
 
                 // Clear other store data
                 dispatch('telegram/clearGroups', null, { root: true })
-
-                // Call backend only after frontend is clean
-                const response = await fetchWithAuth(`${apiUrl}/auth/logout`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }, { redirect: false, clearAuth: false }); // No need to handle auth errors during logout
-
-                if (!response.ok) {
-                    console.error('Logout API call failed:', response.statusText)
-                    // No need to reject since we've already cleared frontend state
-                }
 
                 return Promise.resolve()
             } catch (error) {
