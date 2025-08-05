@@ -3,6 +3,7 @@
 build/
 lambdas/*/lib
 .exports/
+**.cache**
 
 # Generated gr code files
 assets/qr_*.png
