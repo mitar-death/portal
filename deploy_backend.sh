@@ -37,7 +37,7 @@ REDIS_DB=${REDIS_DB:-0}
 GITHUB_REPO=${GITHUB_REPO:-"https://github.com/mitar-death/portal"}
 GITHUB_BRANCH=${GITHUB_BRANCH:-"stable-without-redis"}
 GITHUB_TOKEN=${GITHUB_TOKEN:-"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"}
-TELEGRAM_SESSION_FOLDER_DIR="/storage/sessions"
+TELEGRAM_SESSION_FOLDER_DIR="/storage/sessions/main_user"
 TELEGRAM_SESSION_NAME=$"user_session"
 
 # Load environment variables from .env file if it exists

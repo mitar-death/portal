@@ -143,7 +143,7 @@ mkdir -p "$APP_DIR"
 info "Application directory ensured at $APP_DIR"
 
 info "Creating necessary subdirectories..."
-mkdir -p "$APP_DIR/storage/logs" "$APP_DIR/storage/sessions" "$APP_DIR/server/messages" 
+mkdir -p "$APP_DIR/storage/logs" "$APP_DIR/storage/sessions" "$APP_DIR/server/messages"  "$APP_DIR/storage/sessions/ai_accounts" "$APP_DIR/storage/sessions/main_user"
 
 # Set proper permissions for storage directories and session files
 if command -v setfacl &>/dev/null; then
