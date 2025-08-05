@@ -36,8 +36,9 @@ REDIS_DB=${REDIS_DB:-0}
 # GitHub configuration - update these with your repository details
 GITHUB_REPO=${GITHUB_REPO:-"https://github.com/mitar-death/portal"}
 GITHUB_BRANCH=${GITHUB_BRANCH:-"stable-without-redis"}
-GITHUB_TOKEN=${GITHUB_TOKEN:-"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"}  
-
+GITHUB_TOKEN=${GITHUB_TOKEN:-"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"}
+TELEGRAM_SESSION_FOLDER_DIR="/storage/sessions"
+TELEGRAM_SESSION_NAME=$"user_session"
 
 # Load environment variables from .env file if it exists
 if [ -f ".env" ]; then
@@ -271,6 +272,8 @@ cat > "$TEMP_DIR/config/.env.prod" << EOL
 # Telegram API credentials
 TELEGRAM_API_ID=${TELEGRAM_API_ID:-"your_telegram_api_id"}
 TELEGRAM_API_HASH=${TELEGRAM_API_HASH:-"your_telegram_api_hash"}
+TELEGRAM_SESSION_NAME=${TELEGRAM_SESSION_NAME:-"user_session"}
+TELEGRAM_SESSION_FOLDER_DIR=${TELEGRAM_SESSION_FOLDER_DIR:-"storage/sessions"}
 
 ENV=production
 # Database settings - Cloud SQL PostgreSQL

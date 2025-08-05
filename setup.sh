@@ -143,7 +143,29 @@ mkdir -p "$APP_DIR"
 info "Application directory ensured at $APP_DIR"
 
 info "Creating necessary subdirectories..."
-mkdir -p "$APP_DIR/storage/logs" "$APP_DIR/storage/sessions" "$APP_DIR/server/messages"
+mkdir -p "$APP_DIR/storage/logs" "$APP_DIR/storage/sessions" "$APP_DIR/server/messages" 
+
+# Set proper permissions for storage directories and session files
+if command -v setfacl &>/dev/null; then
+    info "Setting default ACLs for future session files..."
+    setfacl -Rdm u::rwx,g::r-x,o::--- "$APP_DIR/storage/sessions"
+    setfacl -Rdm u::rw-,g::r--,o::--- "$APP_DIR/storage/sessions/ai_accounts"
+    setfacl -Rdm u::rw-,g::r--,o::--- "$APP_DIR/storage/sessions/main_user"
+else
+    # Install ACL support if not available
+    if command -v apt-get &>/dev/null; then
+        info "Installing ACL support..."
+        sudo apt-get update && sudo apt-get install -y acl
+        
+        # Now set the ACLs
+        setfacl -Rdm u::rwx,g::r-x,o::--- "$APP_DIR/storage/sessions"
+        setfacl -Rdm u::rw-,g::r--,o::--- "$APP_DIR/storage/sessions/ai_accounts" 
+        setfacl -Rdm u::rw-,g::r--,o::--- "$APP_DIR/storage/sessions/main_user"
+    else
+        warn "ACL support not available. Future session files may have incorrect permissions."
+    fi
+fi
+
 
 info "Copying application source into $APP_DIR (cleaning caches)..."
 cp -r . "$APP_DIR/" && find "$APP_DIR" -name "__pycache__" -o -name "*.pyc" -o -name ".git" | xargs rm -rf 2>/dev/null || true
