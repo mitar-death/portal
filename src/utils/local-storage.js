@@ -8,9 +8,6 @@ const MAX_ITEMS_TO_STORE = 500; // Maximum number of conversation items to store
 
 const STORAGE_VERSION = '1.1'; // Version for future compatibility
 
-
-// Local storage has a limit of approximately 5-10MB depending on the browser
-
 /**
  * Check if localStorage is available
  * @returns {boolean} True if localStorage is available
@@ -89,7 +86,7 @@ export function saveConversationsToStorage(conversations) {
         // Save to localStorage
         const json = JSON.stringify(storageObj);
         localStorage.setItem(CONVERSATIONS_STORAGE_KEY, json);
-        console.log(`Successfully saved ${storageObj.data.length} conversations to localStorage`);
+
         return true;
     } catch (e) {
         console.error('Error saving to localStorage:', e);
@@ -120,7 +117,6 @@ export function saveConversationsToStorage(conversations) {
 
                 const trimmedJson = JSON.stringify(trimmedObj);
                 localStorage.setItem(CONVERSATIONS_STORAGE_KEY, trimmedJson);
-                console.log('Successfully saved conversations with trimmed history');
                 return true;
             } catch (trimError) {
                 console.warn('Failed to save with trimmed histories:', trimError);
@@ -143,7 +139,6 @@ export function saveConversationsToStorage(conversations) {
                     };
 
                     localStorage.setItem(CONVERSATIONS_STORAGE_KEY, JSON.stringify(recentObj));
-                    console.log('Successfully saved 20 most recent conversations');
                     return true;
                 } catch (sortError) {
                     console.error('Failed to save recent conversations:', sortError);
@@ -217,10 +212,8 @@ export function loadConversationsFromStorage() {
 
         const storageObj = JSON.parse(json);
 
-        // Handle different versions if needed
         if (storageObj.version !== STORAGE_VERSION) {
             console.warn(`Storage version mismatch: ${storageObj.version} vs ${STORAGE_VERSION}`);
-            // Could implement migration logic here if needed
         }
 
         // Validate data format
@@ -229,13 +222,11 @@ export function loadConversationsFromStorage() {
 
             // Try to recover from a direct conversation array format
             if (Array.isArray(storageObj)) {
-                console.log('Found legacy format (direct array), attempting recovery');
                 return verifyConversationIntegrity(storageObj);
             }
 
             // Last attempt: check if the storage object itself might be a conversation
             if (storageObj.conversation_id) {
-                console.log('Found single conversation object, converting to array');
                 return verifyConversationIntegrity([storageObj]);
             }
 
@@ -247,7 +238,6 @@ export function loadConversationsFromStorage() {
 
             // Try one more recovery attempt - if data is an object with conversation_id
             if (storageObj.data && storageObj.data.conversation_id) {
-                console.log('Found single conversation in data object, converting to array');
                 return verifyConversationIntegrity([storageObj.data]);
             }
 
@@ -257,14 +247,10 @@ export function loadConversationsFromStorage() {
         // Apply data integrity verification to ensure all conversations are valid
         const verifiedConversations = verifyConversationIntegrity(storageObj.data);
 
-        console.log(`Loaded ${verifiedConversations.length} valid conversations from storage`);
-
         // Check if we've lost a significant number of conversations - if so, try recovery
         if (storageObj.data.length > 0 && verifiedConversations.length === 0) {
-            console.warn('All conversations were invalid - attempting emergency recovery');
             const recoveredConversations = attemptConversationRecovery();
             if (recoveredConversations.length > 0) {
-                console.log(`Successfully recovered ${recoveredConversations.length} conversations`);
                 return recoveredConversations;
             }
         }
@@ -325,7 +311,6 @@ export function updateConversationInStorage(conversation) {
                 last_updated: new Date().toISOString() // Add last updated timestamp
             };
 
-            console.log(`Updated existing conversation in storage: ${conversation.conversation_id}`);
         } else {
             // Add new conversation with timestamp
             conversations.push({
@@ -397,8 +382,6 @@ export function attemptConversationRecovery() {
             }
         }
 
-        console.log(`Found ${potentialKeys.length} potential keys for conversation recovery`);
-
         // Try to extract conversation data from these keys
         const recoveredConversations = [];
         potentialKeys.forEach(key => {
@@ -421,8 +404,7 @@ export function attemptConversationRecovery() {
                 console.warn(`Failed to parse potential conversation data from key ${key}:`, e);
             }
         });
-
-        console.log(`Recovered ${recoveredConversations.length} conversations from localStorage`);
+        ;
 
         // Remove duplicates based on conversation_id
         const uniqueRecovered = [];
@@ -460,27 +442,23 @@ export function verifyConversationIntegrity(conversations) {
                 return null;
             }
 
-            // Create a verified copy with defaults for missing fields
             const verified = {
                 ...conv,
                 last_updated: conv.last_updated || conv.last_message_time || new Date().toISOString(),
                 history: Array.isArray(conv.history) ? conv.history : []
             };
 
-            // Ensure history items have required fields
             if (verified.history.length > 0) {
                 verified.history = verified.history.filter(msg => {
                     return msg && (msg.message || msg.text || msg.content);
                 });
 
-                // Ensure history is sorted by timestamp if available
                 verified.history.sort((a, b) => {
                     const timeA = a.timestamp ? new Date(a.timestamp) : new Date(0);
                     const timeB = b.timestamp ? new Date(b.timestamp) : new Date(0);
                     return timeA - timeB;
                 });
 
-                // Deduplicate messages in history based on content and timestamp
                 const uniqueMessages = [];
                 const seenSignatures = new Set();
 
@@ -500,8 +478,6 @@ export function verifyConversationIntegrity(conversations) {
 
             return verified;
         }).filter(Boolean); // Remove any null items
-
-        console.log(`Verified ${verifiedConversations.length} conversations (removed ${conversations.length - verifiedConversations.length} invalid ones)`);
 
         return verifiedConversations;
     } catch (e) {

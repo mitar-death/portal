@@ -11,21 +11,18 @@ const PUSHER_CLUSTER = process.env.VUE_APP_PUSHER_CLUSTER || 'mt1';
 
 export async function initPusher() {
     try {
-        console.log("Initializing Pusher with key:", PUSHER_KEY, "cluster:", PUSHER_CLUSTER);
 
         // For public channels, we don't need auth configuration
         const pusher = new Pusher(PUSHER_KEY, {
             cluster: PUSHER_CLUSTER,
-            // Enhanced error handling
             enabledTransports: ['ws', 'wss'],
             disabledTransports: ['sockjs', 'xhr_streaming', 'xhr_polling'],
-            timeout: 15000, // Longer timeout for better reliability
-            activityTimeout: 120000, // 2 minutes activity timeout
-            pongTimeout: 30000, // 30 seconds pong timeout
-            // No auth needed for public channels
+            timeout: 15000,
+            activityTimeout: 120000,
+            pongTimeout: 30000,
         });
 
-        // Add connection error monitoring
+
         pusher.connection.bind('error', function (err) {
             console.error('Pusher connection error:', err);
             if (err.error && err.error.data && err.error.data.code) {

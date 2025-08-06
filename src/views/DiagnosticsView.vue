@@ -2,577 +2,69 @@
   <div class="diagnostics-container">
     <h1>System Diagnostics</h1>
 
-    <div class="status-panel" :class="{ 'status-error': !isSystemHealthy }">
-      <div class="status-indicator">
-        <div class="status-dot" :class="{ active: isSystemHealthy }"></div>
-        <span
-          class="status-text"
-          :class="{ 'status-text-healthy': isSystemHealthy }"
-        >
-          System Status:
-          {{ isSystemHealthy ? "Healthy" : "Issues Detected" }}
-        </span>
-      </div>
-      <div class="connection-status">
-        <div
-          class="status-dot"
-          :class="{
-            active: connectionStatus === 'connected',
-            warning: connectionStatus === 'connecting',
-            error:
-              connectionStatus === 'error' ||
-              connectionStatus === 'disconnected',
-          }"
-        ></div>
-        <span
-          class="status-text"
-          :class="{ 'status-text-connected': connectionStatus === 'connected' }"
-        >
-          Connection Status:
-          {{ connectionStatus === "connected" ? "Live" : "Offline" }}
-        </span>
-      </div>
-      <div class="last-updated" style="color: #333 !important">
-        Last updated: {{ lastUpdated }}
-      </div>
-      <button
-        @click="reinitializeAI"
-        :disabled="reinitializing"
-        class="reinit-button"
-      >
-        {{ reinitializing ? "Reinitializing..." : "Reinitialize AI System" }}
-      </button>
-    </div>
-
+    <SystemStatusPanel
+    :isSystemHealthy="isSystemHealthy"
+    :connectionStatus="connectionStatus"
+    :lastUpdated="lastUpdated"
+    :reinitializing="reinitializing"
+    @reinitialize="reinitializeAI"
+    />
     <div class="diagnostics-grid">
       <!-- System Resources -->
-      <div class="diagnostics-card">
-        <h2>System Resources</h2>
-        <div v-if="diagnostics.system_resources" class="resource-meters">
-          <div class="meter-container">
-            <label>CPU</label>
-            <div class="meter">
-              <div
-                class="meter-fill"
-                :style="{
-                  width: `${diagnostics.system_resources.cpu_percent}%`,
-                }"
-                :class="
-                  getResourceClass(diagnostics.system_resources.cpu_percent)
-                "
-              ></div>
-            </div>
-            <span>{{ diagnostics.system_resources.cpu_percent }}%</span>
-          </div>
-          <div class="meter-container">
-            <label>Memory</label>
-            <div class="meter">
-              <div
-                class="meter-fill"
-                :style="{
-                  width: `${diagnostics.system_resources.memory_percent}%`,
-                }"
-                :class="
-                  getResourceClass(diagnostics.system_resources.memory_percent)
-                "
-              ></div>
-            </div>
-            <span>{{ diagnostics.system_resources.memory_percent }}%</span>
-          </div>
-          <div class="meter-container">
-            <label>Disk</label>
-            <div class="meter">
-              <div
-                class="meter-fill"
-                :style="{
-                  width: `${diagnostics.system_resources.disk_usage_percent}%`,
-                }"
-                :class="
-                  getResourceClass(
-                    diagnostics.system_resources.disk_usage_percent
-                  )
-                "
-              ></div>
-            </div>
-            <span>{{ diagnostics.system_resources.disk_usage_percent }}%</span>
-          </div>
-          <div class="system-info">
-            <p>
-              Process Memory:
-              {{ diagnostics.system_resources.process_memory_mb.toFixed(2) }} MB
-            </p>
-            <p v-if="diagnostics.system_info">
-              Platform: {{ diagnostics.system_info.platform }}
-            </p>
-            <p v-if="diagnostics.system_info">
-              Python: {{ diagnostics.system_info.python_version }}
-            </p>
-            <p v-if="diagnostics.system_info">
-              API Version: {{ diagnostics.system_info.api_version }}
-            </p>
-          </div>
-        </div>
-      </div>
+      <SystemResourcesCard 
+        :systemResources="diagnostics.system_resources"
+        :systemInfo="diagnostics.system_info"
+        :diagnostics="diagnostics"
+      />
 
       <!-- AI Client Status -->
-      <div class="diagnostics-card">
-        <h2>AI Client Status</h2>
-        <div v-if="diagnostics.ai_status" class="client-status">
-          <div class="status-item">
-            <span class="status-label">AI Client:</span>
-            <span
-              class="status-value"
-              :class="{
-                'status-ok': diagnostics.ai_status.is_initialized,
-                'status-error': !diagnostics.ai_status.is_initialized,
-              }"
-            >
-              {{
-                diagnostics.ai_status.is_initialized
-                  ? "Initialized"
-                  : "Not Initialized"
-              }}
-            </span>
-          </div>
-          <div class="status-item">
-            <span class="status-label">Connected Clients:</span>
-            <span class="status-value">{{
-              diagnostics.ai_status.connected_clients || 0
-            }}</span>
-          </div>
-          <div class="status-item">
-            <span class="status-label">Active Listeners:</span>
-            <span class="status-value">{{
-              diagnostics.ai_status.active_listeners || 0
-            }}</span>
-          </div>
-          <div class="status-item">
-            <span class="status-label">Groups Monitored:</span>
-            <span class="status-value">{{
-              diagnostics.ai_status.monitored_groups_count || 0
-            }}</span>
-          </div>
-        </div>
+      <AIStatusCard 
+        :aiStatus="diagnostics.ai_status || {}" 
+        :sessionInfo="diagnostics.session_info || {}" 
+      />
 
-        <!-- Session Info -->
-        <div v-if="diagnostics.session_info" class="session-info">
-          <h3>Sessions</h3>
-          <div class="status-item">
-            <span class="status-label">Sessions Directory:</span>
-            <span
-              class="status-value"
-              :class="{
-                'status-ok': diagnostics.session_info.exists,
-                'status-error': !diagnostics.session_info.exists,
-              }"
-            >
-              {{ diagnostics.session_info.exists ? "Available" : "Missing" }}
-            </span>
-          </div>
-          <div class="status-item">
-            <span class="status-label">Session Count:</span>
-            <span class="status-value">{{
-              diagnostics.session_info.session_count || 0
-            }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- AI Analytics -->
-      <div class="diagnostics-card">
-        <h2>AI System Analytics</h2>
-        <div class="analytics-info">
-          <div class="status-item">
-            <span class="status-label">Connected AI Accounts:</span>
-            <span class="status-value">
-              {{ aiClientsList.filter((c) => c.connected).length }}
-              / {{ aiClientsList.length }}
-            </span>
-          </div>
-          <div class="status-item">
-            <span class="status-label">Active Conversations:</span>
-            <span class="status-value">{{ activeConversations.length }}</span>
-          </div>
-          <div class="status-item">
-            <span class="status-label">Monitored Groups:</span>
-            <span class="status-value">{{
-              (diagnostics.group_mappings || []).length
-            }}</span>
-          </div>
-          <div class="status-item">
-            <span class="status-label">Messages Processed Today:</span>
-            <span class="status-value">{{ getTotalMessagesProcessed() }}</span>
-          </div>
-        </div>
-        <div v-if="getActiveSessions().length > 0" class="active-sessions">
-          <h3>Active Sessions</h3>
-          <div class="session-list">
-            <div
-              v-for="(session, index) in getActiveSessions()"
-              :key="index"
-              class="session-item"
-            >
-              <div class="session-name">
-                {{ session.name || `Session ${index + 1}` }}
-              </div>
-              <div class="session-info">
-                {{ formatTime(session.last_activity) }}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      <AnalyticsCard
+        :aiClientsList="aiClientsList" 
+        :conversationsCount="activeConversations.length"
+        :groupsCount="(diagnostics.group_mappings || []).length"
+        :totalMessages="totalMessages"
+        :activeSessions="getActiveSessions()"
+      />
       <!-- Active Conversations -->
-      <div class="diagnostics-card wide">
-        <h2>Active Conversations</h2>
-
-        <div class="conversations-header">
-          <div class="conversations-tabs">
-            <button
-              class="tab-button"
-              :class="{ active: activeTab === 'all' }"
-              @click="activeTab = 'all'"
-            >
-              All Conversations
-            </button>
-            <button
-              class="tab-button"
-              :class="{ active: activeTab === 'recent' }"
-              @click="activeTab = 'recent'"
-            >
-              Recent Activity
-            </button>
-          </div>
-          <div class="conversation-search">
-            <input
-              type="text"
-              v-model="messageSearchQuery"
-              placeholder="Search in messages..."
-              class="search-input"
-              @input="handleMessageSearch"
-            />
-          </div>
-        </div>
-
-        <div
-          v-if="activeTab === 'recent' && recentConversations.length > 0"
-          class="conversations-list"
-        >
-          <div
-            v-for="conv in recentConversations"
-            :key="conv.conversation_id"
-            class="conversation-item"
-          >
-            <div class="conversation-header">
-              <div class="conversation-name">
-                {{ conv.user_name || conv.user_id }}
-              </div>
-              <div class="conversation-time">
-                {{ formatTime(conv.last_message_time) }}
-              </div>
-            </div>
-            <div class="conversation-details">
-              <div class="conversation-type">
-                {{
-                  conv.chat_type === "group" ? "Group Chat" : "Direct Message"
-                }}
-              </div>
-              <div class="conversation-messages">
-                {{ conv.message_count }} messages
-              </div>
-              <div
-                class="conversation-status"
-                :class="getConversationStatusClass(conv)"
-              >
-                {{ conv.status }}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div v-else-if="activeTab === 'all'" class="conversations-table">
-          <!-- Search Results Section -->
-          <div v-if="messageSearchQuery && searchResults.length > 0" class="search-results-container">
-            <h3>Search Results ({{ getTotalSearchMatches() }} matches)</h3>
-            <div class="search-results-list">
-              <div v-for="result in searchResults" :key="result.conversation_id" class="search-result-group">
-                <div class="search-result-header" @click="toggleConversationHistory(result.conversation_id)">
-                  <div class="search-result-name">{{ result.user_name }}</div>
-                  <div class="search-result-matches">{{ result.matches.length }} matches</div>
-                </div>
-              </div>
-            </div>
-            <div class="search-info">Click on a conversation to view full context</div>
-          </div>
-          
-          <table v-if="activeConversations.length > 0">
-            <thead>
-              <tr>
-                <th>User</th>
-                <th>Type</th>
-                <th>Last Message</th>
-                <th>Started</th>
-                <th>Messages</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template
-                v-for="conv in activeConversations"
-                :key="conv.conversation_id"
-              >
-                <tr
-                  :class="{
-                    'selected-conversation':
-                      selectedConversation === conv.conversation_id,
-                  }"
-                >
-                  <td>{{ conv.user_name || conv.user_id }}</td>
-                  <td>{{ conv.chat_type === "group" ? "Group" : "DM" }}</td>
-                  <td>{{ formatTime(conv.last_message_time) }}</td>
-                  <td>{{ formatTime(conv.start_time) }}</td>
-                  <td>{{ conv.message_count }}</td>
-                  <td>
-                    <span
-                      class="status-indicator"
-                      :class="getConversationStatusClass(conv)"
-                    >
-                      {{ conv.status }}
-                    </span>
-                  </td>
-                  <td>
-                    <button
-                      class="view-history-btn"
-                      @click="toggleConversationHistory(conv.conversation_id)"
-                    >
-                      {{
-                        selectedConversation === conv.conversation_id
-                          ? "Hide History"
-                          : "View History"
-                      }}
-                    </button>
-                  </td>
-                </tr>
-                <tr
-                  v-if="selectedConversation === conv.conversation_id"
-                  class="conversation-history-row"
-                >
-                  <td colspan="7">
-                    <div class="conversation-history-container">
-                      <h4>Conversation History</h4>
-                      <div
-                        v-if="conv.history && conv.history.length"
-                        class="message-list"
-                      >
-                        <div
-                          v-for="(message, msgIndex) in conv.history"
-                          :key="msgIndex"
-                          class="message-item"
-                          :class="{
-                            'user-message':
-                              !message.is_ai_message &&
-                              message.role !== 'assistant',
-                            'ai-message':
-                              message.is_ai_message ||
-                              message.role === 'assistant',
-                            'search-match': messageSearchQuery && 
-                              (message.message || message.content || message.text || '')
-                                .toLowerCase()
-                                .includes(messageSearchQuery.toLowerCase())
-                          }"
-                        >
-                          <div class="message-header">
-                            <span class="message-sender">{{
-                              message.is_ai_message ||
-                              message.role === "assistant"
-                                ? "AI Assistant"
-                                : conv.user_name || "User"
-                            }}</span>
-                            <span
-                              class="message-time"
-                              v-if="message.timestamp"
-                              >{{ formatTime(message.timestamp) }}</span
-                            >
-                          </div>
-                          <div class="message-content">
-                            {{
-                              message.message || message.content || message.text
-                            }}
-                          </div>
-                        </div>
-                      </div>
-                      <div v-else class="no-history">
-                        No message history available for this conversation.
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
-          <div v-else class="no-data">No active conversations</div>
-        </div>
-
-        <div v-else class="no-data">No recent conversation activity</div>
-      </div>
+      <ConversationsCard 
+        :conversations="activeConversations"
+        :recentConversations="recentConversations"
+        :searchResults="searchResults"
+        :selectedConversation="selectedConversation"
+        :messageSearchQuery="messageSearchQuery"
+        :activeTab="activeTab"
+        @update:selectedConversation="selectedConversation = $event"
+        @update:activeTab="activeTab = $event"
+        @update:messageSearchQuery="messageSearchQuery = $event; handleMessageSearch()"
+      />
 
       <!-- Error Log -->
-      <div class="diagnostics-card wide">
-        <h2>Recent Errors</h2>
-        <div class="error-log">
-          <div
-            v-if="
-              diagnostics.recent_errors && diagnostics.recent_errors.length > 0
-            "
-          >
-            <div
-              v-for="(error, index) in diagnostics.recent_errors"
-              :key="index"
-              class="error-item"
-            >
-              <div class="error-time">{{ formatTime(error.timestamp) }}</div>
-              <div class="error-message">{{ error.message }}</div>
-              <div v-if="error.details" class="error-details">
-                {{ error.details }}
-              </div>
-            </div>
-          </div>
-          <div v-else class="no-data">No recent errors</div>
-        </div>
-      </div>
-
+      <ErrorLogCard 
+        :recentErrors="diagnostics.recent_errors || []"
+        :expandedErrors="expandedErrors"
+        @toggle-error="toggleErrorExpand"
+      />
+      
       <!-- AI Clients -->
-      <div class="diagnostics-card wide">
-        <h2>AI Clients ({{ aiClientsList.length }})</h2>
-        <div v-if="aiClientsList.length > 0" class="ai-clients-table-container">
-          <table class="ai-clients-table">
-            <thead>
-              <tr>
-                <th>Account</th>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Groups</th>
-                <th>Conversations</th>
-                <th>Messages</th>
-                <th>Last Activity</th>
-                <th>Phone</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="client in aiClientsList"
-                :key="client.account_id"
-                :class="{
-                  'client-connected': client.connected && client.authorized,
-                  'client-warning': client.connected && !client.authorized,
-                  'client-disconnected': !client.connected,
-                }"
-              >
-                <td>
-                  <strong>{{
-                    client.account_name || `Account ${client.account_id}`
-                  }}</strong>
-                </td>
-                <td>{{ client.name }}</td>
-                <td>
-                  <span
-                    class="status-badge"
-                    :class="{
-                      'status-badge-ok': client.connected && client.authorized,
-                      'status-badge-warning':
-                        client.connected && !client.authorized,
-                      'status-badge-error': !client.connected,
-                    }"
-                  >
-                    {{
-                      client.connected
-                        ? client.authorized
-                          ? "Active"
-                          : "Unauthorized"
-                        : "Offline"
-                    }}
-                  </span>
-                </td>
-                <td>{{ getGroupsForAccount(client.account_id).length }}</td>
-                <td>
-                  {{ getConversationsForAccount(client.account_id).length }}
-                </td>
-                <td>{{ getMessagesForAccount(client.account_id) }}</td>
-                <td>{{ formatTime(client.last_activity || new Date()) }}</td>
-                <td>{{ formatPhoneNumber(client.phone_number) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div v-else class="no-data">
-          No AI clients available.
-          <span v-if="diagnostics.ai_clients === undefined"
-            >AI clients data is missing from diagnostics.</span
-          >
-          <span
-            v-else-if="
-              diagnostics.ai_clients && diagnostics.ai_clients.length === 0
-            "
-            >AI clients array is empty.</span
-          >
-          <span v-else
-            >AI clients data type: {{ typeof diagnostics.ai_clients }}</span
-          >
-        </div>
-      </div>
+      <AIClientsTable 
+        :aiClients="aiClientsList"
+        :groupMappings="diagnostics.group_mappings || []"
+        :conversations="activeConversations"
+      />
 
       <!-- Group Mappings -->
-      <div class="diagnostics-card wide">
-        <h2>Group-to-AI Mappings</h2>
-        <div class="group-filter">
-          <input
-            type="text"
-            v-model="groupFilter"
-            placeholder="Filter groups..."
-            class="filter-input"
-          />
-        </div>
-        <div v-if="filteredGroupMappings.length > 0" class="group-mappings">
-          <table>
-            <thead>
-              <tr>
-                <th>Group</th>
-                <th>AI Account</th>
-                <th>Status</th>
-                <th>Activity</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="mapping in filteredGroupMappings"
-                :key="mapping.group_id"
-              >
-                <td>{{ mapping.group_name || mapping.group_id }}</td>
-                <td>{{ getAIAccountName(mapping.ai_account_id) }}</td>
-                <td>
-                  <span
-                    class="status-indicator"
-                    :class="getGroupStatusClass(mapping)"
-                  >
-                    {{ getGroupStatusText(mapping) }}
-                  </span>
-                </td>
-                <td>
-                  <div
-                    class="activity-indicator"
-                    :class="getActivityClass(mapping.activity_level)"
-                  >
-                    {{ mapping.activity_level || "None" }}
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div v-else class="no-data">No group mappings available</div>
-      </div>
+      <GroupMappingsTable 
+        :groupMappings="diagnostics.group_mappings || []"
+        :groupFilter="groupFilter"
+        :aiClientsList="aiClientsList"
+        :conversations="activeConversations"
+        @update:groupFilter="groupFilter = $event"
+      />
     </div>
   </div>
 </template>
@@ -590,6 +82,16 @@ import {
 } from "@/utils/local-storage";
 import "@/views/search-styles.css";
 
+import SystemStatusPanel from "@/components/diagnostics/SystemStatusPanel.vue";
+import SystemResourcesCard from "@/components/diagnostics/SystemResourcesCard.vue";
+import AnalyticsCard from "@/components/diagnostics/AnalyticsCard.vue";
+import ConversationsCard from "@/components/diagnostics/ConversationsCard.vue";
+import AIStatusCard from "@/components/diagnostics/AIStatusCard.vue";
+import AIClientsTable from "@/components/diagnostics/AIClientsTable.vue";
+import GroupMappingsTable from "@/components/diagnostics/GroupMappingsTable.vue";
+import ErrorLogCard from "@/components/diagnostics/ErrorLogCard.vue";
+
+
 const store = useStore();
 const diagnostics = ref({});
 const lastUpdated = ref("Never");
@@ -604,6 +106,7 @@ const searchResults = ref([]);
 const expandedErrors = ref([]);
 const selectedConversation = ref(null); // Track which conversation history is being viewed
 
+console.log("Checking system health...", diagnostics.value.ai_status);
 import { apiUrl } from "@/services/api-service";
 
 // Computed properties
@@ -645,9 +148,6 @@ const recentConversations = computed(() => {
     return [];
   }
 
-  console.log(
-    `Filtering ${activeConversations.value.length} conversations for recent activity`
-  );
 
   const filtered = activeConversations.value
     .filter((conv) => {
@@ -682,9 +182,7 @@ const recentConversations = computed(() => {
         : new Date(0);
       return timeB - timeA; // Sort by most recent first
     })
-    .slice(0, 5); // Only show 5 most recent conversations
-
-  console.log(`Found ${filtered.length} recent conversations`);
+    .slice(0, 5); 
   return filtered;
 });
 
@@ -901,6 +399,11 @@ function toggleErrorDetails(index) {
   }
 }
 
+// Alias for ErrorLogCard component
+function toggleErrorExpand(errorIndex) {
+  toggleErrorDetails(errorIndex);
+}
+
 function formatPhoneNumber(phone) {
   if (!phone) return "N/A";
 
@@ -921,7 +424,6 @@ function toggleConversationHistory(conversationId) {
   } else {
     // Otherwise, open this conversation
     selectedConversation.value = conversationId;
-    console.log(`Showing history for conversation: ${conversationId}`);
 
     // Find the selected conversation to check if it has history
     const conversation = diagnostics.value.conversations?.find(
@@ -1014,7 +516,6 @@ function mergeWithStoredConversations(newDiagnostics) {
     !diagnostics.value.conversations ||
     !Array.isArray(diagnostics.value.conversations)
   ) {
-    console.log("No stored conversations to merge with");
     // Apply data integrity check to new conversations before storing
     if (
       newDiagnostics.conversations &&
@@ -1023,9 +524,7 @@ function mergeWithStoredConversations(newDiagnostics) {
       mergedDiagnostics.conversations = verifyConversationIntegrity(
         newDiagnostics.conversations
       );
-      console.log(
-        `Verified ${mergedDiagnostics.conversations.length} conversations from server`
-      );
+     
     } else {
       mergedDiagnostics.conversations = [];
     }
@@ -1037,7 +536,6 @@ function mergeWithStoredConversations(newDiagnostics) {
     !newDiagnostics.conversations ||
     !Array.isArray(newDiagnostics.conversations)
   ) {
-    console.log("No conversations in new data, keeping stored ones");
     mergedDiagnostics.conversations = verifyConversationIntegrity(
       diagnostics.value.conversations
     );
@@ -1157,9 +655,6 @@ function mergeWithStoredConversations(newDiagnostics) {
 
       // Only keep recent conversations that aren't in the server data
       if (lastMessageTime && lastMessageTime > oneHourAgo) {
-        console.log(
-          `Keeping local-only conversation: ${localConv.conversation_id}`
-        );
         mergedConversations.push(localConv);
       }
     }
@@ -1185,9 +680,6 @@ function mergeWithStoredConversations(newDiagnostics) {
     verifyConversationIntegrity(mergedConversations);
 
   mergedDiagnostics.conversations = verifiedConversations;
-  console.log(
-    `Merged and verified ${verifiedConversations.length} conversations`
-  );
 
   return mergedDiagnostics;
 }
@@ -1228,14 +720,7 @@ async function fetchDiagnostics() {
       return;
     }
 
-    // Log AI clients if they exist
-    if (newDiagnostics.ai_clients && Array.isArray(newDiagnostics.ai_clients)) {
-      console.log(
-        `Received ${newDiagnostics.ai_clients.length} AI clients from server API`
-      );
-    } else {
-      console.warn("No AI clients received from server API");
-    }
+ 
 
     const mergedDiagnostics = mergeWithStoredConversations(newDiagnostics);
 
@@ -1361,13 +846,11 @@ async function setupPusher() {
 
     // Connect to the diagnostics channel
     const channelName = `diagnostics`;
-    console.log(`Subscribing to Pusher channel: ${channelName}`);
 
     pusherChannel.value = pusherClient.value.subscribe(channelName);
 
     // Set up event handlers
     pusherChannel.value.bind("pusher:subscription_succeeded", () => {
-      console.log("Pusher subscription succeeded for diagnostics");
       connectionStatus.value = "connected";
 
       // Request immediate diagnostics update via API call
@@ -1375,7 +858,6 @@ async function setupPusher() {
     });
 
     pusherChannel.value.bind("pusher:subscription_error", (error) => {
-      console.error("Pusher subscription error:", error);
       connectionStatus.value = "error";
 
       // Try to reconnect after 5 seconds
@@ -1384,7 +866,6 @@ async function setupPusher() {
 
     // Handle diagnostics update events
     pusherChannel.value.bind("diagnostics_update", (message) => {
-      console.log("Pusher diagnostics_update received");
 
       // Extract the actual diagnostics data from the message
       // The backend may send { type: "diagnostics_update", data: diagnostics_data }
@@ -1396,15 +877,7 @@ async function setupPusher() {
         return;
       }
 
-      // Log received AI clients data if any
-      if (
-        diagnosticsData.ai_clients &&
-        Array.isArray(diagnosticsData.ai_clients)
-      ) {
-        console.log(
-          `Received ${diagnosticsData.ai_clients.length} AI clients in diagnostics update`
-        );
-      }
+
 
       // Merge with stored conversations
       const mergedData = mergeWithStoredConversations(diagnosticsData);
@@ -1635,8 +1108,6 @@ async function setupPusher() {
 
     // Add debug logging for auth errors
     pusherClient.value.connection.bind("error", (error) => {
-      console.error("Pusher connection error:", error);
-
       let errorDetails = "Unknown error";
       if (error && error.error) {
         if (error.error.data && error.error.data.code) {
@@ -1686,19 +1157,9 @@ onMounted(() => {
   // First, try to load conversations from local storage
   const storedConversations = loadConversationsFromStorage();
   if (storedConversations && storedConversations.length > 0) {
-    console.log(
-      `Loaded ${storedConversations.length} conversations from local storage during mount`
-    );
-
     // Verify the integrity of stored conversations
     const verifiedConversations =
       verifyConversationIntegrity(storedConversations);
-    console.log(
-      `Verified ${verifiedConversations.length} conversations (removed ${
-        storedConversations.length - verifiedConversations.length
-      } invalid ones)`
-    );
-
     // Initialize diagnostics with verified stored conversations
     diagnostics.value = {
       ...diagnostics.value,
@@ -1727,7 +1188,6 @@ onMounted(() => {
       diagnostics.value.conversations &&
       Array.isArray(diagnostics.value.conversations)
     ) {
-      console.log("Saving conversations before unmounting");
       saveConversationsToStorage(diagnostics.value.conversations);
     }
 
@@ -1747,164 +1207,11 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
+<style >
 .diagnostics-container {
   padding: 20px;
   max-width: 1400px;
   margin: 0 auto;
-}
-
-.status-panel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background-color: #e8f5e9;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 30px;
-  border-left: 5px solid #2e7d32;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  position: relative;
-  overflow: hidden;
-}
-
-.status-panel::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 120px;
-  background: linear-gradient(
-    90deg,
-    rgba(232, 245, 233, 0) 0%,
-    rgba(232, 245, 233, 0.8) 100%
-  );
-  z-index: 1;
-  pointer-events: none;
-}
-
-.status-panel.status-error {
-  background-color: #ffebee;
-  border-left-color: #c62828;
-}
-
-.status-panel.status-error::after {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 235, 238, 0) 0%,
-    rgba(255, 235, 238, 0.8) 100%
-  );
-}
-
-.connection-status {
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-}
-
-.ws-status {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.9em;
-}
-
-.ws-connected {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-}
-
-.ws-connecting {
-  background-color: #fff8e1;
-  color: #ff8f00;
-}
-
-.ws-disconnected {
-  background-color: #fafafa;
-  color: #757575;
-}
-
-.ws-error {
-  background-color: #ffebee;
-  color: #c62828;
-}
-
-.status-indicator {
-  display: flex;
-  align-items: center;
-}
-
-.status-text {
-  color: #333;
-  font-weight: 600;
-}
-
-.status-text-healthy {
-  color: #1b5e20;
-}
-
-.status-text-connected {
-  color: #1b5e20;
-  font-weight: 600;
-}
-
-.status-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background-color: #ccc;
-  margin-right: 5px;
-}
-
-.status-dot.active {
-  background-color: #4caf50;
-  box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
-}
-
-.reinit-button {
-  background-color: #1976d2;
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  box-shadow: 0 2px 6px rgba(25, 118, 210, 0.3);
-}
-
-.reinit-button::before {
-  content: "";
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  margin-right: 8px;
-  background-color: currentColor;
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z' /%3E%3C/svg%3E");
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z' /%3E%3C/svg%3E");
-  mask-size: contain;
-  -webkit-mask-size: contain;
-  mask-repeat: no-repeat;
-  -webkit-mask-repeat: no-repeat;
-}
-
-.reinit-button:hover:not(:disabled) {
-  background-color: #1565c0;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(25, 118, 210, 0.4);
-}
-
-.reinit-button:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(25, 118, 210, 0.3);
-}
-
-.reinit-button:disabled {
-  background-color: #bdbdbd;
-  cursor: not-allowed;
-  box-shadow: none;
 }
 
 .diagnostics-grid {
@@ -2031,6 +1338,63 @@ onMounted(() => {
   text-align: center;
 }
 
+.tab-button {
+  padding: 10px 16px;
+  background-color: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-weight: 600;
+  color: #78909c;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+  position: relative;
+  overflow: hidden;
+} 
+
+/* Filter input styling */
+.filter-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #37474f;
+  background-color: white;
+  transition: all 0.2s ease;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.15);
+}
+
+.filter-input::placeholder {
+  color: #b0bec5;
+}
+.tab-button.active {
+  color: #1976d2;
+  border-bottom-color: #1976d2;
+}
+
+.tab-button::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  background-color: rgba(25, 118, 210, 0.1);
+  transition: height 0.2s ease;
+  z-index: -1;
+}
+
+.tab-button:hover::after {
+  height: 100%;
+}
 /* Better table styling */
 table {
   width: 100%;
@@ -2119,68 +1483,6 @@ tbody tr:hover {
   box-shadow: 0 0 6px rgba(183, 28, 28, 0.6);
 }
 
-/* Better activity indicators */
-.activity-indicator {
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 0.85em;
-  display: inline-flex;
-  align-items: center;
-  min-width: 80px;
-  justify-content: center;
-}
-
-.activity-indicator::before {
-  content: "";
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 6px;
-  animation: pulse 2s infinite;
-}
-
-.activity-high {
-  background-color: #ffebee;
-  color: #b71c1c;
-}
-
-.activity-high::before {
-  background-color: #b71c1c;
-  animation-duration: 1s;
-}
-
-.activity-medium {
-  background-color: #e3f2fd;
-  color: #0277bd;
-}
-
-.activity-medium::before {
-  background-color: #0277bd;
-  animation-duration: 1.5s;
-}
-
-.activity-low {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-}
-
-.activity-low::before {
-  background-color: #2e7d32;
-  animation-duration: 2s;
-}
-
-.activity-none {
-  background-color: #f5f5f5;
-  color: #616161;
-}
-
-.activity-none::before {
-  background-color: #9e9e9e;
-  animation: none;
-}
-
 @keyframes pulse {
   0% {
     box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.5);
@@ -2193,160 +1495,6 @@ tbody tr:hover {
   }
 }
 
-/* Improved tab buttons */
-.conversations-tabs {
-  display: flex;
-  margin-bottom: 16px;
-  border-bottom: 1px solid #e0e0e0;
-  gap: 4px;
-}
-
-.tab-button {
-  padding: 10px 16px;
-  background-color: transparent;
-  border: none;
-  border-bottom: 3px solid transparent;
-  cursor: pointer;
-  font-weight: 600;
-  color: #78909c;
-  transition: all 0.2s ease;
-  font-size: 0.95rem;
-  position: relative;
-  overflow: hidden;
-}
-
-.tab-button.active {
-  color: #1976d2;
-  border-bottom-color: #1976d2;
-}
-
-.tab-button::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 0;
-  background-color: rgba(25, 118, 210, 0.1);
-  transition: height 0.2s ease;
-  z-index: -1;
-}
-
-.tab-button:hover::after {
-  height: 100%;
-}
-
-/* Better conversation items */
-.conversation-item {
-  background-color: white;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  padding: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.conversation-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.conversation-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.conversation-name {
-  font-weight: 600;
-  color: #37474f;
-  font-size: 1.05rem;
-}
-
-.conversation-time {
-  color: #78909c;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.conversation-details {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.conversation-type,
-.conversation-messages {
-  color: #546e7a;
-  font-size: 0.9rem;
-  background-color: #f5f7f9;
-  padding: 2px 8px;
-  border-radius: 12px;
-}
-
-/* Filter input styling */
-.filter-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 1rem;
-  color: #37474f;
-  background-color: white;
-  transition: all 0.2s ease;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-}
-
-.filter-input:focus {
-  outline: none;
-  border-color: #1976d2;
-  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.15);
-}
-
-.filter-input::placeholder {
-  color: #b0bec5;
-}
-
-/* Error section styling */
-.error-item {
-  border-radius: 8px;
-  margin-bottom: 16px;
-  background-color: #fff5f5;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border-left: 4px solid #f44336;
-}
-
-.error-time {
-  font-size: 0.85rem;
-  color: #78909c;
-  padding: 8px 16px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-}
-
-.error-message {
-  font-weight: 600;
-  color: #d32f2f;
-  padding: 12px 16px 8px;
-  font-size: 1rem;
-}
-
-.error-details {
-  padding: 0 16px 12px;
-  color: #455a64;
-  font-size: 0.9rem;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-family: monospace;
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 4px;
-  margin: 0 16px 12px;
-}
 
 /* "No data" message styling */
 .no-data {
@@ -2365,63 +1513,6 @@ tbody tr:hover {
   grid-column: 1 / -1;
 }
 
-.resource-meters {
-  margin-top: 15px;
-}
-
-.meter-container {
-  margin-bottom: 15px;
-}
-
-.meter-container label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-}
-
-.meter {
-  height: 12px;
-  background-color: #e0e0e0;
-  border-radius: 6px;
-  overflow: hidden;
-  margin-bottom: 5px;
-}
-
-.meter-fill {
-  height: 100%;
-  border-radius: 6px;
-  transition: width 0.5s ease;
-}
-
-.meter-fill.normal {
-  background-color: #4caf50;
-}
-
-.meter-fill.warning {
-  background-color: #ff9800;
-}
-
-.meter-fill.critical {
-  background-color: #f44336;
-}
-
-.system-info {
-  margin-top: 20px;
-  padding-top: 15px;
-  border-top: 1px solid #eee;
-}
-
-.system-info p {
-  margin: 5px 0;
-  color: #666;
-}
-
-.client-status,
-.session-info,
-.websocket-info,
-.email-status {
-  margin-top: 15px;
-}
 
 .status-item {
   display: flex;
@@ -2462,122 +1553,4 @@ tbody tr:hover {
   color: #424242;
 }
 
-.conversations-list {
-  margin-top: 15px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-/* Conversation history styles */
-.selected-conversation {
-  background-color: rgba(25, 118, 210, 0.05);
-}
-
-.conversation-history-row {
-  background-color: #f5f9ff;
-}
-
-.conversation-history-container {
-  padding: 15px;
-  border-top: 1px solid #e0e0e0;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.conversation-history-container h4 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  color: #1976d2;
-  font-size: 1rem;
-}
-
-.message-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.message-item {
-  padding: 10px 15px;
-  border-radius: 8px;
-  position: relative;
-  max-width: 85%;
-}
-
-.user-message {
-  align-self: flex-end;
-  background-color: #e3f2fd;
-  border-bottom-right-radius: 2px;
-  margin-left: 15%;
-}
-
-.ai-message {
-  align-self: flex-start;
-  background-color: #f5f5f5;
-  border-bottom-left-radius: 2px;
-  margin-right: 15%;
-}
-
-.message-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 5px;
-  font-size: 0.8rem;
-}
-
-.message-sender {
-  font-weight: 600;
-  color: #455a64;
-}
-
-.message-time {
-  color: #78909c;
-  font-size: 0.75rem;
-}
-
-.message-content {
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.no-history {
-  text-align: center;
-  padding: 20px;
-  color: #9e9e9e;
-  font-style: italic;
-}
-
-.view-history-btn {
-  background-color: transparent;
-  border: 1px solid #1976d2;
-  color: #1976d2;
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  transition: all 0.2s ease;
-}
-
-.view-history-btn:hover {
-  background-color: #1976d2;
-  color: white;
-}
-
-.debug-btn {
-  background-color: #673ab7;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  margin-top: 10px;
-  display: block;
-  width: fit-content;
-  margin: 10px auto 0;
-}
-
-.debug-btn:hover {
-  background-color: #5e35b1;
-}
 </style>
