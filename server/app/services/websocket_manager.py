@@ -4,9 +4,21 @@ import json
 import asyncio
 from server.app.core.logging import logger
 from datetime import datetime
+import pusher
+from server.app.core.config import settings
 
 class ConnectionManager:
     def __init__(self):
+        logger.info(f"Initializing WebSocket Connection Manager with: ", settings.PUSHER_APP_ID, settings.PUSHER_KEY, settings.PUSHER_CLUSTER)
+        # Initialize Pusher client
+        self.pusher_client = pusher.Pusher(
+            app_id=settings.PUSHER_APP_ID,
+            key=settings.PUSHER_KEY,
+            secret=settings.PUSHER_SECRET,
+            cluster=settings.PUSHER_CLUSTER,
+            ssl=True
+        )
+
         self.active_connections: Dict[str, WebSocket] = {}
         self.user_connections: Dict[str, Set[str]] = {}  # user_id -> set of connection_ids
         self.connection_user: Dict[str, str] = {}  # connection_id -> user_id
@@ -199,7 +211,10 @@ class ConnectionManager:
                 "timestamp": datetime.now().isoformat()
             }
             
-            # Only broadcast if there are active connections
+            # Use Pusher to broadcast diagnostics - send just the data for better frontend compatibility
+            self.pusher_client.trigger('diagnostics', 'diagnostics_update', diagnostics_data)
+            
+            # Fallback to WebSockets if needed - include the full message structure
             if self.active_connections:
                 await self.broadcast_json(message)
                 logger.debug(f"Broadcasting diagnostics update to {len(self.active_connections)} connections")
@@ -214,17 +229,36 @@ class ConnectionManager:
             "type": "chat_message",
             "data": message_data
         }
-        await self.broadcast_json(data)
+        # Use Pusher with public channels
+        self.pusher_client.trigger('chat', 'new_message', data)
+        # Fallback to WebSockets if needed
+        if self.active_connections:
+            await self.broadcast_json(data)
 
 
     
     async def update_conversation(self, conversation_data: dict):
         """Send updated conversation data to all connected clients"""
+        # Ensure the conversation has an ID
+        if not conversation_data.get('conversation_id'):
+            logger.error(f"Attempted to send conversation update without conversation_id: {conversation_data}")
+            return
+            
+        # Prepare the message
         message = {
             "type": "conversation_update",
             "data": conversation_data
         }
-        await self.broadcast_json(message)
+        
+        # Log the update
+        logger.info(f"Sending conversation update for {conversation_data.get('conversation_id')}")
+        
+        # Use Pusher with public channels
+        self.pusher_client.trigger('diagnostics', 'conversation_update', conversation_data)
+        
+        # Fallback to WebSockets if needed
+        if self.active_connections:
+            await self.broadcast_json(message)
     
 # Create a singleton instance
 websocket_manager = ConnectionManager()

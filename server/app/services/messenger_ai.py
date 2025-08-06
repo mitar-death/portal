@@ -1,5 +1,6 @@
 import asyncio
 import os
+from typing import List, Dict, Optional
 from datetime import datetime, timedelta
 from telethon import TelegramClient, errors as telethon_errors, events
 from server.app.core.logging import logger
@@ -13,7 +14,8 @@ from server.app.services.message_analyzer import MessageAnalyzer
 from server.app.services.conversation_manager import ConversationManager
 from server.app.services.websocket_manager import websocket_manager
 import traceback
-        
+from server.app.utils.db_helpers import get_user_keywords
+          
 
 class MessengerAI:
     """
@@ -69,7 +71,6 @@ class MessengerAI:
             self.conversation_manager = ConversationManager()
             
             # Load user's keywords
-            from server.app.utils.db_helpers import get_user_keywords
             keywords = await get_user_keywords(user_id)
             self.message_analyzer.set_keywords(keywords)
             
@@ -78,7 +79,7 @@ class MessengerAI:
                 # Query active AI accounts
                 stmt = select(AIAccount).where(AIAccount.user_id == user_id, AIAccount.is_active == True)
                 result = await session.execute(stmt)
-                ai_accounts = result.scalars().all()
+                ai_accounts: List[AIAccount] = result.scalars().all()
                 
                 if not ai_accounts:
                     logger.warning(f"No active AI accounts found for user {user_id}")
@@ -87,7 +88,7 @@ class MessengerAI:
                 # Initialize each AI account with its own client
                 success_count = 0
                 # Create session directory for AI accounts
-                import os
+
                 sessions_dir = os.path.join('storage', 'sessions', 'ai_accounts')
                 os.makedirs(sessions_dir, exist_ok=True)
                 
@@ -323,6 +324,24 @@ class MessengerAI:
             sender_name=sender_name
         )
         
+        # Send chat message notification for the group message
+        try:
+            conversation_id = f"convo_{sender_id}_{ai_account_id}"
+            chat_message = {
+                "conversation_id": conversation_id,
+                "sender_id": sender_id,
+                "sender_name": sender_name,
+                "message": message_text,
+                "timestamp": datetime.now().isoformat(),
+                "ai_account_id": ai_account_id,
+                "is_ai_message": False,
+                "from_group": True,
+                "group_name": chat_title
+            }
+            asyncio.create_task(websocket_manager.add_chat_message(chat_message))
+        except Exception as e:
+            logger.error(f"Error sending group message notification: {e}")
+        
         # Get updated conversation history
         conversation_history = self.conversation_manager.get_conversation_history(sender_id, ai_account_id)
         
@@ -336,6 +355,8 @@ class MessengerAI:
                 from_group=True,
                 group_name=chat_title
             )
+            
+            
             
             # Send the response directly to the user, not in the group
             try:
@@ -378,7 +399,7 @@ class MessengerAI:
                     
                     # Create conversation data for WebSocket
                     conversation_data = {
-                        "id" : conversation_id,
+                        "conversation_id" : conversation_id,
                         "user_id": sender_id,
                         "sender_name": sender_name,
                         "ai_account_id": ai_account_id,
@@ -390,6 +411,18 @@ class MessengerAI:
                     
                     # Send to WebSocket clients
                     asyncio.create_task(websocket_manager.update_conversation(conversation_data))
+                    
+                    # Also send a chat message notification
+                    chat_message = {
+                        "conversation_id": conversation_id,
+                        "sender_id": sender_id,
+                        "sender_name": sender_name,
+                        "message": response,
+                        "timestamp": datetime.now().isoformat(),
+                        "ai_account_id": ai_account_id,
+                        "is_ai_message": True
+                    }
+                    asyncio.create_task(websocket_manager.add_chat_message(chat_message))
                 except Exception as e:
                     logger.error(f"Error updating WebSocket with conversation data: {e}")
                 
@@ -441,11 +474,13 @@ class MessengerAI:
         
         # Get the client for this AI account
         ai_client = self.ai_clients.get(ai_account_id)
+        ai_account = self.ai_accounts.get(ai_account_id)
         if not ai_client:
             logger.warning(f"AI client {ai_account_id} not found, cannot respond to DM")
             return
-            
-        # Verify client is connected
+        
+        logger.info(f"Ai account", ai_account) 
+        
         if not ai_client.is_connected():
             try:
                 await ai_client.connect()
@@ -461,8 +496,43 @@ class MessengerAI:
             user_id=sender_id, 
             message_text=message_text,
             ai_account_id=ai_account_id,
-            sender_name=sender_name
+            sender_name=sender_name,
         )
+        
+        # Send user's message notification via WebSocket
+        try:
+            # Get the updated conversation history
+            conversation_history = self.conversation_manager.get_conversation_history(sender_id, ai_account_id)
+            conversation_id = f"convo_{sender_id}_{ai_account_id}"
+            
+            # Create conversation data for WebSocket
+            conversation_data = {
+                "conversation_id": conversation_id,
+                "user_id": sender_id,
+                "sender_name": sender_name,
+                "ai_account_id": ai_account_id,
+                "ai_account_name": self.ai_accounts[ai_account_id].name if ai_account_id in self.ai_accounts else "Unknown",
+                "last_updated": datetime.now().isoformat(),
+                "history": conversation_history,
+                "message_count": len(conversation_history)
+            }
+                    
+            # Send to WebSocket clients
+            asyncio.create_task(websocket_manager.update_conversation(conversation_data))
+            
+            # Also send a chat message notification for the user's message
+            user_chat_message = {
+                "conversation_id": conversation_id,
+                "sender_id": sender_id,
+                "sender_name": sender_name,
+                "message": message_text,
+                "timestamp": datetime.now().isoformat(),
+                "ai_account_id": ai_account_id,
+                "is_ai_message": False
+            }
+            asyncio.create_task(websocket_manager.add_chat_message(user_chat_message))
+        except Exception as e:
+            logger.error(f"Error sending user message notification: {e}")
         
         # Get conversation history
         conversation_history = self.conversation_manager.get_conversation_history(sender_id, ai_account_id)
@@ -482,7 +552,9 @@ class MessengerAI:
                 matched_keywords=matched_keywords,
                 is_new_conversation=is_new_conversation,
                 conversation_history=conversation_history,
-                from_group=False
+                from_group=False,
+                ai_shareable_link=ai_account.shareable_link if ai_account.shareable_link else None,
+                ai_account_context=ai_account.ai_response_context if ai_account.ai_response_context else None
             )
             
             # Send the response
@@ -503,6 +575,22 @@ class MessengerAI:
                 # Add the response to the conversation history
                 self.conversation_manager.add_ai_response(sender_id, ai_account_id, response)
                 
+                # Send chat message notification via WebSocket
+                try:
+                    conversation_id = f"convo_{sender_id}_{ai_account_id}"
+                    chat_message = {
+                        "conversation_id": conversation_id,
+                        "sender_id": sender_id,
+                        "sender_name": sender_name,
+                        "message": response,
+                        "timestamp": datetime.now().isoformat(),
+                        "ai_account_id": ai_account_id,
+                        "is_ai_message": True
+                    }
+                    asyncio.create_task(websocket_manager.add_chat_message(chat_message))
+                except Exception as e:
+                    logger.error(f"Error sending chat message notification: {e}")
+                
             except Exception as e:
                 logger.error(f"Failed to send DM response to {sender_name}: {e}")
                 self.conversation_manager.record_dm_error(sender_id, "general_error")
@@ -512,8 +600,8 @@ class MessengerAI:
             
         # Clean up old conversations
         self.conversation_manager.clean_old_conversations()
-            
-    async def _generate_response(self, message_text, matched_keywords, is_new_conversation, conversation_history, from_group=False, group_name=None):
+
+    async def _generate_response(self, message_text, matched_keywords, is_new_conversation, conversation_history, from_group=False, group_name=None, ai_shareable_link=None, ai_account_context=None):
         """
         Generate a response based on the message text, matched keywords, and conversation history.
         
@@ -524,7 +612,8 @@ class MessengerAI:
             conversation_history: List of previous messages in this conversation
             from_group: Whether this message originated in a group
             group_name: The name of the group (if from_group is True)
-            
+            ai_shareable_link: The shareable link for the AI account (optional)
+            ai_account_context: Context for the AI account (optional)
         Returns:
             str: The generated response text, or None if no response should be sent
         """
@@ -579,10 +668,45 @@ class MessengerAI:
             
             Previous conversation:
             {conversation_str}
+            
             """
             
+            # Add AI account context if available
+            if ai_account_context:
+                context_str += f"""
+                Additional context for response:
+                {ai_account_context}
+                """
+            # Add guidance about using the shareable link as a solution
+            if ai_shareable_link:
+                context_str += f"""
+                IMPORTANT GUIDANCE:
+                
+                Your ultimate goal in this conversation is to guide the user toward a solution at this link: {ai_shareable_link}
+                
+                However, follow these strategic steps:
+                1. First, engage with the user genuinely and build rapport by understanding their specific problem
+                2. Ask clarifying questions to fully grasp their situation and demonstrate your expertise
+                3. Provide initial helpful information to establish credibility and trust
+                4. Only after understanding their problem scope, introduce the shareable link as the comprehensive solution
+                5. When sharing the link, explain specifically how it will address their unique problems
+                
+                Do not share the link immediately. Wait until you've established value and the conversation has progressed naturally.
+                Make the recommendation feel personalized to their specific situation, not generic.
+                
+            """
+            
+            logger.info(f"Shareable Link", ai_shareable_link)  # Log only the first 150 characters
+            
             # Generate an appropriate response using the AI engine
-            logger.debug(f"Generating response with context: {context_str[:100]}...")
+            logger.debug(f"Generating response with context: {context_str[:150]}...")
+            
+            # Log additional context information if available
+            if ai_account_context:
+                logger.debug(f"Using AI account context: {ai_account_context[:100]}...")
+            if ai_shareable_link:
+                logger.debug(f"Using shareable link in strategy: {ai_shareable_link}")
+                
             response = await generate_response(message_text, context_str)
             
             if response:
@@ -595,9 +719,14 @@ class MessengerAI:
                 elif from_group:
                     response = f"Regarding your mention of {', '.join(matched_keywords)} in the group, let me help you with that."
                 elif is_new_conversation and matched_keywords == ["assistance"]:
-                    response = f"Hello! I'm your AI assistant. How can I help you today?"
+                    response = f"Hello! How can I help you today?"
                 else:
                     response = f"I noticed you mentioned {', '.join(matched_keywords)}. Let me help you with that."
+                
+                # Append shareable link for established conversations in the fallback scenario (but not first messages)
+                # This is a fallback situation where AI generation failed but we might still want to guide users to the link
+                if ai_shareable_link and not is_new_conversation and len(conversation_history) > 3:
+                    response += f"\n\nBy the way, I think you might find the resources at {ai_shareable_link} helpful for addressing your specific needs."
                 
             return response
             
@@ -607,19 +736,28 @@ class MessengerAI:
             logger.error(f"Traceback: {traceback.format_exc()}")
             
             # Fallback to simple response if AI generation fails
+            fallback_response = ""
+            
             if is_new_conversation:
                 # Initial greeting for new conversations
                 if from_group:
-                    return (f"Hello! I noticed you mentioned {', '.join(matched_keywords)} in the group. "
+                    fallback_response = (f"Hello! I noticed you mentioned {', '.join(matched_keywords)} in the group. "
                            f"I'm messaging you directly to chat about this. How can I help?")
                 elif matched_keywords == ["assistance"]:
-                    return "Hello! I'm your AI assistant. How can I help you today?"
+                    fallback_response = "Hello! How can I help you today?"
                 else:
-                    return (f"Hello! I noticed you mentioned {', '.join(matched_keywords)}. "
+                    fallback_response = (f"Hello! I noticed you mentioned {', '.join(matched_keywords)}. "
                            f"I'd be happy to chat about that. How can I help you?")
             else:
                 # Continue existing conversation
-                return f"Thanks for your message. I see you're still interested in {', '.join(matched_keywords)}."
+                fallback_response = f"Thanks for your message. I see you're still interested in {', '.join(matched_keywords)}."
+                
+                # For established conversations, potentially include the shareable link if we have enough conversation context
+                if ai_shareable_link and len(conversation_history) >= 4:
+                    # Only add the link if this is a longer conversation and seems appropriate
+                    fallback_response += f"\n\nBased on our conversation, I believe the resources at {ai_shareable_link} might be exactly what you need to solve your problem. Would you like me to tell you more about how this could help?"
+            
+            return fallback_response
     
     def _cleanup_old_conversations(self):
         """

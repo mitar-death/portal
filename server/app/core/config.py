@@ -41,6 +41,12 @@ class Settings(BaseSettings):
     TELEGRAM_API_HASH: str = os.getenv("TELEGRAM_API_HASH", "")
     TELEGRAM_SESSION_FOLDER_DIR: str = os.getenv("TELEGRAM_SESSION_FOLDER_DIR", "storage/sessions")
     TELEGRAM_SESSION_NAME: str = os.getenv("TELEGRAM_SESSION_NAME", "default_session")
+    
+    # Pusher settings for WebSocket communication
+    PUSHER_APP_ID: str = os.getenv("PUSHER_APP_ID", "")
+    PUSHER_KEY: str = os.getenv("PUSHER_KEY", "")
+    PUSHER_SECRET: str = os.getenv("PUSHER_SECRET", "")
+    PUSHER_CLUSTER: str = os.getenv("PUSHER_CLUSTER", "us2")
 
     BACKEND_URL: str = os.getenv("BACKEND_URL", "http://127.0.0.1:8030")
     FIREBASE_PROJECT_ID: str = os.getenv("FIREBASE_PROJECT_ID", "")

@@ -113,7 +113,8 @@ import { apiUrl } from '@/services/api-service';
 console.log(`Using API URL in SettingsView: ${apiUrl}`);
 
 const toggleDarkMode = (value) => {
-  theme.global.name.value = value ? "dark" : "light";
+  themeColor = value ? "dark" : "light";
+  theme.change(themeColor);
 };
 
 const toggleNotifications = (value) => {

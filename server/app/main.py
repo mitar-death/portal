@@ -3,11 +3,12 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-
+from server.app.services.monitor import set_active_user_id
 from server.app.core.logging import setup_logging, logger
 from server.app.core.config import settings
 from server.app.routes.base_router import router
 from server.app.routes.websocket_routes import ws_router
+from server.app.routes.pusher_routes import pusher_router
 from server.app.core.middlewares import DBSessionMiddleware, AuthMiddleware, RequestLoggingMiddleware
 from server.app.services.telegram import get_client
 from server.app.services.monitor import start_monitoring, stop_monitoring, start_health_check_task
@@ -57,7 +58,7 @@ async def lifespan(app: FastAPI):
                     
                     if user:
                         # Set this user as the active user for monitoring
-                        from server.app.services.monitor import set_active_user_id
+                       
                         await set_active_user_id(user.id)
                         logger.info(f"Set active user ID to {user.id} during application startup")
                     else:
@@ -120,6 +121,7 @@ app.add_middleware(DBSessionMiddleware)  # Will be executed second
 # Include API routers with a prefix
 app.include_router(router)
 app.include_router(ws_router)
+app.include_router(pusher_router)
 
 # Add exception handlers
 app.add_exception_handler(HTTPException, app_exception_handler)  

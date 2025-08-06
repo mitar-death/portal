@@ -106,10 +106,20 @@ export default {
             }
         },
 
-        async updateAIAccount({ rootState, dispatch }, { accountId, isActive }) {
+        async updateAIAccount({ rootState, dispatch }, { accountId, isActive, name, shareable_link, ai_response_context }) {
             if (!rootState.auth.token) return Promise.reject('Not authenticated')
 
             try {
+                const payload = {
+                    account_id: accountId
+                };
+
+                // Only include fields that are defined
+                if (isActive !== undefined) payload.is_active = isActive;
+                if (name !== undefined) payload.name = name;
+                if (shareable_link !== undefined) payload.shareable_link = shareable_link;
+                if (ai_response_context !== undefined) payload.ai_response_context = ai_response_context;
+
                 const response = await fetch(`${apiUrl}/ai/accounts`, {
                     method: 'PUT',
                     headers: {
@@ -117,10 +127,7 @@ export default {
                         'Authorization': `Bearer ${rootState.auth.token}`
                     },
                     credentials: 'include',
-                    body: JSON.stringify({
-                        account_id: accountId,
-                        is_active: isActive
-                    })
+                    body: JSON.stringify(payload)
                 })
 
                 if (!response.ok) {
@@ -135,14 +142,21 @@ export default {
                 if (result.success) {
                     // Update the account in the store
                     dispatch('fetchAIAccounts')
+
+                    // Determine message based on which fields were updated
+                    let message = 'Account updated successfully';
+                    if (isActive !== undefined && Object.keys(payload).length === 2) {
+                        message = `Account ${isActive ? 'activated' : 'deactivated'}`;
+                    }
+
                     dispatch('ui/showSnackbar', {
-                        text: `Account ${isActive ? 'activated' : 'deactivated'}`,
+                        text: message,
                         color: 'success'
                     }, { root: true })
                     return result
                 } else {
                     dispatch('ui/showSnackbar', {
-                        text: result.error || 'Failed to update account status',
+                        text: result.error || 'Failed to update account',
                         color: 'error'
                     }, { root: true })
                     return Promise.reject(result.error)

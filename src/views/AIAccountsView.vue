@@ -106,14 +106,24 @@
                 >
                   <v-icon color="primary">mdi-login</v-icon>
                 </v-btn>
+
                 <v-btn
                   small
                   icon
                   @click="logoutAccount(account)"
-                  v-else
+                  v-if="account.session_status === 'authorized'"
                   title="Logout"
                 >
                   <v-icon color="warning">mdi-logout</v-icon>
+                </v-btn>
+
+                <v-btn
+                  small
+                  icon
+                  @click="showEditDialog(account)"
+                  title="Edit"
+                >
+                  <v-icon color="primary">mdi-pencil</v-icon>
                 </v-btn>
 
                 <v-btn small icon @click="confirmDeleteAccount(account)" title="Delete">
@@ -462,6 +472,78 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Edit Account Dialog -->
+    <v-dialog v-model="showEditAccountDialog" max-width="600px">
+      <v-card>
+        <v-card-title class="headline">
+          <v-icon color="primary" class="mr-2">mdi-pencil</v-icon>
+          Edit AI Account
+        </v-card-title>
+        <v-card-text>
+          <v-alert
+            v-if="editValidationError"
+            type="error"
+            dismissible
+            @click:close="editValidationError = ''"
+            class="mb-4"
+          >
+            {{ editValidationError }}
+          </v-alert>
+          <v-form ref="editForm" v-model="editFormValid" lazy-validation>
+            <v-text-field
+              v-model="editAccount.name"
+              label="Account Name"
+              required
+              :rules="[(v) => !!v || 'Name is required']"
+            ></v-text-field>
+
+            <v-switch
+              v-model="editAccount.is_active"
+              color="success"
+              label="Active"
+              hide-details
+              class="mb-4"
+            ></v-switch>
+
+            <v-text-field
+              v-model="editAccount.shareable_link"
+              label="Shareable Link"
+              hint="Optional shareable link for this account"
+              persistent-hint
+            ></v-text-field>
+
+            <v-textarea
+              v-model="editAccount.ai_response_context"
+              label="AI Response Context"
+              hint="Additional context for AI responses (optional)"
+              persistent-hint
+              rows="4"
+              auto-grow
+            ></v-textarea>
+          </v-form>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="grey darken-1"
+            text
+            @click="showEditAccountDialog = false"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            color="primary"
+            :disabled="!editFormValid"
+            :loading="editingSaving"
+            @click="updateAccount"
+          >
+            Save Changes
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -502,6 +584,17 @@ const twoFactorPassword = ref("");
 const twoFactorRequired = ref(false);
 const showLogoutDialog = ref(false);
 const showCleanupDialog = ref(false);
+const showEditAccountDialog = ref(false);
+const editFormValid = ref(true);
+const editingSaving = ref(false);
+const editValidationError = ref("");
+const editAccount = reactive({
+  id: null,
+  name: "",
+  is_active: true,
+  shareable_link: "",
+  ai_response_context: ""
+});
 
 const testResult = reactive({
   success: false,
@@ -512,6 +605,7 @@ const testResult = reactive({
 // Form refs
 const form = ref(null);
 const codeForm = ref(null);
+const editForm = ref(null);
 
 // Computed properties
 const aiAccounts = computed(() => store.getters["ai/aiAccounts"]);
@@ -644,6 +738,46 @@ const toggleAccountStatus = async (account) => {
   } catch (error) {
     // Revert the toggle if there was an error
     account.is_active = !account.is_active;
+  }
+};
+
+const showEditDialog = (account) => {
+  // Initialize edit form with account data
+  editAccount.id = account.id;
+  editAccount.name = account.name;
+  editAccount.is_active = account.is_active;
+  editAccount.shareable_link = account.shareable_link || "";
+  editAccount.ai_response_context = account.ai_response_context || "";
+  
+  // Reset validation
+  editValidationError.value = "";
+  
+  // Show the dialog
+  showEditAccountDialog.value = true;
+};
+
+const updateAccount = async () => {
+  if (!editFormValid.value) {
+    return;
+  }
+  
+  editingSaving.value = true;
+  try {
+    await store.dispatch("ai/updateAIAccount", {
+      accountId: editAccount.id,
+      name: editAccount.name,
+      isActive: editAccount.is_active,
+      shareable_link: editAccount.shareable_link,
+      ai_response_context: editAccount.ai_response_context
+    });
+    
+    // Close dialog after successful update
+    showEditAccountDialog.value = false;
+  } catch (error) {
+    console.error("Error updating account:", error);
+    editValidationError.value = error.message || "Failed to update account";
+  } finally {
+    editingSaving.value = false;
   }
 };
 

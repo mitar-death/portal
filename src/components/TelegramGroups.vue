@@ -259,6 +259,17 @@ onMounted(async () => {
   await store.dispatch("telegram/fetchTelegramGroups");
   await store.dispatch("ai/fetchAIAccounts");
   await store.dispatch("ai/fetchGroupAssignments");
+
+  // Pre-select groups that are already being monitored
+  if (groups.value.length > 0) {
+    const monitoredGroups = groups.value
+      .filter(group => group.is_monitored === true)
+      .map(group => group.id);  // Store just the IDs to match item-value
+    if (monitoredGroups.length > 0) {
+      selected.value = monitoredGroups;
+      console.log(`Pre-selected ${monitoredGroups.length} monitored groups:`, monitoredGroups);
+    }
+  }
 });
 
 function getAssignmentForGroup(groupId) {
@@ -357,8 +368,10 @@ async function monitorSelectedGroups() {
     return;
   }
 
-  const groupIds = selected.value.map((group) => group.id || group);
-
+  // Since selected.value now contains IDs, we can use them directly
+  const groupIds = selected.value;
+  console.log("Monitoring groups with IDs:", groupIds);
+  
   loading.value = true;
   try {
     const response = await fetch(`${apiUrl}/add/selected-groups`, {

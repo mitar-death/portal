@@ -43,6 +43,8 @@ async def get_ai_accounts(request: Request, db: AsyncSession = None) -> Dict[str
                 "name": account.name,
                 "phone_number": sanitize_log_data(account.phone_number),
                 "is_active": account.is_active,
+                "shareable_link": account.shareable_link,
+                "ai_response_context": account.ai_response_context,
                 "created_at": account.created_at.isoformat() if account.created_at else None
             }
             for account in accounts
@@ -155,6 +157,8 @@ async def update_ai_account(request: Request, db: AsyncSession = None) -> Dict[s
         account_id = body.get("account_id")
         name = body.get("name")
         is_active = body.get("is_active")
+        shareable_link = body.get("shareable_link")
+        ai_response_context = body.get("ai_response_context")
         
         if not account_id:
             return standardize_response(
@@ -183,7 +187,11 @@ async def update_ai_account(request: Request, db: AsyncSession = None) -> Dict[s
             account.name = name
         if is_active is not None:
             account.is_active = is_active
-            
+        if shareable_link is not None:
+            account.shareable_link = shareable_link
+        if ai_response_context is not None:
+            account.ai_response_context = ai_response_context
+
         return standardize_response(
             {"account_id": account.id},
             "AI account updated successfully", 

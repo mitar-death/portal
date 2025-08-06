@@ -42,7 +42,7 @@ async def get_user_selected_groups(user_id: int) -> Set[str]:
         logger.warning("No user ID provided, cannot load groups")
         return set()
     
-    try:
+    try: 
         async with AsyncSessionLocal() as db:
             result = await db.execute(
                 select(SelectedGroup).where(SelectedGroup.user_id == user_id)

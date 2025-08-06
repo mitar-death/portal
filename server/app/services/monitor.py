@@ -144,10 +144,12 @@ async def handle_new_message(event):
         # If no active user is set, we can't process messages
         if not active_user_id:
             logger.warning(f"No active user ID set, cannot process messages. Current ID: {active_user_id}")
+            active_user_id = await get_active_user_id()
             return
             
         # Skip if message has no text
         if not hasattr(message, 'text') or not message.text:
+            logger.debug(f"Skipping message with no text: {message.id} in {chat_id}")
             return
             
         # Check if this group is being monitored
@@ -252,6 +254,8 @@ async def handle_new_message(event):
         # Send the message to the WebSocket manager for real-time monitoring
         try:
             # Add additional contextual information to the message data
+            
+            # Send to WebSocket clients
             websocket_message = message_data.copy()
             websocket_message.update({
                 "is_group_message": is_group_message,
@@ -259,8 +263,6 @@ async def handle_new_message(event):
                 "monitored": True,
                 "processed_time": datetime.now().isoformat()
             })
-            
-            # Send to WebSocket clients
             asyncio.create_task(websocket_manager.add_chat_message(websocket_message))
         except Exception as e:
             logger.error(f"Error sending message to WebSocket: {e}")

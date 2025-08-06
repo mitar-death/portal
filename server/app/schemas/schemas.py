@@ -15,6 +15,10 @@ class TelegramGroup(BaseModel):
     description: Optional[str] = None
     username: Optional[str] = None
     is_channel: bool = False
+    is_monitored: Optional[bool] = False
+
+    class Config:
+        validate_assignment = True
 
 class SendCodeRequest(BaseModel):
     phone_number: str
@@ -25,10 +29,9 @@ class CodeVerification(BaseModel):
     phone_code_hash: str
 
 class AuthResponse(BaseModel):
-    user: Optional[User] = None
     message: str
     success: bool
-    token: Optional[str] = None
+    data: Optional[dict] = None
 
 class GroupsResponse(BaseModel):
     groups: List[TelegramGroup]

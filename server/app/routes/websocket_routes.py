@@ -14,6 +14,17 @@ import uuid
 # Create a separate router for WebSocket endpoints
 ws_router = APIRouter()
 
+@ws_router.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    # Accept all connections (only do this for development)
+    origin = websocket.headers.get("origin", "")
+    host = websocket.headers.get("host", "")
+    
+    logger.debug(f"WebSocket connection attempt from origin: {origin}, host: {host}")
+    
+    await websocket.accept()
+    # Rest of your WebSocket handling code...
+
 @ws_router.websocket("/ws/diagnostics")
 async def diagnostics_websocket(websocket: WebSocket):
     """

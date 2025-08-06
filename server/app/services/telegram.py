@@ -4,21 +4,34 @@ from pathlib import Path
 from server.app.core.config import settings
 from teleredis import RedisSession
 from server.app.services.redis_client import init_redis
+from init_db import logger
 
+config_session_dir = settings.TELEGRAM_SESSION_FOLDER_DIR
+config_session_name = settings.TELEGRAM_SESSION_NAME
 
+session_dir = Path(os.path.expanduser(config_session_dir))
+session_dir.mkdir(exist_ok=True)
+session_path = str(session_dir / config_session_name)
 
-env = settings.ENVIRONMENT
-if env == "production":
-    session_dir = Path(os.path.expanduser("./.tgportal_sessions"))
-    session_dir.mkdir(exist_ok=True)
-    session_path = str(session_dir / "user_session")
-    
+env = settings.ENV
+if env == "development":
+    logger.info("Using folder session for Telegram client in development environment")
+   
     client = TelegramClient(session_path, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
 
 else:
-    redis_connection = init_redis(decode_responses=False)
-    redis_session = RedisSession("session_name", redis_connection=redis_connection)
-    client = TelegramClient(redis_session, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
+    try:
+        logger.info("Using Redis session for Telegram client in production environment")
+        redis_connection = init_redis(decode_responses=False)
+        redis_session = RedisSession("session_name", redis_connection=redis_connection)
+        
+        client = TelegramClient(redis_session, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
+    except Exception as e:
+        logger.error(f"Failed to initialize Telegram client with Redis session: {str(e)}")
+        logger.info("Falling back to file-based session")
+        
+        client = TelegramClient(session_path, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
+    
 
 def get_client():
     """

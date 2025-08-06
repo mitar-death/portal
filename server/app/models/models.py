@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime,ForeignKey, BIGINT,JSON
+from sqlalchemy import Column, Integer, String, Boolean, DateTime,ForeignKey, BIGINT,JSON,Text
 from sqlalchemy.ext.mutable import MutableList
 
 from sqlalchemy.orm import relationship
@@ -109,6 +109,8 @@ class AIAccount(Base):
     is_active = Column(Boolean, default=True)
     session_string = Column(String, nullable=True)  # Optional: Store Telethon session string
     phone_code_hash = Column(String, nullable=True)  # Temporarily store the phone code hash during login
+    shareable_link = Column(String, nullable=True)  
+    ai_response_context = Column(Text, nullable=True)  # Large text field for AI response context
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
@@ -129,6 +131,7 @@ class Group(Base):
     is_channel = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    is_monitored = Column(Boolean, default=False) 
     
     user = relationship("User", back_populates="groups")
     ai_assignments = relationship("GroupAIAccount", back_populates="group")

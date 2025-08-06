@@ -16,9 +16,13 @@
             :key="grp.id"
             @click="selectGroup(grp)"
             :class="{ 'bg-grey-lighten-4': props.selectedGroup?.id === grp.id }"
+            :prepend-icon="grp.is_monitored ? 'mdi-eye-check' : ''"
           >
             <template v-slot:default>
               <v-list-item-title>{{ grp.title }}</v-list-item-title>
+              <v-list-item-subtitle v-if="grp.is_monitored" class="text-success">
+                Monitored
+              </v-list-item-subtitle>
             </template>
           </v-list-item>
         </template>

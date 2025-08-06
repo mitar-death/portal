@@ -226,19 +226,9 @@ async def get_user_groups(request: Request, db: AsyncSession = None) -> List[Dic
         
         for dialog in dialogs:
             entity = dialog.entity
-            
+  
             # Check if it's a group or channel (not a private chat)
             if hasattr(entity, 'title'):
-                group_data = {
-                    "id": entity.id,
-                    "title": entity.title,
-                    "member_count": getattr(entity, 'participants_count', 0) or 0,  # Ensure it's never None
-                    "description": getattr(entity, 'about', None),
-                    "username": getattr(entity, 'username', None),
-                    "is_channel": hasattr(entity, 'broadcast') and entity.broadcast
-                }
-                groups.append(group_data)
-                
                 # Save or update group in database
                 stmt = select(Group).where(
                     Group.user_id == user.id,
@@ -247,26 +237,47 @@ async def get_user_groups(request: Request, db: AsyncSession = None) -> List[Dic
                 result = await db.execute(stmt)
                 existing_group = result.scalars().first()
                 
+                # Common attributes for both new and existing groups
+                group_data = {  
+                    "id": entity.id,
+                    "title": entity.title,
+                    "member_count": getattr(entity, 'participants_count', 0) or 0,  # Ensure it's never None
+                    "description": getattr(entity, 'about', None),
+                    "username": getattr(entity, 'username', None),
+                    "is_channel": hasattr(entity, 'broadcast') and entity.broadcast
+                }
+                
                 if existing_group:
                     # Update existing group with latest info
                     existing_group.title = entity.title
                     existing_group.username = getattr(entity, 'username', None)
                     existing_group.description = getattr(entity, 'about', None)
                     existing_group.member_count = getattr(entity, 'participants_count', 0)
-                    existing_group.is_channel = hasattr(entity, 'broadcast') and entity.broadcast
+                    existing_group.is_channel = group_data["is_channel"]
                     db.add(existing_group)
+                    
+                    # Add is_monitored flag from the database, ensuring it's a boolean
+                    group_data["is_monitored"] = bool(existing_group.is_monitored) if existing_group.is_monitored is not None else False
+                    logger.info(f"Updated existing group: {entity.title} (ID: {entity.id})")
                 else:
                     # Create new group
                     new_group = Group(
                         user_id=user.id,
                         telegram_id=entity.id,
                         title=entity.title,
-                        username=getattr(entity, 'username', None),
-                        description=getattr(entity, 'about', None),
-                        member_count=getattr(entity, 'participants_count', 0),
-                        is_channel=hasattr(entity, 'broadcast') and entity.broadcast
+                        username=group_data["username"],
+                        description=group_data["description"],
+                        member_count=group_data["member_count"],
+                        is_channel=group_data["is_channel"],
+                        is_monitored=False 
                     )
                     db.add(new_group)
+                    
+                    # Add is_monitored flag (default False for new groups)
+                    group_data["is_monitored"] = False
+                    logger.info(f"Added new group: {entity.title} (ID: {entity.id})")
+                
+                groups.append(group_data)
         
         # Commit all group updates at once
         await db.commit()
@@ -277,6 +288,10 @@ async def get_user_groups(request: Request, db: AsyncSession = None) -> List[Dic
         logger.error(f"Failed to fetch groups: {e}")
         # If we already have some groups from Telegram, return those even if database operations failed
         if groups:
+            # Ensure all groups have proper boolean values for is_monitored
+            for group in groups:
+                if "is_monitored" not in group or group["is_monitored"] is None:
+                    group["is_monitored"] = False
             logger.info(f"Returning {len(groups)} groups despite database error")
             return groups
         raise HTTPException(status_code=500, detail=f"Failed to fetch groups: {str(e)}")
@@ -323,7 +338,31 @@ async def monitor_groups(request: Request, selected_groups: Dict[str, Any], db: 
                 )
                 db.add(selected_group)
             
-            # Fetch the group details from Telegram to ensure it matches the schema
+            # Get the group from db
+            stmt = select(Group).where(
+                Group.user_id == user.id,
+                Group.telegram_id == int(group_id)
+            )
+            group = await db.execute(stmt)
+            db_group = group.scalars().first()
+            logger.info(f"Selected group {db_group} for user {user.id}")
+            if not db_group:
+                # If group doesn't exist, create a minimal entry
+                db_group = Group(
+                    user_id=user.id,
+                    telegram_id=int(group_id),
+                    title=f"Group {group_id}",
+                    member_count=0, 
+                    description=None,
+                    username=None,
+                    is_channel=False,
+                    is_monitored=True  # Mark as monitored
+                )
+                db.add(db_group)
+            else:
+                db_group.is_monitored = True
+                db.add(db_group)
+               
             try:
                 entity = await client.get_entity(int(group_id))
                 group_data = {
@@ -388,6 +427,8 @@ async def get_keywords_controller(request: Request, db: AsyncSession = None) -> 
         # Get the keywords list or empty list if no record exists
         keywords_list = user_keywords.keywords if user_keywords else []
         
+        
+         # Ensure monitoring is started if not already
         return standardize_response(
             {
                 "keywords": keywords_list,

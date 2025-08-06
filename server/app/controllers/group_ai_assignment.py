@@ -4,6 +4,7 @@ from server.app.core.databases import db_context
 from server.app.models.models import User, AIAccount, Group, GroupAIAccount
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
+from server.app.services.monitor import stop_monitoring, start_monitoring, start_health_check_task
 from sqlalchemy.exc import SQLAlchemyError
 from typing import Dict, List, Any
 from server.app.utils.controller_helpers import (
@@ -70,6 +71,7 @@ async def get_group_ai_assignments(request: Request, db: AsyncSession = None) ->
         for account in ai_accounts
     ]
     
+    
     # Format groups with their assignments
     groups_list = [
         {
@@ -77,11 +79,13 @@ async def get_group_ai_assignments(request: Request, db: AsyncSession = None) ->
             "telegram_id": group.telegram_id,
             "title": group.title,
             "ai_account_id": assignments[str(group.id)]["ai_account_id"],
-            "is_active": assignments[str(group.id)]["is_active"]
+            "is_active": assignments[str(group.id)]["is_active"],
+            "is_monitored": group.is_monitored if hasattr(group, 'is_monitored') else False,
         }
         for group in groups
     ]
     
+    logger.info(f"Retrieved {len(groups)} groups and {len(groups_list)} AI accounts for user {user.id}")
     return standardize_response({
         "groups": groups_list,
         "ai_accounts": ai_accounts_list
@@ -171,7 +175,18 @@ async def update_group_ai_assignment(request: Request, db: AsyncSession = None) 
     else:
         # No existing assignment and no AI account ID provided
         result_message = "No changes needed"
+        
+   
+    monitoring_started = await start_monitoring()
+    if monitoring_started:
+        logger.info("Telegram message monitoring started successfully")
+    else:
+        logger.warning("Failed to start Telegram message monitoring. Login may be required.")
     
+    # Start the health check task for real-time diagnostics
+    await start_health_check_task()
+    logger.info("Health check monitoring task started")
+
     # Commit changes
     await db.commit()
     
