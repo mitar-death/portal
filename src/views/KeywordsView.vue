@@ -21,10 +21,7 @@
                 <v-text-field
                   v-model="newKeyword"
                   label="Keyword"
-                  :rules="[(v) => !!v || 'Keyword is required']"
-                  required
-                  @keyup.enter="addKeyword"
-                ></v-text-field>
+                  :rules="[(v) => !!v || 'Keyword is required']" required @keyup.enter="addKeyword"></v-text-field>
 
                 <v-btn
                   color="primary"

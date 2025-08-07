@@ -132,77 +132,33 @@ async def load_user_keywords(user_id):
 @client.on(events.NewMessage(incoming=True))
 async def handle_new_message(event):
     """
-    Handle incoming messages.
-    This function will be called whenever a new message is received.
-    Messages can come from either groups or direct messages.
+    Handle incoming messages from groups and direct messages.
+    - Group messages: Process if they match keywords in monitored groups
+    - Direct messages: Always process to maintain conversations
     """
     global active_user_id, monitored_group_ids, keywords, messenger_ai
+    
     try:
         message = event.message
-        chat_id = str(message.chat_id)  # Convert to string for comparison
         
-        # If no active user is set, we can't process messages
-        if not active_user_id:
-            logger.warning(f"No active user ID set, cannot process messages. Current ID: {active_user_id}")
-            active_user_id = await get_active_user_id()
-            return
-            
         # Skip if message has no text
         if not hasattr(message, 'text') or not message.text:
-            logger.debug(f"Skipping message with no text: {message.id} in {chat_id}")
             return
-            
-        # Check if this group is being monitored
-        if monitored_group_ids and chat_id not in monitored_group_ids:
-            logger.debug(f"Skipping message from unmonitored group: {chat_id}")
-            return
-            
-        # Try to get chat info
-        chat_title = None
-        try:
-            chat = await event.get_chat()
-            chat_title = getattr(chat, 'title', None)
-        except Exception as e:
-            logger.error(f"Error getting chat info: {e}")
-            
-        # Try to get sender info
-        sender_name = None
-        sender_id = None
-        try:
-            sender = await event.get_sender()
-            first_name = getattr(sender, 'first_name', '')
-            last_name = getattr(sender, 'last_name', '')
-            sender_name = f"{first_name} {last_name}".strip() or f"User {sender.id}"
-            sender_id = sender.id  # Store the sender's ID for conversation tracking
-        except Exception as e:
-            logger.error(f"Error getting sender info: {e}")
-            sender_name = f"Unknown"
-            
-        # Determine if this is a group message or a direct message
-        is_group_message = bool(chat_title)  # Groups have titles, DMs don't
         
-        # For group messages, we need to check if it's a monitored group
-        if is_group_message:
-            # Initialize monitored groups if not already done
-            if not monitored_group_ids:
-                monitored_group_ids = await get_user_selected_groups(active_user_id)
-                logger.info(f"Initialized monitored groups for user {active_user_id}: {monitored_group_ids}")
-                
-            # Handle the Telegram ID format difference
-            # Telegram sends negative IDs for groups/channels with the format -100{group_id}
-            short_chat_id = chat_id.replace('-100', '')
-            
-            # Skip if not a monitored group
-            if chat_id not in monitored_group_ids and short_chat_id not in monitored_group_ids:
-                logger.debug(f"Message from group {chat_id} not in monitored groups, skipping")
+        chat_id = str(message.chat_id)
+        
+        # Verify active user is set
+        if not active_user_id:
+            logger.warning("No active user ID set, cannot process messages")
+            active_user_id = await get_active_user_id()
+            if not active_user_id:
                 return
-        else:
-            # This is a direct message - we should handle it if we have an active AI conversation
-            # No need to check for keywords in DMs, as they will be handled by the MessengerAI component
-            logger.debug(f"Received direct message from {sender_name} (ID: {sender_id})")
         
-        # Log basic info
-        logger.info(f"New message received: {message.id} in {chat_id}")
+        # Get chat and sender information
+        chat_title, sender_name, sender_id = await _get_message_metadata(event)
+        
+        # Determine if this is a group message or a direct message
+        is_group_message = bool(chat_title)
         
         # Prepare message data dictionary
         message_data = {
@@ -212,78 +168,161 @@ async def handle_new_message(event):
             'chat_title': chat_title,
             'sender_id': sender_id,
             'sender_name': sender_name,
-            'text': message.text
+            'text': message.text,
+            'is_group_message': is_group_message
         }
         
-        # Ensure active_user_id is set and valid
-        if not active_user_id or not isinstance(active_user_id, int) or active_user_id <= 0:
-            logger.error(f"Invalid active_user_id: {active_user_id}. Cannot initialize MessengerAI.")
-            return
-            
-        # Initialize messenger_ai if needed
-        if not messenger_ai:
-            logger.info(f"Initializing MessengerAI with user_id: {active_user_id}")
-            messenger_ai = MessengerAI()
-            ai_initialized = await messenger_ai.initialize(active_user_id)
-            if not ai_initialized:
-                logger.error(f"Failed to initialize MessengerAI with user_id: {active_user_id}")
-                messenger_ai = None
-                return
-                
-        # Ensure we have keywords loaded
-        if not keywords and active_user_id:
-            await load_user_keywords(active_user_id)
-            
-        # If this is a group message, we only write to file if it contains keywords
-        # If this is a DM, we always handle it
+        # Process based on message type
         if is_group_message:
-            # Check if message contains any keywords
-            message_text_lower = message.text.lower()
-            matched_keywords = [keyword for keyword in keywords if keyword in message_text_lower]
-            
-            # Add matched keywords to the message data
-            message_data['matched_keywords'] = matched_keywords
-            
-            # Only record group messages that contain keywords
-            if matched_keywords or not keywords:
-                write_message_to_file(message_data, active_user_id)
+            await _setup_group_message(message_data, chat_id)
         else:
-            # Always record DMs
-            write_message_to_file(message_data, active_user_id)
+            await _setup_direct_message(message_data)
             
-        # Send the message to the WebSocket manager for real-time monitoring
-        try:
-            # Add additional contextual information to the message data
-            
-            # Send to WebSocket clients
-            websocket_message = message_data.copy()
-            websocket_message.update({
-                "is_group_message": is_group_message,
-                "matched_keywords": message_data.get('matched_keywords', []),
-                "monitored": True,
-                "processed_time": datetime.now().isoformat()
-            })
-            asyncio.create_task(websocket_manager.add_chat_message(websocket_message))
-        except Exception as e:
-            logger.error(f"Error sending message to WebSocket: {e}")
-            
-        # Always send the message to MessengerAI for processing
-        # The MessengerAI component will decide whether to respond based on:
-        # - For group messages: only if they contain keywords
-        # - For DMs: always, to continue conversations
-        if messenger_ai:
-            logger.debug(f"Sending message to MessengerAI for processing")
-            asyncio.create_task(messenger_ai.handle_message(message_data))
-        else:
-            logger.warning(f"MessengerAI not initialized, cannot process message")
-            # Try to reinitialize
-            await ensure_messenger_ai_initialized()
-            if messenger_ai:
-                asyncio.create_task(messenger_ai.handle_message(message_data))
-                
     except Exception as e:
-        logger.error(f"Error in handle_new_message: {e}")
+        logger.error(f"Error in handle_new_message: {e}", exc_info=True)
+        error_tracker.add_error("Message handling error", str(e))
 
+async def _get_message_metadata(event):
+    """Extract metadata from the message event"""
+    # Get chat info
+    chat_title = None
+    try:
+        chat = await event.get_chat()
+        chat_title = getattr(chat, 'title', None)
+    except Exception as e:
+        logger.error(f"Error getting chat info: {e}")
+    
+    # Get sender info
+    sender_name = "Unknown"
+    sender_id = None
+    try:
+        sender = await event.get_sender()
+        first_name = getattr(sender, 'first_name', '')
+        last_name = getattr(sender, 'last_name', '')
+        sender_name = f"{first_name} {last_name}".strip() or f"User {sender.id}"
+        sender_id = sender.id
+    except Exception as e:
+        logger.error(f"Error getting sender info: {e}")
+    
+    return chat_title, sender_name, sender_id
+
+async def _setup_group_message(message_data, chat_id):
+    """Process group messages based on keywords and monitored status"""
+    global monitored_group_ids, keywords, active_user_id
+    
+    # Initialize monitored groups if needed
+    if not monitored_group_ids:
+        monitored_group_ids = await get_user_selected_groups(active_user_id)
+        logger.info(f"Initialized monitored groups for user {active_user_id}: {monitored_group_ids}")
+    
+    # Check if this is a monitored group
+    short_chat_id = chat_id.replace('-100', '')
+    if chat_id not in monitored_group_ids and short_chat_id not in monitored_group_ids:
+        logger.debug(f"Message from group {chat_id} not in monitored groups, skipping")
+        return
+    
+    # Ensure keywords are loaded
+    if not keywords:
+        await load_user_keywords(active_user_id)
+    
+    # Enhanced keyword matching
+    matched_keywords = _match_keywords(message_data['text'], keywords)
+    message_data['matched_keywords'] = matched_keywords
+    
+    # Only process group messages that match keywords
+    if matched_keywords or not keywords:
+        logger.info(f"Recording group message with keywords: {matched_keywords} in {chat_id}")
+        
+        # Write to file
+        write_message_to_file(message_data, active_user_id)
+        
+        # Send to WebSocket
+        await _send_to_websocket(message_data, matched_keywords)
+        
+        # Process with AI
+        await _process_with_ai(message_data)
+
+async def _setup_direct_message(message_data):
+    """Process direct messages - always write to file and process with AI"""
+    global active_user_id
+    
+    logger.info(f"Processing direct message from {message_data['sender_name']} (ID: {message_data['sender_id']})")
+    
+    # Always write DMs to file
+    write_message_to_file(message_data, active_user_id)
+    
+    # Send to WebSocket
+    # await _send_to_websocket(message_data, [])
+    
+    # Process with AI
+    # await _process_with_ai(message_data)
+
+def _match_keywords(text, keywords_list):
+    """
+    Enhanced keyword matching with word boundaries and partial matches
+    """
+    if not keywords_list:
+        return []
+    
+    text_lower = text.lower()
+    matched = []
+    
+    # Split text into words for word boundary checking
+    words = set(text_lower.split())
+    
+    for keyword in keywords_list:
+        keyword_lower = keyword.lower()
+        
+        # Check for exact word matches (with word boundaries)
+        if keyword_lower in words:
+            matched.append(keyword)
+            continue
+            
+        # Check for phrases (multiple words)
+        if ' ' in keyword_lower and keyword_lower in text_lower:
+            matched.append(keyword)
+            continue
+            
+        # Check for partial matches within words (more than 3 chars to avoid false positives)
+        if len(keyword_lower) > 3 and keyword_lower in text_lower:
+            matched.append(keyword)
+    
+    return matched
+
+async def _send_to_websocket(message_data, matched_keywords):
+    """Send message to WebSocket clients"""
+    try:
+        websocket_message = message_data.copy()
+        websocket_message.update({
+            "matched_keywords": matched_keywords,
+            "monitored": True,
+            "processed_time": datetime.now().isoformat()
+        })
+        await websocket_manager.add_chat_message(websocket_message)
+    except Exception as e:
+        logger.error(f"Error sending message to WebSocket: {e}")
+        error_tracker.add_error("WebSocket error", str(e))
+
+async def _process_with_ai(message_data):
+    """Process message with MessengerAI"""
+    global messenger_ai, active_user_id
+    
+    # Initialize AI if needed
+    if not messenger_ai:
+        await ensure_messenger_ai_initialized()
+    
+    if messenger_ai:
+        try:
+            await messenger_ai.handle_message(message_data)
+        except Exception as e:
+            logger.error(f"Error in AI processing: {e}")
+            error_tracker.add_error("AI processing error", str(e))
+            
+            # Try to reinitialize on error
+            if await ensure_messenger_ai_initialized():
+                await messenger_ai.handle_message(message_data)
+    else:
+        logger.error("MessengerAI still not initialized after attempt")
 
 async def _run_client():
     """

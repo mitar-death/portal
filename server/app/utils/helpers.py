@@ -7,24 +7,21 @@ import sqlalchemy as sa
 from server.app.core.config import settings
 from loguru import logger
 
-def generate_random_string(length: int) -> str:
+
+
+def match_keywords(text, keywords_list):
     """
-    Generate random alphanumeric string based on specified length
-
-    Args:
-        length (int): The length of the string
-
-    Returns:
-        str: The random string
+    Enhanced keyword matching with word boundaries and partial matches
     """
-    letters_and_digits = string.ascii_lowercase + string.digits
-    rand_string = "".join(random.choice(letters_and_digits) for i in range(length))
-    return rand_string
-
-
-def generate_reference(prefix: str, length: int = 8):
-    return f"{prefix}{generate_random_string(length)}"
-
+    if not keywords_list:
+        return []
+    
+    text_lower = text.lower()
+    matched = []
+    for keyword in keywords_list:
+        if keyword in text_lower:
+            matched.append(keyword)
+    return matched
 
 def create_migration_enum_def(enumType: Enum, name: str):
     """

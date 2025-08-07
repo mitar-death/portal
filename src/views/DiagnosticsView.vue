@@ -80,7 +80,7 @@ import {
   debouncedUpdateConversation, // Add debounced function
   verifyConversationIntegrity, // Add verification function
 } from "@/utils/local-storage";
-import "@/views/search-styles.css";
+import "@/assets/search-styles.css";
 
 import SystemStatusPanel from "@/components/diagnostics/SystemStatusPanel.vue";
 import SystemResourcesCard from "@/components/diagnostics/SystemResourcesCard.vue";
