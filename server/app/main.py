@@ -167,7 +167,7 @@ async def lifespan(app: FastAPI):
     
     # Get telegram client to disconnect it
     try:
-        client = await asyncio.wait_for(get_client_async(), timeout=2)
+        client = await asyncio.wait_for(get_client(), timeout=2)
         if client and client.is_connected():
             await asyncio.wait_for(client.disconnect(), timeout=3)
             logger.info("Telegram client disconnected")
