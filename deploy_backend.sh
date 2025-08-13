@@ -97,6 +97,20 @@ fi
 echo -e "${YELLOW}Setting GCP project to: $PROJECT_ID${NC}"
 gcloud config set project "$PROJECT_ID"
 
+STATIC_IP_NAME="tgportal-static-ip"
+echo -e "${YELLOW}Checking for static IP address...${NC}"
+if gcloud compute addresses describe "$STATIC_IP_NAME" --region="$DB_REGION" &> /dev/null; then
+  echo -e "${GREEN}Static IP address $STATIC_IP_NAME already exists.${NC}"
+  STATIC_IP=$(gcloud compute addresses describe "$STATIC_IP_NAME" --region="$DB_REGION" --format='get(address)')
+  echo -e "${GREEN}Using existing static IP: $STATIC_IP${NC}"
+else
+  echo -e "${YELLOW}Creating new static IP address: $STATIC_IP_NAME${NC}"
+  gcloud compute addresses create "$STATIC_IP_NAME" --region="$DB_REGION"
+  STATIC_IP=$(gcloud compute addresses describe "$STATIC_IP_NAME" --region="$DB_REGION" --format='get(address)')
+  echo -e "${GREEN}Reserved static IP address: $STATIC_IP${NC}"
+fi
+
+
 # Check if the instance exists
 if gcloud compute instances describe "$INSTANCE_NAME" --zone="$ZONE" &> /dev/null; then
   echo -e "${GREEN}Instance $INSTANCE_NAME already exists.${NC}"
@@ -110,9 +124,10 @@ else
     --image-family=debian-12 \
     --image-project=debian-cloud \
     --boot-disk-size=200GB \
-    --tags=http-server,https-server
+    --tags=http-server,https-server \
+    --address="$STATIC_IP"  # Specify the static IP here
 
-  echo -e "${GREEN}Instance created successfully.${NC}"
+  echo -e "${GREEN}Instance created successfully with static IP: $STATIC_IP${NC}"
 
   # Wait for startup script to complete
   echo -e "${YELLOW}Waiting for VM startup script to complete...${NC}"
@@ -495,13 +510,15 @@ if [ -n "$CUSTOM_DOMAIN" ] && [ "$USE_HTTPS" = "true" ]; then
 else
   echo -e "${YELLOW}Backend URL:${NC} http://$EXTERNAL_IP"
 fi
+echo -e "${YELLOW}Static IP Address:${NC} $STATIC_IP"
 echo -e "${YELLOW}VM Instance:${NC} $INSTANCE_NAME (Zone: $ZONE)"
 echo -e "${YELLOW}GitHub Repository:${NC} $GITHUB_REPO"
 echo -e "${YELLOW}GitHub Branch:${NC} $GITHUB_BRANCH"
 if [ -n "$CUSTOM_DOMAIN" ]; then
   echo -e "${YELLOW}Custom Domain:${NC} $CUSTOM_DOMAIN (HTTPS: $USE_HTTPS)"
 fi
-echo -e "${YELLOW}==================================================================${NC}"
+echo -e "${YELLOW}====================================
+==============================${NC}"
 echo -e "${GREEN}Next steps:${NC}"
 echo -e "1. Update your Firebase configuration to allow requests from this domain"
 if [ -n "$CUSTOM_DOMAIN" ]; then
