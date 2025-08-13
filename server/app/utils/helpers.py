@@ -9,19 +9,6 @@ from loguru import logger
 
 
 
-def match_keywords(text, keywords_list):
-    """
-    Enhanced keyword matching with word boundaries and partial matches
-    """
-    if not keywords_list:
-        return []
-    
-    text_lower = text.lower()
-    matched = []
-    for keyword in keywords_list:
-        if keyword in text_lower:
-            matched.append(keyword)
-    return matched
 
 def create_migration_enum_def(enumType: Enum, name: str):
     """

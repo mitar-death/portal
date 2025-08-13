@@ -265,16 +265,7 @@ class MessengerAI:
         """
         logger.debug(f"Processing group message from {sender_name} in {chat_title}")
         
-        # First, check if this message contains any keywords
-        analysis = await self.message_analyzer.should_respond(message_text)
-        if not analysis["should_respond"]:
-            logger.debug(f"No keywords matched in message from {sender_name} in {chat_title}, ignoring")
-            return
-            
-        matched_keywords = analysis["matched_keywords"]
-        logger.info(f"Message from {sender_name} in {chat_title} matched keywords: {matched_keywords}")
-        
-        # Find the appropriate AI account for this group
+        # First: Find the appropriate AI account for this group
         str_chat_id = str(chat_id)
         short_chat_id = str_chat_id.replace('-100', '')
         
@@ -289,6 +280,16 @@ class MessengerAI:
             logger.warning(f"No AI account mapped to group {chat_id}, cannot respond")
             return
         
+        # Secondly, check if this message contains any keywords, and analyze it
+        analysis = await self.message_analyzer.should_respond(message_text)
+        if not analysis["should_respond"]:
+            logger.debug(f"No keywords matched in message from {sender_name} in {chat_title}, ignoring")
+            return
+            
+        matched_keywords = analysis["matched_keywords"]
+        logger.info(f"Message from {sender_name} in {chat_title} matched keywords: {matched_keywords}")
+        
+      
         # Get the client for this AI account
         ai_client = self.ai_clients.get(ai_account_id)
         ai_account = self.ai_accounts.get(ai_account_id)
@@ -355,9 +356,7 @@ class MessengerAI:
                 from_group=True,
                 group_name=chat_title
             )
-            
-            
-            
+            logger.info(f"Generated response for group {chat_id}: {response}")
             # Send the response directly to the user, not in the group
             try:
                 # First, try to get the user entity to ensure we can message them
@@ -457,20 +456,10 @@ class MessengerAI:
         # Get the AI account associated with this user's conversation
         ai_account_id = self.conversation_manager.get_ai_account_for_user(sender_id)
         
-        # If no AI account is associated, try to use any available AI account
+        # If no AI account is associated, do nothing
         if not ai_account_id:
-            logger.info(f"No existing AI account associated with user {sender_id}, trying to assign one")
-            
-            # Use the first available AI account
-            if self.ai_clients:
-                ai_account_id = list(self.ai_clients.keys())[0]
-                logger.info(f"Assigned AI account {ai_account_id} to handle DM from user {sender_id}")
-                
-                # Create a new conversation with this AI account
-                self.conversation_manager.get_or_create_conversation(sender_id, ai_account_id)
-            else:
-                logger.warning(f"No AI accounts available to respond to DM from user {sender_id}")
-                return
+            logger.warning(f"No existing AI account associated with user {sender_id}, trying to assign one")
+            return
         
         # Get the client for this AI account
         ai_client = self.ai_clients.get(ai_account_id)

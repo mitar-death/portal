@@ -5,15 +5,14 @@ from telethon import events
 from server.app.services.telegram import get_client
 from server.app.core.logging import logger
 from server.app.utils.helpers import write_message_to_file
-from server.app.services.messenger_ai import MessengerAI
 from server.app.services.messenger_ai import initialize_messenger_ai, get_messenger_ai
 from server.app.utils.db_helpers import get_user_keywords, get_user_selected_groups
-from server.app.models.models import SelectedGroup
-from sqlalchemy import select
 from server.app.services.messenger_ai import get_messenger_ai
 from server.app.services.websocket_manager import websocket_manager
-from datetime import datetime, timedelta
+from datetime import datetime
 from collections import deque
+from telethon import functions
+
 
 # Add a new class to track recent errors
 class ErrorTracker:
@@ -208,7 +207,7 @@ async def _get_message_metadata(event):
 
 async def _setup_group_message(message_data, chat_id):
     """Process group messages based on keywords and monitored status"""
-    global monitored_group_ids, keywords, active_user_id
+    global monitored_group_ids, keywords, active_user_id, client
     
     # Initialize monitored groups if needed
     if not monitored_group_ids:
@@ -220,6 +219,13 @@ async def _setup_group_message(message_data, chat_id):
     if chat_id not in monitored_group_ids and short_chat_id not in monitored_group_ids:
         logger.debug(f"Message from group {chat_id} not in monitored groups, skipping")
         return
+    
+    # Check if sender is a bot
+    sender_id = message_data['sender_id']
+    # is_bot = await is_bot_detailed(client, sender_id)
+    # if is_bot:
+    #     logger.info(f"Skipping message from bot {message_data['sender_name']} (ID: {sender_id}) in group {chat_id}")
+    #     return
     
     # Ensure keywords are loaded
     if not keywords:
@@ -345,7 +351,24 @@ async def _run_client():
             except asyncio.CancelledError:
                 pass
 
+async def is_bot_detailed(client, user_id):
+    """
+    Check if a user is a bot using the Telethon client.
 
+    Args:
+        client (TelegramClient): The Telethon client instance.
+        user_id (int): The ID of the user to check.
+
+    Returns:
+        bool: True if the user is a bot, False otherwise.
+    """
+    try:
+        logger.info(f"Checking if user {user_id} is a bot or a normal user message can be sent")
+        full_user = await client(functions.users.GetFullUserRequest(user_id))
+        return getattr(full_user.users[0], 'bot', False)
+    except Exception as e:
+        logger.error(f"Error checking if user {user_id} is bot: {e}")
+        return None
 
 async def start_monitoring(user_id=None):
     """

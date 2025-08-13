@@ -8,7 +8,7 @@ from server.app.models.models import ActiveSession, SelectedGroup, User, Keyword
 from server.app.core.logging import logger
 from server.app.services.monitor import stop_monitoring, start_monitoring, start_health_check_task
 from server.app.services.monitor import set_active_user_id
-from server.app.services.telegram import session_path, session_dir
+from server.app.services.telegram import  reset_client
 from server.app.utils.controller_helpers import (
     ensure_client_connected,
     ensure_user_authenticated,
@@ -93,7 +93,7 @@ async def request_code(request: Request, db: AsyncSession = None) -> Dict[str, A
 
 
 @safe_db_operation()
-async def verify_code(phone_number: str, code: str, phone_code_hash: str, db: AsyncSession = None) -> Dict[str, Any]:
+async def verify_code(phone_number: str, code: str, phone_code_hash: str, db: AsyncSession = None):
     """
     Verify the code provided by the user.
     
@@ -109,7 +109,10 @@ async def verify_code(phone_number: str, code: str, phone_code_hash: str, db: As
     Raises:
         HTTPException: If verification fails
     """
-    client = await ensure_client_connected()
+    
+    # Start with a fresh client connection
+    client = reset_client()
+    await client.connect()
     
     # Check if we have an active session
     stmt = select(ActiveSession).where(ActiveSession.phone_number == phone_number)
@@ -120,8 +123,18 @@ async def verify_code(phone_number: str, code: str, phone_code_hash: str, db: As
         raise HTTPException(status_code=400, detail="No active login session found")
     
     try:
+        # After successful sign_in, verify the session was saved
         response = await client.sign_in(phone=phone_number, code=code, phone_code_hash=phone_code_hash)
         logger.info(f"Authentication successful with Telegram")
+        
+        # Verify the session is actually authorized
+        if not await client.is_user_authorized():
+            logger.error("Client reports as unauthorized even after successful sign_in")
+            raise HTTPException(status_code=500, detail="Authentication session not saved properly")
+            
+        # Force a simple API call to ensure the session works
+        me = await client.get_me()
+        logger.info(f"Verified session with user: {me.first_name} (ID: {me.id})")
        
         session.verified = True
         db.add(session)
@@ -539,44 +552,44 @@ async def logout_telegram(request: Request, db: AsyncSession = None) -> Dict[str
     Raises:
         HTTPException: For logout errors
     """
-    user = await ensure_user_authenticated(request)
+    # user = await ensure_user_authenticated(request)
     client = await ensure_client_connected()
     
     try:
         # Reset the active user ID in the monitor service
         await stop_monitoring()
-        logger.info(f"Stopped monitoring for user {user.id}")
+        # logger.info(f"Stopped monitoring for user {user.id}")
         
         # Log out from Telegram
         await client.log_out()
-        logger.info(f"User {user.id} logged out successfully")
+        # logger.info(f"User {user.id} logged out successfully")
         
-        # Clear user's active session from database
-        stmt = select(ActiveSession).where(ActiveSession.user_id == user.id)
-        result = await db.execute(stmt)
-        active_session = result.scalars().first()
+        # # Clear user's active session from database
+        # stmt = select(ActiveSession).where(ActiveSession.user_id == user.id)
+        # result = await db.execute(stmt)
+        # active_session = result.scalars().first()
         
-        if active_session:
-            await db.delete(active_session)
-            await db.commit()
+        # if active_session:
+        #     await db.delete(active_session)
+        #     await db.commit()
         
-        # Delete the Telethon session file
-        try:
-            # Check if user-specific session exists and delete it
-            if os.path.exists(session_path):
-                os.remove(session_path)
-                logger.info(f"Deleted user-specific session file: {session_path}")
+        # # Delete the Telethon session file
+        # try:
+        #     # Check if user-specific session exists and delete it
+        #     if os.path.exists(session_path):
+        #         os.remove(session_path)
+        #         logger.info(f"Deleted user-specific session file: {session_path}")
 
-            # Check for and delete any additional session files that might exist
-            for session_file in os.listdir(session_dir):
-                if session_file.startswith("user_session") and session_file.endswith(".session"):
-                    file_path = os.path.join(session_dir, session_file)
-                    os.remove(file_path)
-                    logger.info(f"Deleted session file: {file_path}")
+        #     # Check for and delete any additional session files that might exist
+        #     for session_file in os.listdir(session_dir):
+        #         if session_file.startswith("user_session") and session_file.endswith(".session"):
+        #             file_path = os.path.join(session_dir, session_file)
+        #             os.remove(file_path)
+        #             logger.info(f"Deleted session file: {file_path}")
                     
-        except Exception as e:
-            logger.error(f"Error deleting session file: {e}")
-            # Continue with logout even if file deletion fails
+        # except Exception as e:
+        #     logger.error(f"Error deleting session file: {e}")
+        #     # Continue with logout even if file deletion fails
         
         return standardize_response({}, "Successfully logged out")
         

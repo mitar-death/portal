@@ -7,7 +7,6 @@ from fastapi import HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from server.app.core.logging import logger
 from server.app.core.databases import db_context
-from server.app.services.telegram import get_client
 
 T = TypeVar('T')
 
@@ -15,9 +14,32 @@ async def ensure_client_connected():
     """
     Ensure the Telegram client is connected. Returns the connected client.
     """
+    from server.app.services.telegram import get_client
+    
     client = get_client()
+    
+    # Always explicitly check connection state
     if not client.is_connected():
+        logger.info("Client disconnected, reconnecting...")
         await client.connect()
+    
+    # Add more detailed connection verification
+    try:
+        # Perform a lightweight API call to verify connection
+        await client.get_me()
+        logger.debug("Verified client connection with API call")
+    except Exception as e:
+        logger.warning(f"Client connection verification failed: {e}")
+        # Try reconnecting once more
+        await client.disconnect()
+        await client.connect()
+    
+    # Validate the session is active
+    if not await client.is_user_authorized():
+        logger.warning("Telegram client connected but not authorized")
+    else:
+        logger.debug("Telegram client connected and authorized")
+     
     return client
 
 async def ensure_user_authenticated(request: Request):

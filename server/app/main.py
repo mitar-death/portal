@@ -58,7 +58,6 @@ async def lifespan(app: FastAPI):
                     
                     if user:
                         # Set this user as the active user for monitoring
-                       
                         await set_active_user_id(user.id)
                         logger.info(f"Set active user ID to {user.id} during application startup")
                     else:
