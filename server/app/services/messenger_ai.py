@@ -1,15 +1,14 @@
 import os
 import asyncio
 import traceback
-from typing import List, Dict, Optional, Set, Any
 from datetime import datetime, timedelta
 from telethon import TelegramClient, errors as telethon_errors, events
 from server.app.core.logging import logger
 from server.app.core.databases import AsyncSessionLocal
-from server.app.models.models import AIAccount, Group, GroupAIAccount
+from server.app.models.models import AIAccount
 from sqlalchemy import select, and_
-from server.app.services.ai_engine import generate_response, analyze_message
-from server.app.utils.db_helpers import get_user_selected_groups, get_user_keywords
+from server.app.services.ai_engine import generate_response
+from server.app.utils.db_helpers import  get_user_keywords
 from server.app.utils.group_helpers import get_group_ai_mappings
 from server.app.services.message_analyzer import MessageAnalyzer
 from server.app.services.conversation_manager import ConversationManager
@@ -396,9 +395,17 @@ class MessengerAI:
                 logger.warning(f"Cannot send DM to user {sender_id} due to previous errors")
                 return
                 
-            # Update conversation in background
+            # Update conversation in background - specify this is from a group
             conversation_task = asyncio.create_task(
-                self._update_conversation(sender_id, sender_name, message_text, ai_account_id)
+                self._update_conversation(
+                    sender_id, 
+                    sender_name, 
+                    message_text, 
+                    ai_account_id,
+                    chat_type="group",
+                    group_id=chat_id,
+                    group_name=chat_title
+                )
             )
             
             # Get conversation state
@@ -430,23 +437,30 @@ class MessengerAI:
             self.active_tasks.add(response_task)
             response_task.add_done_callback(lambda t: self.active_tasks.discard(t))
             
+            # Send a WebSocket notification about this conversation
+            await self._send_conversation_update(sender_id, ai_account_id)
+            
         except Exception as e:
             logger.error(f"Error handling group message: {e}")
             logger.error(traceback.format_exc())
     
-    async def _update_conversation(self, sender_id, sender_name, message_text, ai_account_id):
+    async def _update_conversation(self, sender_id, sender_name, message_text, ai_account_id, chat_type="direct", group_id=None, group_name=None):
         """Update conversation history without blocking"""
         try:
             self.conversation_manager.add_user_message(
                 user_id=sender_id,
                 message_text=message_text,
                 ai_account_id=ai_account_id,
-                sender_name=sender_name
+                sender_name=sender_name,
+                chat_type=chat_type,
+                group_id=group_id,
+                group_name=group_name
             )
             
             # Send WebSocket notification in background
             ws_task = asyncio.create_task(self._send_ws_notification(
-                sender_id, sender_name, message_text, ai_account_id, is_ai=False
+                sender_id, sender_name, message_text, ai_account_id, is_ai=False,
+                group_name=group_name, group_id=group_id, chat_type=chat_type
             ))
             
             self.active_tasks.add(ws_task)
@@ -454,11 +468,11 @@ class MessengerAI:
             
         except Exception as e:
             logger.error(f"Error updating conversation: {e}")
-    
-    async def _send_ws_notification(self, sender_id, sender_name, message, ai_account_id, is_ai=False, group_name=None):
+
+    async def _send_ws_notification(self, sender_id, sender_name, message, ai_account_id, is_ai=False, group_name=None, group_id=None, chat_type="direct"):
         """Send WebSocket notification without blocking"""
         try:
-            conversation_id = f"convo_{sender_id}_{ai_account_id}"
+            conversation_id = f"{sender_id}-{ai_account_id}"
             
             # Create conversation data
             chat_message = {
@@ -468,19 +482,80 @@ class MessengerAI:
                 "message": message,
                 "timestamp": datetime.now().isoformat(),
                 "ai_account_id": ai_account_id,
-                "is_ai_message": is_ai
+                "is_ai_message": is_ai,
+                "chat_type": chat_type
             }
             
             # Add group info if available
-            if group_name:
+            if chat_type == "group":
                 chat_message["from_group"] = True
+                chat_message["group_id"] = group_id
                 chat_message["group_name"] = group_name
                 
             # Send to WebSocket
             await websocket_manager.add_chat_message(chat_message)
             
+            # Also update the conversation
+            await self._send_conversation_update(sender_id, ai_account_id)
+            
         except Exception as e:
             logger.error(f"Error sending WebSocket notification: {e}")
+
+    async def _send_conversation_update(self, user_id, ai_account_id):
+        """Send an updated conversation to the WebSocket manager"""
+        try:
+            # Format the conversation ID as expected by the frontend
+            conversation_id = f"{user_id}-{ai_account_id}"
+            
+            # Get conversation history
+            history = self.conversation_manager.get_conversation_history(user_id, ai_account_id)
+            
+            # Get the raw conversation data
+            user_id_str = str(user_id)
+            if user_id_str not in self.conversation_manager.conversations:
+                return
+                
+            conv_data = self.conversation_manager.conversations[user_id_str]
+            
+            # Get AI account info for display
+            ai_account = self.ai_accounts.get(ai_account_id)
+            ai_account_name = getattr(ai_account, 'name', f"AI Account {ai_account_id}")
+            
+            # Format timestamps
+            last_message_time = conv_data.get("last_message")
+            if isinstance(last_message_time, datetime):
+                last_message_time = last_message_time.isoformat()
+                
+            start_time = conv_data.get("start_time")
+            if isinstance(start_time, datetime):
+                start_time = start_time.isoformat()
+                
+            # Prepare conversation data for WebSocket
+            conversation_update = {
+                "conversation_id": conversation_id,
+                "user_id": user_id,
+                "ai_account_id": ai_account_id,
+                "user_name": conv_data.get("user_name", f"User {user_id}"),
+                "ai_account_name": ai_account_name,
+                "start_time": start_time or datetime.now().isoformat(),
+                "last_message_time": last_message_time or datetime.now().isoformat(),
+                "message_count": len(history),
+                "status": "active",
+                "chat_type": conv_data.get("chat_type", "direct"),
+                "history": history
+            }
+            
+            # Add group info if this is from a group
+            if conv_data.get("chat_type") == "group":
+                conversation_update["from_group"] = True
+                conversation_update["group_id"] = conv_data.get("group_id")
+                conversation_update["group_name"] = conv_data.get("group_name")
+                
+            # Send the update via WebSocket
+            await websocket_manager.update_conversation(conversation_update)
+            
+        except Exception as e:
+            logger.error(f"Error sending conversation update: {e}")
     
     async def _generate_and_send_response(self, ai_client, ai_account, ai_account_id, sender_id, 
                                          sender_name, message_text, matched_keywords, is_new_conversation,

@@ -63,6 +63,13 @@ if [ -f ".env" ]; then
   echo -e "${GREEN}Loaded environment variables from .env file${NC}"
 fi
 
+# Get env vars
+PUSHER_APP_ID=$PUSHER_APP_ID
+PUSHER_APP_KEY=$PUSHER_APP_KEY
+PUSHER_APP_SECRET=$PUSHER_APP_SECRET
+PUSHER_APP_CLUSTER=$PUSHER_APP_CLUSTER
+PUSHER_USE_TLS=${PUSHER_USE_TLS:-"true"}
+
 # Get custom domain from environment or prompt user
 CUSTOM_DOMAIN=${CUSTOM_DOMAIN:-""}
 if [ -z "$CUSTOM_DOMAIN" ]; then
@@ -289,6 +296,13 @@ REDIS_PORT=$REDIS_PORT
 REDIS_DB=$REDIS_DB
 REDIS_PASSWORD=$REDIS_PASSWORD
 
+# Pusher config
+PUSHER_APP_CLUSTER=$PUSHER_APP_CLUSTER
+PUSHER_APP_ID=$PUSHER_APP_ID
+PUSHER_APP_KEY=$PUSHER_APP_KEY
+PUSHER_APP_SECRET=$PUSHER_APP_SECRET
+PUSHER_USE_TLS=$PUSHER_USE_TLS
+
 # Cloud SQL connection name (for socket connections if needed)
 CLOUD_SQL_CONNECTION_NAME=$DB_CONNECTION_NAME
 
@@ -389,6 +403,11 @@ export REDIS_HOST="\$REDIS_HOST"
 export REDIS_PORT="\$REDIS_PORT"
 export REDIS_DB="\$REDIS_DB"
 export REDIS_PASSWORD="\$REDIS_PASSWORD"
+export PUSHER_APP_ID="\$PUSHER_APP_ID"
+export PUSHER_APP_KEY="\$PUSHER_APP_KEY"
+export PUSHER_APP_SECRET="\$PUSHER_APP_SECRET"
+export PUSHER_APP_CLUSTER="\$PUSHER_APP_CLUSTER"
+export PUSHER_USE_TLS="\$PUSHER_USE_TLS"
 
 # Run the setup script in the background to avoid hanging SSH session
 cd /tmp/tgportal_deploy
@@ -434,6 +453,11 @@ export REDIS_HOST='$REDIS_HOST'
 export REDIS_PORT='$REDIS_PORT'
 export REDIS_DB='$REDIS_DB'
 export REDIS_PASSWORD='$REDIS_PASSWORD'
+export PUSHER_APP_ID='$PUSHER_APP_ID'
+export PUSHER_APP_KEY='$PUSHER_APP_KEY'
+export PUSHER_APP_SECRET='$PUSHER_APP_SECRET'
+export PUSHER_APP_CLUSTER='$PUSHER_APP_CLUSTER'
+export PUSHER_USE_TLS='$PUSHER_USE_TLS'
 bash ~/github_setup.sh
 " || {
   echo -e "${RED}Deployment failed. Please check the logs for more information.${NC}"

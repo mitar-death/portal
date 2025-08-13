@@ -3,7 +3,6 @@ Class for managing conversations with users in direct messages.
 """
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
-from telethon import TelegramClient
 from server.app.core.logging import logger
 
 class ConversationManager:
@@ -46,45 +45,103 @@ class ConversationManager:
         return self.conversations[user_id_str]["history"]
     def get_all_conversations(self):
         """
-        Get all conversations currently being tracked.
+        Get all conversations currently being tracked, formatted for diagnostics.
         
         Returns:
-            dict: Dictionary of all conversations, keyed by user ID
+            dict: Dictionary of all conversations, keyed by composite ID
         """
-        # Return a copy of the conversations dictionary to avoid modification issues
-        return dict(self.conversations)
+        result = {}
+        
+        # Convert conversations to the format expected by DiagnosticsView
+        for user_id, data in self.conversations.items():
+            # Skip conversations with no AI account
+            if "ai_account_id" not in data:
+                continue
+                
+            ai_account_id = data["ai_account_id"]
+            
+            # Create a composite key for this conversation
+            conversation_id = f"{user_id}-{ai_account_id}"
+            
+            # Format the conversation data
+            conversation = {
+                "conversation_id": conversation_id,
+                "user_id": user_id,
+                "ai_account_id": ai_account_id,
+                "user_name": data.get("user_name", f"User {user_id}"),
+                "history": data.get("history", []),
+                "start_time": data.get("start_time", datetime.now().isoformat()),
+                "last_message_time": data.get("last_message", datetime.now()).isoformat() 
+                    if isinstance(data.get("last_message"), datetime) else data.get("last_message"),
+                "message_count": len(data.get("history", [])),
+                "status": "active",
+                "chat_type": data.get("chat_type", "direct")
+            }
+            
+            result[conversation_id] = conversation
+            
+        return result
     
-    def add_user_message(self, user_id: int, message_text: str, ai_account_id: int = None, sender_name: str = None) -> None:
+    def add_user_message(self, user_id, message_text, ai_account_id=None, sender_name=None, chat_type="direct", group_id=None, group_name=None):
         """
-        Add a user message to the conversation history.
+        Add a user message to a conversation.
         
         Args:
-            user_id: The user's Telegram ID
-            message_text: The message content
-            ai_account_id: Optional AI account ID (for compatibility with MessengerAI)
-            sender_name: Optional sender name
+            user_id: User ID
+            message_text: The message text
+            ai_account_id: AI account ID
+            sender_name: Optional sender name for display
+            chat_type: Type of chat ("direct" or "group")
+            group_id: Optional group ID if from a group
+            group_name: Optional group name if from a group
         """
         user_id_str = str(user_id)
         
+        # Initialize conversation if it doesn't exist
         if user_id_str not in self.conversations:
-            # Create the conversation if it doesn't exist
-            if ai_account_id:
-                self.get_or_create_conversation(user_id, ai_account_id)
-            else:
-                logger.warning(f"Trying to add message to non-existent conversation for user {user_id}")
-                return
-        
-        self.conversations[user_id_str]["history"].append({
+            self.conversations[user_id_str] = {
+                "ai_account_id": ai_account_id,
+                "history": [],
+                "user_name": sender_name or f"User {user_id}",
+                "start_time": datetime.now(),
+                "last_message": datetime.now(),
+                "chat_type": chat_type,
+                "dm_errors": {}
+            }
+            
+            # Add group info if available
+            if chat_type == "group" and group_id:
+                self.conversations[user_id_str]["group_id"] = group_id
+                self.conversations[user_id_str]["group_name"] = group_name
+        elif ai_account_id is not None:
+            # Update AI account ID if provided
+            self.conversations[user_id_str]["ai_account_id"] = ai_account_id
+            
+        # Update sender name if provided
+        if sender_name:
+            self.conversations[user_id_str]["user_name"] = sender_name
+            
+        # Add message to history
+        message = {
             "role": "user",
             "content": message_text,
-            "timestamp": datetime.now().isoformat()
-        })
+            "timestamp": datetime.now().isoformat(),
+            "is_ai_message": False
+        }
         
+        # Add group info to message if from a group
+        if chat_type == "group" and group_id:
+            message["from_group"] = True
+            message["group_id"] = group_id
+            message["group_name"] = group_name
+            
+            # Also update conversation chat_type
+            self.conversations[user_id_str]["chat_type"] = "group"
+            self.conversations[user_id_str]["group_id"] = group_id
+            self.conversations[user_id_str]["group_name"] = group_name
+        
+        self.conversations[user_id_str]["history"].append(message)
         self.conversations[user_id_str]["last_message"] = datetime.now()
-        
-        # Limit conversation history to last 10 messages
-        if len(self.conversations[user_id_str]["history"]) > 10:
-            self.conversations[user_id_str]["history"] = self.conversations[user_id_str]["history"][-10:]
     
     def add_assistant_message(self, user_id: int, message_text: str, ai_account_id: int = None) -> None:
         """
@@ -129,23 +186,29 @@ class ConversationManager:
             logger.error(f"Error adding AI response to conversation: {e}")
             return False
     
-    def get_conversation_history(self, user_id: int, ai_account_id: int = None) -> List[Dict[str, Any]]:
+    def get_conversation_history(self, user_id, ai_account_id=None):
         """
-        Get the conversation history with a user.
+        Get conversation history for a user and specific AI account.
         
         Args:
-            user_id: The user's Telegram ID
-            ai_account_id: Optional AI account ID (for compatibility with MessengerAI)
+            user_id: The user's ID
+            ai_account_id: The AI account's ID (optional)
             
         Returns:
-            List of conversation history messages
+            list: List of message objects in the conversation
         """
         user_id_str = str(user_id)
         
         if user_id_str not in self.conversations:
             return []
+            
+        conversation = self.conversations[user_id_str]
         
-        return self.conversations[user_id_str]["history"]
+        # If ai_account_id is provided, verify it matches
+        if ai_account_id is not None and conversation.get("ai_account_id") != ai_account_id:
+            return []
+            
+        return conversation.get("history", [])
     
     def get_ai_account_for_user(self, user_id: int) -> Optional[int]:
         """
@@ -287,5 +350,4 @@ class ConversationManager:
             logger.info("Cleared all conversations")
             self.dm_errors.clear()
             logger.info("Cleared all DM errors")
-            
-    
+

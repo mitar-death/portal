@@ -1,5 +1,5 @@
 from fastapi import WebSocket
-from typing import Dict, List, Set, Any, Optional
+from typing import Dict, Set, Any, Optional
 import json
 import asyncio
 from server.app.core.logging import logger
@@ -237,13 +237,23 @@ class ConnectionManager:
 
 
     
-    async def update_conversation(self, conversation_data: dict):
+    async def update_conversation(self, conversation_data):
         """Send updated conversation data to all connected clients"""
         # Ensure the conversation has an ID
         if not conversation_data.get('conversation_id'):
             logger.error(f"Attempted to send conversation update without conversation_id: {conversation_data}")
             return
             
+        # Make sure we have timestamps for all messages
+        if 'history' in conversation_data and isinstance(conversation_data['history'], list):
+            for msg in conversation_data['history']:
+                if not msg.get('timestamp'):
+                    msg['timestamp'] = datetime.now().isoformat()
+    
+        # Always ensure chat_type is set
+        if 'chat_type' not in conversation_data:
+            conversation_data['chat_type'] = 'direct'
+    
         # Prepare the message
         message = {
             "type": "conversation_update",
@@ -251,7 +261,7 @@ class ConnectionManager:
         }
         
         # Log the update
-        logger.info(f"Sending conversation update for {conversation_data.get('conversation_id')}")
+        logger.info(f"Sending conversation update for {conversation_data.get('conversation_id')} (type: {conversation_data.get('chat_type', 'direct')})")
         
         # Use Pusher with public channels
         self.pusher_client.trigger('diagnostics', 'conversation_update', conversation_data)

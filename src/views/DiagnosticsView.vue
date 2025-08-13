@@ -243,6 +243,53 @@ const getConnectionStatusText = computed(() => {
   }
 });
 
+// Add these new computed properties to the script section
+const groupConversations = computed(() => {
+  if (!activeConversations.value) return [];
+  return activeConversations.value.filter(conv => 
+    conv.chat_type === "group" || conv.from_group === true
+  );
+});
+
+const directConversations = computed(() => {
+  if (!activeConversations.value) return [];
+  return activeConversations.value.filter(conv => 
+    conv.chat_type !== "group" && conv.from_group !== true
+  );
+});
+
+// Add this method to get a conversation icon based on type
+function getConversationIcon(conversation) {
+  if (conversation.chat_type === "group" || conversation.from_group === true) {
+    return "mdi-account-group"; // Group chat icon
+  } else {
+    return "mdi-account-message"; // Direct message icon
+  }
+}
+
+// Add this method to get the conversation title
+function getConversationTitle(conversation) {
+  if (conversation.chat_type === "group" || conversation.from_group === true) {
+    return `${conversation.user_name} in ${conversation.group_name || "Group"}`;
+  } else {
+    return conversation.user_name;
+  }
+}
+
+// Add a chat type filter
+const chatTypeFilter = ref("all"); // Options: "all", "direct", "group"
+
+// Add filtered conversations computed property
+const filteredConversations = computed(() => {
+  if (chatTypeFilter.value === "all") {
+    return activeConversations.value;
+  } else if (chatTypeFilter.value === "direct") {
+    return directConversations.value;
+  } else {
+    return groupConversations.value;
+  }
+});
+
 // Helper functions
 function getResourceClass(percent) {
   if (percent >= 90) return "critical";
@@ -1552,5 +1599,4 @@ tbody tr:hover {
 .status-inactive {
   color: #424242;
 }
-
 </style>

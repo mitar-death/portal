@@ -1,7 +1,7 @@
 import asyncio
 import os
 import psutil
-from telethon import events, functions
+from telethon import events
 from server.app.services.telegram import get_client
 from server.app.core.logging import logger
 from server.app.utils.helpers import write_message_to_file
@@ -180,7 +180,7 @@ async def _setup_message_handler(client, user_id):
         logger.info(f"Monitoring for {len(keywords)} keywords")
         
         # Set up event handler for new messages
-        @client.on(events.NewMessage)
+        @client.on(events.NewMessage(incoming=True))
         async def handle_new_message(event):
             # Process in a separate task to avoid blocking
             task = asyncio.create_task(_process_message(event, selected_groups, keywords))
