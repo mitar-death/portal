@@ -44,6 +44,15 @@ class ConversationManager:
             logger.debug(f"Created new conversation for user {user_id} with AI account {ai_account_id}")
         
         return self.conversations[user_id_str]["history"]
+    def get_all_conversations(self):
+        """
+        Get all conversations currently being tracked.
+        
+        Returns:
+            dict: Dictionary of all conversations, keyed by user ID
+        """
+        # Return a copy of the conversations dictionary to avoid modification issues
+        return dict(self.conversations)
     
     def add_user_message(self, user_id: int, message_text: str, ai_account_id: int = None, sender_name: str = None) -> None:
         """
@@ -278,3 +287,5 @@ class ConversationManager:
             logger.info("Cleared all conversations")
             self.dm_errors.clear()
             logger.info("Cleared all DM errors")
+            
+    

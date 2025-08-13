@@ -23,7 +23,59 @@ async def websocket_endpoint(websocket: WebSocket):
     logger.debug(f"WebSocket connection attempt from origin: {origin}, host: {host}")
     
     await websocket.accept()
-    # Rest of your WebSocket handling code...
+    
+    # Get token from query parameters
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=1008, reason="Authentication required")
+        return
+        
+    # Authenticate user
+    try:
+        user = await get_current_user(token=token)
+        if not user:
+            await websocket.close(code=1008, reason="Invalid authentication")
+            return
+            
+        # Generate a unique connection ID
+        connection_id = str(uuid.uuid4())
+        user_id = str(user.id)
+        
+        # Register connection with WebSocket manager
+        await websocket_manager.connect(websocket, connection_id, user_id)
+        
+        try:
+            # Keep connection alive and process messages
+            while True:
+                data = await websocket.receive_text()
+                try:
+                    # Parse JSON
+                    message = json.loads(data)
+                    
+                    # Process message based on type
+                    message_type = message.get("type", "")
+                    
+                    if message_type == "ping":
+                        await websocket.send_json({
+                            "type": "pong",
+                            "timestamp": datetime.now().isoformat()
+                        })
+                except json.JSONDecodeError:
+                    # For plain text messages
+                    if data == "ping":
+                        await websocket.send_json({
+                            "type": "pong",
+                            "timestamp": datetime.now().isoformat()
+                        })
+                        
+        except WebSocketDisconnect:
+            logger.info(f"WebSocket client disconnected: {connection_id}")
+        finally:
+            # Clean up connection
+            await websocket_manager.disconnect(connection_id)
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        await websocket.close(code=1011, reason="Server error")
 
 @ws_router.websocket("/ws/diagnostics")
 async def diagnostics_websocket(websocket: WebSocket):
@@ -41,86 +93,97 @@ async def diagnostics_websocket(websocket: WebSocket):
     if not token:
         await websocket.close(code=1008, reason="Authentication required")
         return
-    
+        
     # Authenticate the user
     try:
         user = await get_current_user(token=token)
         if not user:
             await websocket.close(code=1008, reason="Invalid authentication")
             return
-    except Exception as e:
-        logger.error(f"Authentication error in WebSocket: {e}")
-        await websocket.close(code=1008, reason="Authentication error")
-        return
-    
-    # Generate a unique connection ID
-    connection_id = str(uuid.uuid4())
-    user_id = str(user.id)
-    
-    # Register the connection with the WebSocket manager
-    await websocket_manager.connect(websocket, connection_id, user_id)
-    
-    # Send immediate diagnostics data
-    try:
-        diagnostics = await diagnostic_check()
-        diagnostics["timestamp"] = datetime.now().isoformat()
-        
-        # Add connection stats
-        diagnostics["websocket_info"] = {
-            "active_connections": websocket_manager.get_connection_count(),
-            "connected_users": websocket_manager.get_user_count(),
-            "connection_id": connection_id
-        }
-        
-        # Update the WebSocket manager with latest diagnostics
-        await websocket_manager.update_diagnostics(diagnostics)
-    except Exception as e:
-        logger.error(f"Error sending initial diagnostics: {e}")
-    
-    try:
-        # Keep the WebSocket connection alive with periodic diagnostic updates
-        while True:
-            # Wait for any message from the client (like a ping)
-            data = await websocket.receive_text()
             
-            # Parse the received message
-            try:
-                message = json.loads(data)
-                message_type = message.get("type", "")
+        # Generate a unique connection ID
+        connection_id = str(uuid.uuid4())
+        user_id = str(user.id)
+        
+        # Register the connection with the WebSocket manager
+        await websocket_manager.connect(websocket, connection_id, user_id)
+        
+        # Send initial diagnostics data
+        try:
+            # Get diagnostics using the diagnostic_check function
+            diagnostics = await diagnostic_check()
+            
+            # Add connection info
+            diagnostics["websocket_info"] = {
+                "active_connections": websocket_manager.get_connection_count(),
+                "connected_users": websocket_manager.get_user_count(),
+                "connection_id": connection_id
+            }
+            
+            # Send to client
+            await websocket.send_json({
+                "type": "diagnostics_update",
+                "data": diagnostics,
+                "timestamp": datetime.now().isoformat()
+            })
+        except Exception as e:
+            logger.error(f"Error sending initial diagnostics: {e}")
+            
+        # Handle client messages
+        try:
+            while True:
+                data = await websocket.receive_text()
                 
-                # Handle different message types
-                if message_type == "get_diagnostics":
-                    # Client requested fresh diagnostics
-                    diagnostics = await diagnostic_check()
-                    diagnostics["timestamp"] = datetime.now().isoformat()
+                try:
+                    message = json.loads(data)
+                    message_type = message.get("type", "")
                     
-                    # Add connection stats
-                    diagnostics["websocket_info"] = {
-                        "active_connections": websocket_manager.get_connection_count(),
-                        "connected_users": websocket_manager.get_user_count(),
-                        "connection_id": connection_id
-                    }
-                    
-                    # Update the WebSocket manager with latest diagnostics
-                    await websocket_manager.update_diagnostics(diagnostics)
-                    
-                elif message_type == "ping":
-                    # Simple ping message to keep connection alive
-                    await websocket.send_text(json.dumps({
-                        "type": "pong",
-                        "timestamp": datetime.now().isoformat()
-                    }))
-            except json.JSONDecodeError:
-                logger.warning(f"Received invalid JSON from WebSocket: {data}")
-                continue
-                
-    except WebSocketDisconnect:
-        # Client disconnected
-        logger.info(f"WebSocket client disconnected: {connection_id}")
+                    if message_type == "get_diagnostics":
+                        # Refresh diagnostics
+                        diagnostics = await diagnostic_check()
+                        
+                        # Add connection info
+                        diagnostics["websocket_info"] = {
+                            "active_connections": websocket_manager.get_connection_count(),
+                            "connected_users": websocket_manager.get_user_count(),
+                            "connection_id": connection_id
+                        }
+                        
+                        # Send to client
+                        await websocket.send_json({
+                            "type": "diagnostics_update",
+                            "data": diagnostics,
+                            "timestamp": datetime.now().isoformat()
+                        })
+                    elif message_type == "ping":
+                        await websocket.send_json({
+                            "type": "pong",
+                            "timestamp": datetime.now().isoformat()
+                        })
+                except json.JSONDecodeError:
+                    # Handle plain text for backward compatibility
+                    if data == "ping":
+                        await websocket.send_json({
+                            "type": "pong",
+                            "timestamp": datetime.now().isoformat()
+                        })
+                    elif data == "refresh":
+                        diagnostics = await diagnostic_check()
+                        await websocket.send_json({
+                            "type": "diagnostics_update",
+                            "data": diagnostics,
+                            "timestamp": datetime.now().isoformat()
+                        })
+                        
+        except WebSocketDisconnect:
+            logger.info(f"WebSocket client disconnected: {connection_id}")
+        except Exception as e:
+            logger.error(f"Error in diagnostics WebSocket: {e}")
+            
     except Exception as e:
-        logger.error(f"WebSocket error: {e}")
+        logger.error(f"Error establishing WebSocket connection: {e}")
     finally:
-        # Clean up the connection
+        # Always clean up the connection
         if connection_id:
             await websocket_manager.disconnect(connection_id)
 

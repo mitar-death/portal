@@ -2,43 +2,84 @@
 Helper utilities for controllers to reduce code duplication and improve error handling.
 """
 import functools
+import asyncio
 from typing import Any, Callable, TypeVar, cast
 from fastapi import HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from server.app.core.logging import logger
 from server.app.core.databases import db_context
-
+from contextlib import asynccontextmanager
+from server.app.services.telegram import get_client
 T = TypeVar('T')
+
+# Semaphore to limit concurrent operations
+API_SEMAPHORE = asyncio.Semaphore(10)
 
 async def ensure_client_connected():
     """
     Ensure the Telegram client is connected. Returns the connected client.
+    Uses timeout protection to prevent blocking indefinitely.
     """
-    from server.app.services.telegram import get_client
     
-    client = get_client()
+    
+    client = await get_client()
     
     # Always explicitly check connection state
     if not client.is_connected():
         logger.info("Client disconnected, reconnecting...")
-        await client.connect()
+        try:
+            async with API_SEMAPHORE:
+                await asyncio.wait_for(client.connect(), timeout=5)
+            logger.info("Client reconnected successfully")
+        except asyncio.TimeoutError:
+            logger.error("Timeout while connecting Telegram client")
+            raise HTTPException(status_code=500, detail="Timeout connecting to Telegram")
+        except Exception as e:
+            logger.error(f"Error reconnecting client: {e}")
+            raise HTTPException(status_code=500, detail="Failed to connect to Telegram")
     
     # Add more detailed connection verification
     try:
-        # Perform a lightweight API call to verify connection
-        await client.get_me()
+        # Perform a lightweight API call to verify connection with timeout
+        async with API_SEMAPHORE:
+            await asyncio.wait_for(client.get_me(), timeout=5)
         logger.debug("Verified client connection with API call")
-    except Exception as e:
-        logger.warning(f"Client connection verification failed: {e}")
+    except asyncio.TimeoutError:
+        logger.error("Timeout during connection verification")
         # Try reconnecting once more
         await client.disconnect()
-        await client.connect()
+        try:
+            async with API_SEMAPHORE:
+                await asyncio.wait_for(client.connect(), timeout=5)
+        except (asyncio.TimeoutError, Exception) as e:
+            logger.error(f"Failed to reconnect after timeout: {e}")
+            raise HTTPException(status_code=500, detail="Connection verification failed")
+    except Exception as e:
+        logger.error(f"Error verifying client connection: {e}")
+        # Try reconnecting
+        await client.disconnect()
+        try:
+            async with API_SEMAPHORE:
+                await asyncio.wait_for(client.connect(), timeout=5)
+        except (asyncio.TimeoutError, Exception) as reconnect_error:
+            logger.error(f"Failed to reconnect: {reconnect_error}")
+            raise HTTPException(status_code=500, detail="Failed to verify connection")
     
     # Validate the session is active
-    if not await client.is_user_authorized():
-        logger.warning("Telegram client connected but not authorized")
-    else:
-        logger.debug("Telegram client connected and authorized")
+    try:
+        async with API_SEMAPHORE:
+            is_authorized = await asyncio.wait_for(client.is_user_authorized(), timeout=5)
+        if not is_authorized:
+            logger.warning("Telegram client connected but not authorized")
+            raise HTTPException(status_code=401, detail="Telegram authorization required")
+        else:
+            logger.debug("Telegram client connected and authorized")
+    except asyncio.TimeoutError:
+        logger.error("Timeout checking authorization status")
+        raise HTTPException(status_code=500, detail="Timeout checking authorization")
+    except Exception as e:
+        logger.error(f"Error checking authorization: {e}")
+        raise HTTPException(status_code=500, detail="Failed to verify authorization")
      
     return client
 
@@ -48,64 +89,124 @@ async def ensure_user_authenticated(request: Request):
     """
     user = getattr(request.state, "user", None) or getattr(request, "user", None)
     if not user:
-        raise HTTPException(status_code=401, detail="User not authenticated")
+        raise HTTPException(status_code=401, detail="Authentication required")
     return user
 
 async def ensure_telegram_authorized(client=None):
     """
-    Ensure the Telegram client is authorized. Returns the authorized client or raises an exception.
+    Ensure the Telegram client is authorized with timeout protection.
+    Returns the authorized client or raises an exception.
     """
     if client is None:
         client = await ensure_client_connected()
     
-    if not await client.is_user_authorized():
-        raise HTTPException(status_code=401, detail="Telegram session not authorized")
+    try:
+        async with API_SEMAPHORE:
+            is_authorized = await asyncio.wait_for(client.is_user_authorized(), timeout=5)
+        if not is_authorized:
+            logger.error("Telegram client is not authorized")
+            raise HTTPException(status_code=401, detail="Telegram authorization required")
+    except asyncio.TimeoutError:
+        logger.error("Timeout checking authorization status")
+        raise HTTPException(status_code=500, detail="Timeout checking authorization")
+    except Exception as e:
+        logger.error(f"Error checking authorization: {e}")
+        raise HTTPException(status_code=500, detail="Failed to verify authorization")
+        
     return client
+
+@asynccontextmanager
+async def safe_db_session():
+    """
+    Context manager for safely handling database sessions.
+    Ensures proper session cleanup to prevent database locks.
+    """
+    from server.app.core.databases import AsyncSessionLocal
+    
+    session = AsyncSessionLocal()
+    try:
+        yield session
+    finally:
+        await session.close()
 
 def safe_db_operation():
     """
     Decorator for safely handling database operations with proper transaction management.
+    Prevents database locks by ensuring proper session handling.
     """
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
-            db = db_context.get()
-            try:
-                result = await func(*args, **kwargs, db=db)
-                await db.commit()  # Add this line to commit the transaction
-                return result
-            except HTTPException:
-                await db.rollback()
-                raise
-            except Exception as e:
-                await db.rollback()
-                logger.error(f"Database operation failed in {func.__name__}: {str(e)}")
-                raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
-        return cast(Callable[..., T], wrapper)
+            db = kwargs.get('db')
+            
+            # If db is already provided, use it
+            if db is not None:
+                return await func(*args, **kwargs)
+                
+            # Otherwise, create a new session
+            async with safe_db_session() as session:
+                kwargs['db'] = session
+                try:
+                    result = await func(*args, **kwargs)
+                    return result
+                except Exception as e:
+                    # Log the error but re-raise it for the caller to handle
+                    logger.error(f"Database operation error in {func.__name__}: {e}")
+                    raise
+                    
+        return wrapper
     return decorator
 
 def sanitize_log_data(data: Any) -> Any:
     """
-    Remove sensitive information from data before logging.
+    Sanitize sensitive data for logging.
+    
+    Args:
+        data: The data to sanitize
+        
+    Returns:
+        Sanitized data safe for logging
     """
-    if isinstance(data, dict):
-        sanitized = {}
-        for key, value in data.items():
-            if key.lower() in ['phone', 'phone_number', 'password', 'token', 'secret', 'hash']:
-                sanitized[key] = '***REDACTED***'
-            else:
-                sanitized[key] = sanitize_log_data(value)
-        return sanitized
+    if data is None:
+        return None
+        
+    if isinstance(data, str):
+        # For phone numbers, mask all but the last 4 digits
+        if any(char.isdigit() for char in data) and len(data) > 4:
+            return "*" * (len(data) - 4) + data[-4:]
+        # For other strings, mask the middle portion
+        elif len(data) > 6:
+            return data[:2] + "*" * (len(data) - 4) + data[-2:]
+        # For short strings, replace with asterisks
+        else:
+            return "*" * len(data)
+            
+    elif isinstance(data, dict):
+        # Recursively sanitize dictionary values
+        return {k: sanitize_log_data(v) for k, v in data.items()}
+        
     elif isinstance(data, list):
+        # Recursively sanitize list items
         return [sanitize_log_data(item) for item in data]
+        
+    # Return other types unchanged
     return data
 
 def standardize_response(data: Any, message: str = "Operation successful", status_code: int = 200):
     """
-    Return a standardized response format.
+    Create a standardized response format.
+    
+    Args:
+        data: The response data
+        message: A message describing the result
+        status_code: HTTP status code
+        
+    Returns:
+        Dict with standardized response format
     """
     return {
-        "success": 200 <= status_code < 300,
+        "success": True if status_code < 400 else False,
+        "data": data,
         "message": message,
-        "data": data
+        "status_code": status_code,
     }

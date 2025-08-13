@@ -178,6 +178,10 @@ const refreshData = async () => {
 };
 
 const updateAssignment = async (group) => {
+  // Store original values to restore if the update fails
+  const originalAiAccountId = group.ai_account_id;
+  const originalIsActive = group.is_active;
+
   loading.value = true;
   try {
     await store.dispatch("ai/updateGroupAssignment", {
@@ -185,17 +189,61 @@ const updateAssignment = async (group) => {
       aiAccountId: group.ai_account_id,
       isActive: group.is_active,
     });
+
+    // Show success message
+    store.dispatch("ui/showSnackbar", {
+      text: "Group assignment updated successfully",
+      color: "success",
+    });
   } catch (error) {
     console.error("Error updating assignment:", error);
+
+    // Restore original values
+    group.ai_account_id = originalAiAccountId;
+    group.is_active = originalIsActive;
+
+    // Show error message
+    store.dispatch("ui/showSnackbar", {
+      text: "Failed to update assignment. Please try again.",
+      color: "error",
+    });
   } finally {
     loading.value = false;
   }
 };
 
-const clearAssignment = (group) => {
+const clearAssignment = async (group) => {
   // Set the AI account to null and update
+  const originalAiAccountId = group.ai_account_id;
   group.ai_account_id = null;
-  updateAssignment(group);
+
+  loading.value = true;
+  try {
+    await store.dispatch("ai/updateGroupAssignment", {
+      groupId: group.id,
+      aiAccountId: null,
+      isActive: false,
+    });
+
+    // Show success message
+    store.dispatch("ui/showSnackbar", {
+      text: "Assignment removed successfully",
+      color: "success",
+    });
+  } catch (error) {
+    console.error("Error clearing assignment:", error);
+
+    // Restore original value
+    group.ai_account_id = originalAiAccountId;
+
+    // Show error message
+    store.dispatch("ui/showSnackbar", {
+      text: "Failed to remove assignment. Please try again.",
+      color: "error",
+    });
+  } finally {
+    loading.value = false;
+  }
 };
 
 // Lifecycle hooks

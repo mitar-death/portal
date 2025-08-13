@@ -29,7 +29,7 @@ async def check_auth_status(request: Request, db: AsyncSession = None) -> Dict[s
     """
     try:
         # Get the Telegram client
-        client = get_client()
+        client = await get_client()
         
         # Check if the client is connected
         is_connected = client.is_connected()

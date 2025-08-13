@@ -497,11 +497,14 @@ export default {
                     }, { root: true })
                     return result
                 } else {
+                    const error = new Error(result.error || result.message || 'Unknown error updating assignment');
+                    console.error('Error updating assignment (API reported failure):', error);
+
                     dispatch('ui/showSnackbar', {
                         text: result.error || 'Failed to update assignment',
                         color: 'error'
                     }, { root: true })
-                    return Promise.reject(result.error)
+                    throw error;
                 }
             } catch (error) {
                 console.error('Error updating group assignment:', error)

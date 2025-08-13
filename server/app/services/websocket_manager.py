@@ -260,5 +260,24 @@ class ConnectionManager:
         if self.active_connections:
             await self.broadcast_json(message)
     
+    # Add the broadcast_health method to your WebSocketManager class
+    async def broadcast_health(self, health_data):
+        """
+        Broadcast health status data to all connected clients.
+        
+        Args:
+            health_data: The health status data to broadcast
+        """
+        if not self.active_connections:
+            return
+            
+        message = {
+            "type": "health_update",
+            "data": health_data,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        await self.broadcast(message)
+
 # Create a singleton instance
 websocket_manager = ConnectionManager()

@@ -18,6 +18,9 @@ from server.app.core.exceptions import (
     unhandled_exception_handler,
     validation_exception_handler,
 )
+from server.app.core.databases import AsyncSessionLocal
+from server.app.models.models import User
+from sqlalchemy import select
 # Set up logging
 setup_logging()
 
@@ -29,7 +32,7 @@ async def lifespan(app: FastAPI):
     This handles startup and shutdown events.
     """
     # Startup: Initialize Telegram client and start monitoring
-    client = get_client()
+    client = await get_client()
     if not client.is_connected():
         await client.connect()
     
@@ -47,9 +50,7 @@ async def lifespan(app: FastAPI):
                 logger.info(f"Found authorized Telegram user: {me.first_name} {me.last_name} (@{me.username})")
                 
                 # Find the user in the database
-                from server.app.core.databases import AsyncSessionLocal
-                from server.app.models.models import User
-                from sqlalchemy import select
+                
                 
                 async with AsyncSessionLocal() as session:
                     stmt = select(User).where(User.telegram_id == str(me.id))

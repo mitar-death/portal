@@ -163,6 +163,7 @@ async def websocket_diagnostics(
         if connection_id:
             await websocket_manager.disconnect(connection_id)
 
+# Update the diagnostics controller to use monitor.diagnostic_check
 @safe_db_operation()
 async def get_ai_diagnostics(request: Request, db: AsyncSession = None):
     """
@@ -179,7 +180,8 @@ async def get_ai_diagnostics(request: Request, db: AsyncSession = None):
     """
     try:
         # Get diagnostics from the monitor service
-        diagnostics = await MessengerAI().diagnostic_check()
+        from server.app.services.monitor import diagnostic_check
+        diagnostics = await diagnostic_check()
         
         user = await ensure_user_authenticated(request)
 
@@ -212,6 +214,7 @@ async def get_ai_diagnostics(request: Request, db: AsyncSession = None):
             "active_connections": websocket_manager.get_connection_count(),
             "connected_users": websocket_manager.get_user_count()
         }
+        
         try:
             #Query all Ai accounts for user and check if its loggedin
             stmt = select(AIAccount).where(AIAccount.user_id == user.id)
@@ -235,6 +238,7 @@ async def get_ai_diagnostics(request: Request, db: AsyncSession = None):
         except SQLAlchemyError as e:
             logger.error(f"Database error retrieving AI accounts: {sanitize_log_data(str(e))}")
             diagnostics["ai_clients"] = {"error": "Failed to retrieve AI accounts"}
+            
         # Add system resource information
         try:
             diagnostics["system_resources"] = {
@@ -267,11 +271,32 @@ async def reinitialize_ai_messenger(request: Request):
     This can be used to recover from a state where messenger_ai is None.
     """
     try:
-        # Force a reinitialization of the messenger_ai
-        result = await MessengerAI().ensure_messenger_ai_initialized()
+        # Get the AI messenger instance
+        from server.app.services.messenger_ai import get_messenger_ai
+        messenger_ai = await get_messenger_ai()
+        
+        if messenger_ai and hasattr(messenger_ai, 'ensure_messenger_ai_initialized'):
+            # Use the AI messenger's own reinitialization method
+            result = await messenger_ai.ensure_messenger_ai_initialized()
+        else:
+            # Fallback to manual reinitialization
+            from server.app.services.monitor import get_active_user_id
+            from server.app.services.messenger_ai import initialize_messenger_ai
+            
+            user_id = await get_active_user_id()
+            if not user_id:
+                logger.error("No active user ID set, cannot reinitialize MessengerAI")
+                return {
+                    "success": False,
+                    "message": "No active user ID set, cannot reinitialize MessengerAI",
+                    "diagnostics": {}
+                }
+                
+            result = await initialize_messenger_ai(user_id)
 
-        # Get updated diagnostics regardless of result
-        diagnostics = await MessengerAI().diagnostic_check()
+        # Get updated diagnostics
+        from server.app.services.monitor import diagnostic_check
+        diagnostics = await diagnostic_check()
         
         # Add timestamp and standard fields
         diagnostics["timestamp"] = datetime.now().isoformat()
@@ -304,7 +329,11 @@ async def reinitialize_ai_messenger(request: Request):
                     "success"
                 )
                 # Update diagnostics in WebSocket
-                await websocket_manager.update_diagnostics(diagnostics)
+                await websocket_manager.broadcast({
+                    "type": "diagnostics_update",
+                    "data": diagnostics,
+                    "timestamp": datetime.now().isoformat()
+                })
             except Exception as e:
                 logger.error(f"Error sending WebSocket notification: {e}", exc_info=True)
             
@@ -324,7 +353,11 @@ async def reinitialize_ai_messenger(request: Request):
                     "error"
                 )
                 # Still update diagnostics to show current state
-                await websocket_manager.update_diagnostics(diagnostics)
+                await websocket_manager.broadcast({
+                    "type": "diagnostics_update",
+                    "data": diagnostics,
+                    "timestamp": datetime.now().isoformat()
+                })
             except Exception as e:
                 logger.error(f"Error sending WebSocket notification: {e}", exc_info=True)
             
