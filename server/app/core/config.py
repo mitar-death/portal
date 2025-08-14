@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
     REDIS_DB: int = int(os.getenv("REDIS_DB", 0))
     REDIS_PASSWORD: str = os.getenv("REDIS_PASSWORD", None)
+    
     # Telegram
     TELEGRAM_API_ID: str = os.getenv("TELEGRAM_API_ID", "")
     TELEGRAM_API_HASH: str = os.getenv("TELEGRAM_API_HASH", "")
@@ -47,6 +48,12 @@ class Settings(BaseSettings):
     PUSHER_KEY: str = os.getenv("PUSHER_KEY", "")
     PUSHER_SECRET: str = os.getenv("PUSHER_SECRET", "")
     PUSHER_CLUSTER: str = os.getenv("PUSHER_CLUSTER", "us2")
+    
+    # Sentry config
+    SENTRY_DSN: str = os.getenv("SENTRY_DSN", "")
+    SENTRY_ENVIRONMENT: str = os.getenv("SENTRY_ENVIRONMENT", "production")
+    SENTRY_TRACES_SAMPLE_RATE: str = str(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.2"))
+    SENTRY_ENABLE_TRACING: str = str(os.getenv("SENTRY_ENABLE_TRACING", "true"))
 
     BACKEND_URL: str = os.getenv("BACKEND_URL", "http://127.0.0.1:8030")
     FIREBASE_PROJECT_ID: str = os.getenv("FIREBASE_PROJECT_ID", "")

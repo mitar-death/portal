@@ -342,6 +342,12 @@ USE_HTTPS=$USE_HTTPS
 
 # AI model settings
 GOOGLE_STUDIO_API_KEY=${GOOGLE_STUDIO_API_KEY:-"your_google_studio_api_key"}
+
+# Sentry error reporting
+SENTRY_DSN=${SENTRY_DSN:-""}
+SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-"production"}
+SENTRY_TRACES_SAMPLE_RATE=${SENTRY_TRACES_SAMPLE_RATE:-"0.2"}
+SENTRY_ENABLE_TRACING=${SENTRY_ENABLE_TRACING:-"true"}
 EOL
 
 # Create GitHub deployment script

@@ -22,10 +22,13 @@ from server.app.core.exceptions import (
 from server.app.core.databases import AsyncSessionLocal
 from server.app.models.models import User
 from sqlalchemy import select
+from server.app.core.sentry import init_sentry
+
 
 # Set up logging
 setup_logging()
 
+init_sentry()
 # Background tasks set
 background_tasks = set()
 

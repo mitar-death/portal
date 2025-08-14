@@ -13,3 +13,5 @@ router.include_router(ai_routes)
 router.include_router(diagnostics_routes)
 router.include_router(groups_routes)
 router.include_router(keywords_routes)
+
+
