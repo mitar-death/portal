@@ -192,7 +192,8 @@ async def update_ai_account(request: Request, db: AsyncSession = None) -> Dict[s
             account.shareable_link = shareable_link
         if ai_response_context is not None:
             account.ai_response_context = ai_response_context
-
+            
+            
         return standardize_response(
             {"account_id": account.id},
             "AI account updated successfully", 
@@ -265,7 +266,7 @@ async def delete_ai_account(request: Request, db: AsyncSession = None) -> Dict[s
         
         # Now delete the account itself
         await db.delete(account)
-        
+        await db.commit()
         return standardize_response(
             {},
             "AI account deleted successfully"
