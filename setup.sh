@@ -289,7 +289,7 @@ PUSHER_USE_TLS=$PUSHER_USE_TLS
 
 # FastAPI settings
 DEBUG=false
-HOST=0.0.0.0
+HOST=localhost
 PORT=8000
 SERVER_PORT=8000
 
@@ -321,7 +321,7 @@ else
   PYTHON_PATH=$(which python3 || echo "/usr/bin/python3")
   sudo tee /etc/supervisor/conf.d/tgportal.conf > /dev/null <<EOF
 [program:tgportal]
-command=$PYTHON_PATH -m uvicorn server.app.main:app --host=0.0.0.0 --port=8000 --workers 4
+command=$PYTHON_PATH -m uvicorn server.app.main:app --host=localhost --port=8000 
 directory=$APP_DIR
 user=$REAL_USER
 autostart=true
@@ -460,8 +460,8 @@ render_nginx_config() {
       fi
     fi
 
-    # Render HTTPS-capable config
-    sudo tee "$target_conf" > /dev/null <<EOF
+# Render HTTPS-capable config
+sudo tee "$target_conf" > /dev/null <<EOF
 server {
     listen 80;
     server_name ${CUSTOM_DOMAIN};
@@ -478,18 +478,12 @@ server {
     ssl_certificate_key ${KEY_PATH};
 
     location / {
-        proxy_pass http://0.0.0.0:8000;
+        proxy_pass http://localhost:8000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_read_timeout 90;
-        proxy_buffer_size 4k;
-        proxy_buffers 4 32k;
-        proxy_busy_buffers_size 64k;
     }
 }
 EOF
@@ -502,7 +496,7 @@ server {
     server_name ${EXTERNAL_IP};
 
     location / {
-        proxy_pass http://0.0.0.0:8000;
+        proxy_pass http://localhost:8000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -541,7 +535,7 @@ server {
     server_name ${CUSTOM_DOMAIN:-${EXTERNAL_IP}};
 
     location / {
-        proxy_pass http://0.0.0.0:8000;
+        proxy_pass http://localhost:8000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";

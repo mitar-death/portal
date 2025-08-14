@@ -149,6 +149,13 @@ if ! gcloud compute firewall-rules describe allow-https &> /dev/null; then
     --target-tags=https-server
 fi
 
+if ! gcloud compute firewall-rules describe allow-custom-port-8000 &> /dev/null; then
+  echo -e "${YELLOW}Creating firewall rule for custom port 8000${NC}"
+  gcloud compute firewall-rules create allow-custom-port-8000 \
+    --allow tcp:8000 \
+    --target-tags=http-server
+fi
+
 # Get the external IP of the instance
 EXTERNAL_IP=$(gcloud compute instances describe "$INSTANCE_NAME" --zone="$ZONE" --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
 echo -e "${GREEN}Instance external IP: $EXTERNAL_IP${NC}"
@@ -310,6 +317,9 @@ REDIS_HOST=$REDIS_HOST
 REDIS_PORT=$REDIS_PORT
 REDIS_DB=$REDIS_DB
 REDIS_PASSWORD=$REDIS_PASSWORD
+
+DEBUG=true
+LOG_LEVEL=debug
 
 # Pusher config
 PUSHER_CLUSTER=$PUSHER_CLUSTER

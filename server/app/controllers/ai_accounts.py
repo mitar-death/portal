@@ -470,6 +470,9 @@ async def login_ai_account(request: Request, db: AsyncSession = None) -> Dict[st
                 
                 # Store the phone_code_hash in the account for later use
                 account.phone_code_hash = phone_code_hash.phone_code_hash
+                db.add(account)
+                await db.flush() 
+                await db.commit() 
                 
                 await client.disconnect()
                 

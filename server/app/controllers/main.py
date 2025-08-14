@@ -111,7 +111,7 @@ async def verify_code(phone_number: str, code: str, phone_code_hash: str, db: As
     """
     
     # Start with a fresh client connection
-    client = reset_client()
+    client = await reset_client()
     await client.connect()
     
     # Check if we have an active session

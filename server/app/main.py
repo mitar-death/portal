@@ -225,12 +225,9 @@ app.add_exception_handler(
 
 def run():
     """Entry point for the Poetry script."""
-    if settings.ENV == "development":
-        logger.info("Running in development mode with reload enabled")
-        uvicorn.run("server.app.main:app", host=settings.HOST, port=settings.SERVER_PORT, reload=True)
-    else:
-        logger.info("Running in production mode")
-        uvicorn.run("server.app.main:app", host=settings.HOST, port=settings.SERVER_PORT, workers=4)
+    
+    logger.info("Running in development mode with reload enabled")
+    uvicorn.run("server.app.main:app", host=settings.HOST, port=settings.SERVER_PORT, reload=True)
 
 if __name__ == "__main__":
     run()
