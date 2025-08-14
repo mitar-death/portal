@@ -33,10 +33,8 @@ async def ensure_client_connected():
             logger.info("Client reconnected successfully")
         except asyncio.TimeoutError:
             logger.error("Timeout while connecting Telegram client")
-            raise HTTPException(status_code=500, detail="Timeout connecting to Telegram")
         except Exception as e:
             logger.error(f"Error reconnecting client: {e}")
-            raise HTTPException(status_code=500, detail="Failed to connect to Telegram")
     
     # Add more detailed connection verification
     try:
@@ -53,7 +51,7 @@ async def ensure_client_connected():
                 await asyncio.wait_for(client.connect(), timeout=5)
         except (asyncio.TimeoutError, Exception) as e:
             logger.error(f"Failed to reconnect after timeout: {e}")
-            raise HTTPException(status_code=500, detail="Connection verification failed")
+
     except Exception as e:
         logger.error(f"Error verifying client connection: {e}")
         # Try reconnecting
@@ -63,7 +61,7 @@ async def ensure_client_connected():
                 await asyncio.wait_for(client.connect(), timeout=5)
         except (asyncio.TimeoutError, Exception) as reconnect_error:
             logger.error(f"Failed to reconnect: {reconnect_error}")
-            raise HTTPException(status_code=500, detail="Failed to verify connection")
+
     
     # Validate the session is active
     try:
@@ -71,15 +69,14 @@ async def ensure_client_connected():
             is_authorized = await asyncio.wait_for(client.is_user_authorized(), timeout=5)
         if not is_authorized:
             logger.warning("Telegram client connected but not authorized")
-            raise HTTPException(status_code=401, detail="Telegram authorization required")
         else:
             logger.debug("Telegram client connected and authorized")
     except asyncio.TimeoutError:
         logger.error("Timeout checking authorization status")
-        raise HTTPException(status_code=500, detail="Timeout checking authorization")
+
     except Exception as e:
         logger.error(f"Error checking authorization: {e}")
-        raise HTTPException(status_code=500, detail="Failed to verify authorization")
+
      
     return client
 
