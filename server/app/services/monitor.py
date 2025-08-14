@@ -340,7 +340,7 @@ async def _process_direct_message(event, chat, sender):
             await messenger.handle_message(message_data)
             
         # Send to WebSocket
-        await websocket_manager.add_message(message_data)
+        await websocket_manager.add_chat_message(message_data)
         
     except Exception as e:
         logger.error(f"Error processing direct message: {e}")
