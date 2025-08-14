@@ -321,7 +321,7 @@ else
   PYTHON_PATH=$(which python3 || echo "/usr/bin/python3")
   sudo tee /etc/supervisor/conf.d/tgportal.conf > /dev/null <<EOF
 [program:tgportal]
-command=$PYTHON_PATH -m uvicorn server.app.main:app --host=localhost --port=8000 
+command=$PYTHON_PATH -m uvicorn server.app.main:app --host=localhost --port=8000 --workers=4 --log-level=info
 directory=$APP_DIR
 user=$REAL_USER
 autostart=true
