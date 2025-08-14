@@ -127,6 +127,7 @@ async def create_ai_account(request: Request, db: AsyncSession = None) -> Dict[s
         
         db.add(new_account)
         await db.flush()  # Flush to get the ID
+        await db.commit()  # Commit the transaction
         
         return standardize_response(
             {"account_id": new_account.id},
