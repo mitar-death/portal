@@ -14,7 +14,7 @@ const getApiUrl = () => {
     if (isProduction) {
 
         // Use production URL in development (as per requirement)
-        url = process.env.VUE_APP_PROD_BASE_URL || "http://34.72.66.156/api";
+        url = process.env.VUE_APP_PROD_BASE_URL;
 
     } else {
         // Use development URL in production (as per requirement)

@@ -75,11 +75,6 @@ const props = defineProps({
   },
 });
 
-// Add logging to help diagnose issues
-console.log("AIStatusCard received props:", {
-  aiStatus: props.aiStatus,
-  sessionInfo: props.sessionInfo,
-});
 </script>
 
 <style scoped>
