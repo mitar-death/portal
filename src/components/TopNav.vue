@@ -10,7 +10,7 @@
     </v-avatar>
 
     <v-toolbar-title class="text-subtitle-1 font-weight-bold">
-      TG Portal
+      {{ appTitle }}
     </v-toolbar-title>
 
     <v-spacer />
@@ -92,12 +92,13 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 
 const store = useStore();
 const router = useRouter();
+const appTitle = ref(process.env.VUE_APP_TITLE || "TG Portal");
 
 // Computed properties
 const isAuthenticated = computed(() => store.getters["auth/isAuthenticated"]);

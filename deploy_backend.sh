@@ -38,7 +38,7 @@ GITHUB_REPO=${GITHUB_REPO:-"https://github.com/mitar-death/portal"}
 GITHUB_BRANCH=${GITHUB_BRANCH:-"stable-without-redis"}
 GITHUB_TOKEN=${GITHUB_TOKEN:-"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"}
 TELEGRAM_SESSION_FOLDER_DIR="/storage/sessions/main_user"
-TELEGRAM_SESSION_NAME=$"user_session"
+TELEGRAM_SESSION_NAME="user_session"
 
 # Load environment variables from .env file if it exists
 if [ -f ".env" ]; then
@@ -47,7 +47,7 @@ if [ -f ".env" ]; then
   echo "#!/bin/bash" > "$ENV_TEMP"
   
   # Parse .env file and export variables
-  grep -v '^#' .env | grep -v '^$' | sed -e 's/\r$//' | \
+  grep -v '^#' .env.production | grep -v '^$' | sed -e 's/\r$//' | \
   sed -e 's/^[[:space:]]*//g' | sed -e 's/[[:space:]]*=[[:space:]]*/=/g' | \
   while IFS= read -r line; do
     # Skip lines that don't contain an equals sign

@@ -146,6 +146,7 @@ router.beforeEach(async (to, from, next) => {
     }
   } else {
     // Route doesn't require auth, always proceed
+    document.title = to.meta.title || process.env.VUE_APP_TITLE || 'TG Portal';
     next();
   }
 })
