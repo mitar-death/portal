@@ -6,7 +6,7 @@ from server.app.schemas.schemas import (
     GroupsResponse,
     SelectedGroupsRequest
 )
-from server.app.controllers.main import (
+from server.app.controllers.groups import (
     get_user_groups,
     monitor_groups,
 )
@@ -15,7 +15,7 @@ from server.app.core.auth import require_auth
 groups_routes = APIRouter(dependencies=[Depends(require_auth)]) 
 
 
-@groups_routes.post('/add/selected-groups', tags=['Telegram'], response_model=GroupsResponse)
+@groups_routes.post('/add/selected-groups', tags=['Groups'], response_model=GroupsResponse)
 async def add_selected_groups(
     request: Request,
     selected_groups: SelectedGroupsRequest):
@@ -26,7 +26,7 @@ async def add_selected_groups(
     groups = await monitor_groups(request,selected_groups)
     return {"groups": groups}
 
-@groups_routes.get('/telegram/groups', tags=['Telegram'], response_model=GroupsResponse)
+@groups_routes.get('/telegram/groups', tags=['Groups'], response_model=GroupsResponse)
 async def get_groups(
    request: Request):
     """
@@ -35,3 +35,4 @@ async def get_groups(
 
     groups = await get_user_groups(request)
     return {"groups": groups}
+

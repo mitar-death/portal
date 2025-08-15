@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     SENTRY_ENVIRONMENT: str = os.getenv("SENTRY_ENVIRONMENT", "production")
     SENTRY_TRACES_SAMPLE_RATE: str = str(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.2"))
     SENTRY_ENABLE_TRACING: str = str(os.getenv("SENTRY_ENABLE_TRACING", "true"))
+    
 
     BACKEND_URL: str = os.getenv("BACKEND_URL", "http://127.0.0.1:8030")
     FIREBASE_PROJECT_ID: str = os.getenv("FIREBASE_PROJECT_ID", "")

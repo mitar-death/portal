@@ -8,12 +8,11 @@ from server.app.schemas.schemas import (
 )
 from server.app.controllers.main import (
     verify_code,
-    logout_telegram as telegram_logout_service 
 )
-from server.app.controllers.auth import check_auth_status
+from server.app.controllers.auth import (check_auth_status,
+                                         logout_telegram as telegram_logout_service)
 
-auth_routes = APIRouter() 
- 
+auth_routes = APIRouter()
 
 
 @auth_routes.get('/auth/status', tags=['Auth'])

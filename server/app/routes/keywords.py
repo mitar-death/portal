@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends,Request, HTTPException, Header
-from typing import Optional, Dict, Any
-from server.app.controllers.main import (
+from fastapi import APIRouter, Depends,Request
+
+from server.app.controllers.keywords import (
     get_keywords_controller,
     add_keywords_controller,
-    logout_telegram as telegram_logout_service  # Rename the import
+    delete_keywords_controller
 )
 from server.app.core.auth import require_auth
 
@@ -23,3 +23,10 @@ async def add_keywords(request:Request):
     Add keywords for message filtering.
     """
     return await add_keywords_controller(request)
+
+@keywords_routes.post('/delete/keywords', tags=['Keywords'])
+async def delete_keywords(request:Request):
+    """
+    Delete keywords for message filtering.
+    """
+    return await delete_keywords_controller(request)

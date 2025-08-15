@@ -72,7 +72,7 @@ async def start_monitoring(user_id=None):
         active_user_id = user_id
         
     if not active_user_id:
-        logger.error("Cannot start monitoring: No active user ID set")
+        logger.info("Cannot start monitoring: No active user ID set")
         return False
         
     # If already monitoring, stop first
@@ -96,7 +96,7 @@ async def start_monitoring(user_id=None):
             async with API_SEMAPHORE:
                 is_authorized = await asyncio.wait_for(client.is_user_authorized(), timeout=5)
             if not is_authorized:
-                logger.error("Telegram client is not authorized")
+                logger.info("Telegram client is not authorized")
                 return False
         except (asyncio.TimeoutError, Exception) as e:
             logger.error(f"Error checking authorization: {e}")
@@ -331,7 +331,7 @@ async def _process_direct_message(event, chat, sender):
         }
         
         # Write to file for logging
-        write_task = asyncio.create_task(write_message_to_file(message_data, "group"))
+        _ = asyncio.create_task(write_message_to_file(message_data, "group"))
     
         
         # Forward to AI messenger (always process DMs)

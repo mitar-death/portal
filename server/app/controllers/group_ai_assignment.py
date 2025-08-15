@@ -8,9 +8,7 @@ from server.app.services.monitor import stop_monitoring, start_monitoring, start
 from sqlalchemy.exc import SQLAlchemyError
 from typing import Dict, List, Any
 from server.app.utils.controller_helpers import (
-    ensure_client_connected,
     ensure_user_authenticated,
-    ensure_telegram_authorized,
     safe_db_operation,
     sanitize_log_data,
     standardize_response

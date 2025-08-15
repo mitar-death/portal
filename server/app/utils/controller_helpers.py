@@ -31,10 +31,13 @@ async def ensure_client_connected():
             async with API_SEMAPHORE:
                 await asyncio.wait_for(client.connect(), timeout=5)
             logger.info("Client reconnected successfully")
+            
         except asyncio.TimeoutError:
             logger.error("Timeout while connecting Telegram client")
+            return None
         except Exception as e:
             logger.error(f"Error reconnecting client: {e}")
+            return None
     
     # Add more detailed connection verification
     try:
@@ -102,13 +105,13 @@ async def ensure_telegram_authorized(client=None):
             is_authorized = await asyncio.wait_for(client.is_user_authorized(), timeout=5)
         if not is_authorized:
             logger.error("Telegram client is not authorized")
-            raise HTTPException(status_code=401, detail="Telegram authorization required")
+            return None
     except asyncio.TimeoutError:
         logger.error("Timeout checking authorization status")
-        raise HTTPException(status_code=500, detail="Timeout checking authorization")
+        return None
     except Exception as e:
         logger.error(f"Error checking authorization: {e}")
-        raise HTTPException(status_code=500, detail="Failed to verify authorization")
+        return None
         
     return client
 
@@ -147,8 +150,6 @@ def safe_db_operation():
                     result = await func(*args, **kwargs)
                     return result
                 except Exception as e:
-                    # Log the error but re-raise it for the caller to handle
-                    logger.error(f"Database operation error in {func.__name__}: {e}")
                     raise
                     
         return wrapper

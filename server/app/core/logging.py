@@ -2,9 +2,7 @@
 
 import sys
 from pathlib import Path
-
 from loguru import logger
-
 from server.app.core.config import settings
 
 

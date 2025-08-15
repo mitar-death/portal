@@ -1092,7 +1092,7 @@ async def initialize_messenger_ai(user_id):
     success = await _messenger_ai_instance.initialize(user_id)
     
     if not success:
-        logger.error("Failed to initialize MessengerAI")
+        logger.info("Failed to initialize MessengerAI")
         _messenger_ai_instance = None
         
     return success

@@ -12,9 +12,7 @@ from teleredis import RedisSession
 from server.app.services.redis_client import init_redis
 from telethon.errors import SessionPasswordNeededError, PhoneCodeInvalidError
 from server.app.utils.controller_helpers import (
-    ensure_client_connected,
     ensure_user_authenticated,
-    ensure_telegram_authorized,
     safe_db_operation,
     sanitize_log_data,
     standardize_response

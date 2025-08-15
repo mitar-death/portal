@@ -9,6 +9,9 @@ from server.app.controllers.main import (
 
 main_routes = APIRouter()
 
+@main_routes.get("/sentry-debug")
+async def trigger_error():
+    division_by_zero = 1 / 0
 
 @main_routes.get('/', tags=['Base'])
 async def index():
