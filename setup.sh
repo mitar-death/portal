@@ -164,6 +164,7 @@ fi
 if [ -d "$APP_DIR/storage/sessions/main_user" ]; then
   find "$APP_DIR/storage/sessions/main_user" -type f -name "*.session" -exec chmod 600 {} \;
   find "$APP_DIR/storage/sessions/main_user" -type f -name "*.session-journal" -exec chmod 600 {} \;
+   find "$APP_DIR/storage/sessions/main_user" -type f -name "*.session_metadata.json" -exec chmod 600 {} \;
 fi
 
 info "Copying application source into $APP_DIR (cleaning caches)..."

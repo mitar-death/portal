@@ -1,22 +1,20 @@
-from typing import Dict, Any, List
+from typing import Dict, Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, Request
-from server.app.models.models import ActiveSession, SelectedGroup, User, Group
+from server.app.models.models import ActiveSession, User
 from telethon.errors import PhoneCodeInvalidError, SessionPasswordNeededError, SessionExpiredError, SignInFailedError
 from server.app.core.logging import logger
 from server.app.services.monitor import  start_monitoring, start_health_check_task
 from server.app.services.monitor import set_active_user_id
 from  server.app.services.telegram import (get_client)
-
 from server.app.utils.controller_helpers import (
-    ensure_client_connected,
-    ensure_user_authenticated,
-    ensure_telegram_authorized,
     safe_db_operation,
     sanitize_log_data,
     standardize_response
 )
+
+
 @safe_db_operation()
 async def request_code(request: Request, db: AsyncSession = None) -> Dict[str, Any]:
     """

@@ -222,7 +222,13 @@ async def _process_message(event, selected_groups, keywords):
             
         # Process the message based on type
         chat = await event.get_chat()
+        if not chat:
+            logger.warning("No chat found for message, skipping")
+            return
         sender = await event.get_sender()
+        if not sender:
+            logger.warning("No sender found for message, skipping")
+            return
         
         # Check if it's a group or a DM
         if hasattr(chat, 'title'):  # It's a group/channel
