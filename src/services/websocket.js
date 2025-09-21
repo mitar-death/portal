@@ -70,12 +70,14 @@ class WebSocketService {
                     throw new Error('No access token available for WebSocket authentication');
                 }
 
-                // Construct WebSocket URL with token
-                const wsUrl = `${this.getWebSocketUrl(endpoint)}?token=${encodeURIComponent(accessToken)}`;
+                // Construct WebSocket URL (without token in query params for security)
+                const wsUrl = this.getWebSocketUrl(endpoint);
                 console.log('Connecting to WebSocket:', endpoint);
 
-                // Create WebSocket connection
-                this.socket = new WebSocket(wsUrl);
+                // Create WebSocket connection with JWT token in subprotocol header (secure method)
+                // This sends the JWT token via Sec-WebSocket-Protocol header instead of query params
+                const authProtocol = `bearer.${accessToken}`;
+                this.socket = new WebSocket(wsUrl, [authProtocol]);
 
                 // Connection opened
                 this.socket.onopen = (event) => {
