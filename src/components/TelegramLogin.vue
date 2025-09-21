@@ -309,10 +309,13 @@ async function verifyCode() {
         await store.dispatch("auth/logout");
       }
 
-      // Then update with new auth data
+      // Then update with new auth data - handle JWT tokens properly
       await store.dispatch("auth/loginWithTelegram", {
         user: data.data.user,
-        token: data.data.token,
+        access_token: data.data.access_token,
+        refresh_token: data.data.refresh_token,
+        expires_in: data.data.expires_in,
+        token_type: data.data.token_type
       });
 
       // Update UI to show authenticated state
