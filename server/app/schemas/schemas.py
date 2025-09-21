@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from typing import List, Optional
+from pydantic import BaseModel
+
 
 class User(BaseModel):
     id: int
@@ -7,6 +8,7 @@ class User(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     phone_number: str
+
 
 class TelegramGroup(BaseModel):
     id: int
@@ -20,21 +22,26 @@ class TelegramGroup(BaseModel):
     class Config:
         validate_assignment = True
 
+
 class SendCodeRequest(BaseModel):
     phone_number: str
+
 
 class CodeVerification(BaseModel):
     phone_number: str
     code: str
     phone_code_hash: str
 
+
 class AuthResponse(BaseModel):
     message: str
     success: bool
     data: Optional[dict] = None
 
+
 class GroupsResponse(BaseModel):
     groups: List[TelegramGroup]
-    
+
+
 class SelectedGroupsRequest(BaseModel):
     group_ids: List[int]

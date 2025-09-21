@@ -1,167 +1,186 @@
-from fastapi import Request, HTTPException, WebSocket, Depends, WebSocketDisconnect, Header
-from server.app.core.logging import logger
-from server.app.services.messenger_ai import MessengerAI
-from server.app.services.websocket_manager import websocket_manager
-from datetime import datetime
-import platform
 import os
-import psutil
+import platform
 import uuid
+from datetime import datetime
 import json
+import psutil
+from fastapi import Request, HTTPException, WebSocket, WebSocketDisconnect
 
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from server.app.core.config import settings
 from server.app.core.middlewares import get_current_user
-from server.app.utils.controller_helpers import safe_db_operation, ensure_user_authenticated,sanitize_log_data
-from typing import Optional
-from server.app.models.models import AIAccount, User
-import server.app.utils.controller_helpers
+from server.app.utils.controller_helpers import (
+    safe_db_operation,
+    ensure_user_authenticated,
+    sanitize_log_data,
+)
+from server.app.core.logging import logger
+from server.app.services.messenger_ai import MessengerAI
+from server.app.services.websocket_manager import websocket_manager
+from server.app.services.messenger_ai import get_messenger_ai
+from server.app.services.monitor import diagnostic_check
+from server.app.models.models import AIAccount
+from server.app.services.monitor import get_active_user_id
+from server.app.services.messenger_ai import initialize_messenger_ai
 
 
-async def websocket_diagnostics(
-    websocket: WebSocket,
-    token: str = None
-):
+async def websocket_diagnostics(websocket: WebSocket, token: str = None):
     """
     WebSocket endpoint for real-time diagnostics updates
     """
     connection_id = None
     user_id = None
-    
+
     try:
         # Authenticate the user using the token
         if not token:
             await websocket.close(code=1008, reason="Authentication required")
             return
-            
+
         user = await get_current_user(token)
         if not user:
             await websocket.close(code=1008, reason="Invalid authentication")
             return
-            
+
         # Generate a unique connection ID
         connection_id = str(uuid.uuid4())
         user_id = str(user.id) if user else None
-        
+
         # Connect to the WebSocket manager
         await websocket_manager.connect(websocket, connection_id, user_id)
-        
+
         try:
             # Send initial diagnostics data
             diagnostics = await MessengerAI().diagnostic_check()
-            
+
             # Add additional system information
             diagnostics["timestamp"] = datetime.now().isoformat()
             diagnostics["system_info"] = {
                 "platform": platform.platform(),
                 "python_version": platform.python_version(),
-                "api_version": getattr(settings, "API_VERSION", "1.0.0")
+                "api_version": getattr(settings, "API_VERSION", "1.0.0"),
             }
-            
+
             # Add system resource information
             try:
                 diagnostics["system_resources"] = {
                     "cpu_percent": psutil.cpu_percent(),
                     "memory_percent": psutil.virtual_memory().percent,
-                    "disk_usage_percent": psutil.disk_usage('/').percent,
-                    "process_memory_mb": psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
+                    "disk_usage_percent": psutil.disk_usage("/").percent,
+                    "process_memory_mb": psutil.Process(os.getpid()).memory_info().rss
+                    / 1024
+                    / 1024,
                 }
             except Exception as e:
                 logger.error(f"Error getting system resources: {e}")
                 diagnostics["system_resources"] = {"error": str(e)}
-                
+
             # Add WebSocket information
             diagnostics["websocket_info"] = {
                 "active_connections": websocket_manager.get_connection_count(),
                 "connected_users": websocket_manager.get_user_count(),
-                "connection_id": connection_id
+                "connection_id": connection_id,
             }
-            
-            await websocket_manager.send_json(connection_id, {
-                "type": "diagnostics_update",
-                "data": diagnostics,
-                "timestamp": datetime.now().isoformat()
-            })
-            
+
+            await websocket_manager.send_json(
+                connection_id,
+                {
+                    "type": "diagnostics_update",
+                    "data": diagnostics,
+                    "timestamp": datetime.now().isoformat(),
+                },
+            )
+
             # Keep the connection alive and handle incoming messages
             while True:
                 data = await websocket.receive_text()
                 try:
                     message = json.loads(data)
                     message_type = message.get("type", "")
-                    
+
                     if message_type == "ping":
-                        await websocket_manager.send_json(connection_id, {
-                            "type": "pong",
-                            "timestamp": datetime.now().isoformat()
-                        })
+                        await websocket_manager.send_json(
+                            connection_id,
+                            {"type": "pong", "timestamp": datetime.now().isoformat()},
+                        )
                     elif message_type == "get_diagnostics":
                         # Client requested a refresh of diagnostics
                         diagnostics = await MessengerAI().diagnostic_check()
-                        
+
                         # Add additional system information
                         diagnostics["timestamp"] = datetime.now().isoformat()
                         diagnostics["system_info"] = {
                             "platform": platform.platform(),
                             "python_version": platform.python_version(),
-                            "api_version": getattr(settings, "API_VERSION", "1.0.0")
+                            "api_version": getattr(settings, "API_VERSION", "1.0.0"),
                         }
-                        
+
                         # Add system resource information
                         try:
                             diagnostics["system_resources"] = {
                                 "cpu_percent": psutil.cpu_percent(),
                                 "memory_percent": psutil.virtual_memory().percent,
-                                "disk_usage_percent": psutil.disk_usage('/').percent,
-                                "process_memory_mb": psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
+                                "disk_usage_percent": psutil.disk_usage("/").percent,
+                                "process_memory_mb": psutil.Process(os.getpid())
+                                .memory_info()
+                                .rss
+                                / 1024
+                                / 1024,
                             }
                         except Exception as e:
                             logger.error(f"Error getting system resources: {e}")
                             diagnostics["system_resources"] = {"error": str(e)}
-                            
+
                         # Add WebSocket information
                         diagnostics["websocket_info"] = {
                             "active_connections": websocket_manager.get_connection_count(),
                             "connected_users": websocket_manager.get_user_count(),
-                            "connection_id": connection_id
+                            "connection_id": connection_id,
                         }
-                        
-                        await websocket_manager.send_json(connection_id, {
-                            "type": "diagnostics_update",
-                            "data": diagnostics,
-                            "timestamp": datetime.now().isoformat()
-                        })
+
+                        await websocket_manager.send_json(
+                            connection_id,
+                            {
+                                "type": "diagnostics_update",
+                                "data": diagnostics,
+                                "timestamp": datetime.now().isoformat(),
+                            },
+                        )
                 except json.JSONDecodeError:
                     # Handle plain text messages for backward compatibility
                     if data == "ping":
-                        await websocket_manager.send_json(connection_id, {
-                            "type": "pong",
-                            "timestamp": datetime.now().isoformat()
-                        })
+                        await websocket_manager.send_json(
+                            connection_id,
+                            {"type": "pong", "timestamp": datetime.now().isoformat()},
+                        )
                     elif data == "refresh":
                         # Client requested a refresh of diagnostics
                         diagnostics = await MessengerAI().diagnostic_check()
-                        await websocket_manager.send_json(connection_id, {
-                            "type": "diagnostics_update",
-                            "data": diagnostics,
-                            "timestamp": datetime.now().isoformat()
-                        })
+                        await websocket_manager.send_json(
+                            connection_id,
+                            {
+                                "type": "diagnostics_update",
+                                "data": diagnostics,
+                                "timestamp": datetime.now().isoformat(),
+                            },
+                        )
                 except Exception as e:
                     logger.error(f"Error processing WebSocket message: {e}")
-                    
+
         except WebSocketDisconnect:
             logger.info(f"WebSocket client disconnected: {connection_id}")
         except Exception as e:
             logger.error(f"Error in diagnostics WebSocket: {e}")
-    
+
     except Exception as e:
         logger.error(f"Error establishing WebSocket connection: {e}")
     finally:
         # Always clean up the connection if it was established
         if connection_id:
             await websocket_manager.disconnect(connection_id)
+
 
 # Update the diagnostics controller to use monitor.diagnostic_check
 @safe_db_operation()
@@ -180,9 +199,9 @@ async def get_ai_diagnostics(request: Request, db: AsyncSession = None):
     """
     try:
         # Get diagnostics from the monitor service
-        from server.app.services.monitor import diagnostic_check
+
         diagnostics = await diagnostic_check()
-        
+
         user = await ensure_user_authenticated(request)
 
         # Add version and timestamp
@@ -190,79 +209,89 @@ async def get_ai_diagnostics(request: Request, db: AsyncSession = None):
         diagnostics["system_info"] = {
             "platform": platform.platform(),
             "python_version": platform.python_version(),
-            "api_version": getattr(settings, "API_VERSION", "1.0.0")
+            "api_version": getattr(settings, "API_VERSION", "1.0.0"),
         }
-        
+
         # Add session directory status
-        sessions_dir = os.path.join('storage', 'sessions', 'ai_accounts')
+        sessions_dir = os.path.join("storage", "sessions", "ai_accounts")
         if os.path.exists(sessions_dir):
-            session_files = [f for f in os.listdir(sessions_dir) if f.endswith('.session')]
+            session_files = [
+                f for f in os.listdir(sessions_dir) if f.endswith(".session")
+            ]
             diagnostics["session_info"] = {
                 "directory": sessions_dir,
                 "exists": True,
                 "session_count": len(session_files),
-                "session_files": session_files
+                "session_files": session_files,
             }
         else:
-            diagnostics["session_info"] = {
-                "directory": sessions_dir,
-                "exists": False
-            }
-        
+            diagnostics["session_info"] = {"directory": sessions_dir, "exists": False}
+
         # Add WebSocket information
         diagnostics["websocket_info"] = {
             "active_connections": websocket_manager.get_connection_count(),
-            "connected_users": websocket_manager.get_user_count()
+            "connected_users": websocket_manager.get_user_count(),
         }
-        
+
         try:
-            #Query all Ai accounts for user and check if its loggedin
+            # Query all Ai accounts for user and check if its loggedin
             stmt = select(AIAccount).where(AIAccount.user_id == user.id)
             ai_accounts = await db.execute(stmt)
             ai_accounts = ai_accounts.scalars().all()
-            
+
             ai_clients = []
             for account in ai_accounts:
-                ai_clients.append({
-                    "id": account.id,
-                    "account_id": account.id,
-                    "name": account.name,
-                    "is_active": account.is_active,
-                    "phone_number": account.phone_number,
-                    "is_active": account.is_active,
-                    "connected": True,
-                    "authorized": account.is_active,
-                    "last_activity": account.updated_at.isoformat() if account.updated_at else None
-                })
+                ai_clients.append(
+                    {
+                        "id": account.id,
+                        "account_id": account.id,
+                        "name": account.name,
+                        "is_active": account.is_active,
+                        "phone_number": account.phone_number,
+                        "connected": True,
+                        "authorized": account.is_active,
+                        "last_activity": (
+                            account.updated_at.isoformat()
+                            if account.updated_at
+                            else None
+                        ),
+                    }
+                )
             diagnostics["ai_clients"] = ai_clients
         except SQLAlchemyError as e:
-            logger.error(f"Database error retrieving AI accounts: {sanitize_log_data(str(e))}")
+            logger.error(
+                f"Database error retrieving AI accounts: {sanitize_log_data(str(e))}"
+            )
             diagnostics["ai_clients"] = {"error": "Failed to retrieve AI accounts"}
-            
+
         # Add system resource information
         try:
             diagnostics["system_resources"] = {
                 "cpu_percent": psutil.cpu_percent(),
                 "memory_percent": psutil.virtual_memory().percent,
-                "disk_usage_percent": psutil.disk_usage('/').percent,
-                "process_memory_mb": psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
+                "disk_usage_percent": psutil.disk_usage("/").percent,
+                "process_memory_mb": psutil.Process(os.getpid()).memory_info().rss
+                / 1024
+                / 1024,
             }
         except Exception as e:
             logger.error(f"Error getting system resources: {e}")
             diagnostics["system_resources"] = {"error": str(e)}
-        
-        logger.info(f"AI messenger diagnostics requested")
-        
+
+        logger.info("AI messenger diagnostics requested")
+
         # Return a standardized response
         return {
             "success": True,
             "message": "Diagnostics retrieved successfully",
-            "diagnostics": diagnostics
+            "diagnostics": diagnostics,
         }
-        
+
     except Exception as e:
         logger.error(f"Error in AI diagnostics controller: {e}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving diagnostics: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving diagnostics: {str(e)}"
+        ) from e
 
 
 async def reinitialize_ai_messenger(request: Request):
@@ -272,47 +301,44 @@ async def reinitialize_ai_messenger(request: Request):
     """
     try:
         # Get the AI messenger instance
-        from server.app.services.messenger_ai import get_messenger_ai
         messenger_ai = await get_messenger_ai()
-        
-        if messenger_ai and hasattr(messenger_ai, 'ensure_messenger_ai_initialized'):
+
+        if messenger_ai and hasattr(messenger_ai, "ensure_messenger_ai_initialized"):
             # Use the AI messenger's own reinitialization method
             result = await messenger_ai.ensure_messenger_ai_initialized()
         else:
             # Fallback to manual reinitialization
-            from server.app.services.monitor import get_active_user_id
-            from server.app.services.messenger_ai import initialize_messenger_ai
-            
             user_id = await get_active_user_id()
             if not user_id:
                 logger.error("No active user ID set, cannot reinitialize MessengerAI")
                 return {
                     "success": False,
                     "message": "No active user ID set, cannot reinitialize MessengerAI",
-                    "diagnostics": {}
+                    "diagnostics": {},
                 }
-                
+
             result = await initialize_messenger_ai(user_id)
 
         # Get updated diagnostics
-        from server.app.services.monitor import diagnostic_check
         diagnostics = await diagnostic_check()
-        
+
         # Add timestamp and standard fields
         diagnostics["timestamp"] = datetime.now().isoformat()
         diagnostics["system_info"] = {
             "platform": platform.platform(),
             "python_version": platform.python_version(),
-            "api_version": getattr(settings, "API_VERSION", "1.0.0")
+            "api_version": getattr(settings, "API_VERSION", "1.0.0"),
         }
-        
+
         # Add system resources
         try:
             diagnostics["system_resources"] = {
                 "cpu_percent": psutil.cpu_percent(),
                 "memory_percent": psutil.virtual_memory().percent,
-                "disk_usage_percent": psutil.disk_usage('/').percent,
-                "process_memory_mb": psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
+                "disk_usage_percent": psutil.disk_usage("/").percent,
+                "process_memory_mb": psutil.Process(os.getpid()).memory_info().rss
+                / 1024
+                / 1024,
             }
         except Exception as e:
             logger.error(f"Error getting system resources: {e}")
@@ -320,61 +346,65 @@ async def reinitialize_ai_messenger(request: Request):
 
         if result:
             logger.info("Successfully reinitialized AI messenger")
-            
+
             # Broadcast notification to WebSocket clients
             try:
                 await websocket_manager.send_notification(
                     "ai_reinitialized",
                     "AI messenger successfully reinitialized",
-                    "success"
+                    "success",
                 )
                 # Update diagnostics in WebSocket
-                await websocket_manager.broadcast({
-                    "type": "diagnostics_update",
-                    "data": diagnostics,
-                    "timestamp": datetime.now().isoformat()
-                })
+                await websocket_manager.broadcast(
+                    {
+                        "type": "diagnostics_update",
+                        "data": diagnostics,
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
             except Exception as e:
-                logger.error(f"Error sending WebSocket notification: {e}", exc_info=True)
-            
+                logger.error(
+                    f"Error sending WebSocket notification: {e}", exc_info=True
+                )
+
             return {
                 "success": True,
                 "message": "AI messenger successfully reinitialized",
-                "diagnostics": diagnostics
+                "diagnostics": diagnostics,
             }
-        else:
-            logger.warning("Failed to reinitialize AI messenger")
-            
-            # Broadcast notification to WebSocket clients
-            try:
-                await websocket_manager.send_notification(
-                    "ai_reinitialize_failed",
-                    "Failed to reinitialize AI messenger",
-                    "error"
-                )
-                # Still update diagnostics to show current state
-                await websocket_manager.broadcast({
+        logger.warning("Failed to reinitialize AI messenger")
+
+        # Broadcast notification to WebSocket clients
+        try:
+            await websocket_manager.send_notification(
+                "ai_reinitialize_failed",
+                "Failed to reinitialize AI messenger",
+                "error",
+            )
+            # Still update diagnostics to show current state
+            await websocket_manager.broadcast(
+                {
                     "type": "diagnostics_update",
                     "data": diagnostics,
-                    "timestamp": datetime.now().isoformat()
-                })
-            except Exception as e:
-                logger.error(f"Error sending WebSocket notification: {e}", exc_info=True)
-            
-            return {
-                "success": False,
-                "message": "Failed to reinitialize AI messenger",
-                "diagnostics": diagnostics
-            }
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
+        except Exception as e:
+            logger.error(f"Error sending WebSocket notification: {e}", exc_info=True)
+
+        return {
+            "success": False,
+            "message": "Failed to reinitialize AI messenger",
+            "diagnostics": diagnostics,
+        }
     except Exception as e:
         logger.error(f"Error reinitializing AI messenger: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error reinitializing AI messenger: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error reinitializing AI messenger: {str(e)}"
+        ) from e
 
 
-async def diagnostics_websocket_endpoint(
-    websocket: WebSocket,
-    token: str = None
-):
+async def diagnostics_websocket_endpoint(websocket: WebSocket, token: str = None):
     """
     WebSocket endpoint for real-time diagnostics updates (legacy endpoint)
     This endpoint is maintained for backward compatibility.
@@ -382,88 +412,96 @@ async def diagnostics_websocket_endpoint(
     """
     connection_id = None
     user_id = None
-    
+
     try:
         # Authenticate the user using the token
         if not token:
             await websocket.close(code=1008, reason="Authentication required")
             return
-            
+
         user = await get_current_user(token)
         if not user:
             await websocket.close(code=1008, reason="Invalid authentication")
             return
-            
+
         # Generate a unique connection ID
         connection_id = str(uuid.uuid4())
         user_id = str(user.id) if user else None
-        
+
         # Connect to the WebSocket manager
         await websocket_manager.connect(websocket, connection_id, user_id)
-        logger.info(f"Legacy diagnostics WebSocket endpoint connected: {connection_id}, user: {user_id}")
-        
+        logger.info(
+            f"Legacy diagnostics WebSocket endpoint connected: {connection_id}, user: {user_id}"
+        )
+
         try:
             # Send initial diagnostics data
             diagnostics = await MessengerAI().diagnostic_check()
-            
+
             # Add timestamp and system info
             diagnostics["timestamp"] = datetime.now().isoformat()
             diagnostics["system_info"] = {
                 "platform": platform.platform(),
                 "python_version": platform.python_version(),
-                "api_version": getattr(settings, "API_VERSION", "1.0.0")
+                "api_version": getattr(settings, "API_VERSION", "1.0.0"),
             }
-            
+
             # Add WebSocket information
             diagnostics["websocket_info"] = {
                 "active_connections": websocket_manager.get_connection_count(),
                 "connected_users": websocket_manager.get_user_count(),
-                "connection_id": connection_id
+                "connection_id": connection_id,
             }
-            
-            await websocket_manager.send_json(connection_id, {
-                "type": "diagnostics_update",
-                "data": diagnostics,
-                "timestamp": datetime.now().isoformat()
-            })
-            
+
+            await websocket_manager.send_json(
+                connection_id,
+                {
+                    "type": "diagnostics_update",
+                    "data": diagnostics,
+                    "timestamp": datetime.now().isoformat(),
+                },
+            )
+
             # Keep the connection alive and handle incoming messages
             while True:
                 data = await websocket.receive_text()
                 if data == "ping":
-                    await websocket_manager.send_json(connection_id, {
-                        "type": "pong",
-                        "timestamp": datetime.now().isoformat()
-                    })
+                    await websocket_manager.send_json(
+                        connection_id,
+                        {"type": "pong", "timestamp": datetime.now().isoformat()},
+                    )
                 elif data == "refresh":
                     # Client requested a refresh of diagnostics
                     diagnostics = await MessengerAI().diagnostic_check()
-                    
+
                     # Add timestamp and system info
                     diagnostics["timestamp"] = datetime.now().isoformat()
                     diagnostics["system_info"] = {
                         "platform": platform.platform(),
                         "python_version": platform.python_version(),
-                        "api_version": getattr(settings, "API_VERSION", "1.0.0")
+                        "api_version": getattr(settings, "API_VERSION", "1.0.0"),
                     }
-                    
+
                     # Add WebSocket information
                     diagnostics["websocket_info"] = {
                         "active_connections": websocket_manager.get_connection_count(),
                         "connected_users": websocket_manager.get_user_count(),
-                        "connection_id": connection_id
+                        "connection_id": connection_id,
                     }
-                    
-                    await websocket_manager.send_json(connection_id, {
-                        "type": "diagnostics_update",
-                        "data": diagnostics,
-                        "timestamp": datetime.now().isoformat()
-                    })
+
+                    await websocket_manager.send_json(
+                        connection_id,
+                        {
+                            "type": "diagnostics_update",
+                            "data": diagnostics,
+                            "timestamp": datetime.now().isoformat(),
+                        },
+                    )
         except WebSocketDisconnect:
             logger.info(f"WebSocket client disconnected: {connection_id}")
         except Exception as e:
             logger.error(f"Error in diagnostics WebSocket: {e}")
-    
+
     except Exception as e:
         logger.error(f"Error establishing WebSocket connection: {e}")
     finally:

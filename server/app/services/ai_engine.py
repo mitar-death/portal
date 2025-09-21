@@ -10,7 +10,7 @@ try:
     logger.info("Gemini AI configured successfully")
 except Exception as e:
     logger.error(f"Failed to configure Gemini AI: {e}")
-    
+
 # Define model configuration for better results
 generation_config = {
     "temperature": 0.2,  # Lower temperature for more consistent results
@@ -22,21 +22,21 @@ generation_config = {
 # Initialize Gemini model
 try:
     model = genai.GenerativeModel(
-        "gemini-1.5-flash",
-        generation_config=generation_config
+        "gemini-1.5-flash", generation_config=generation_config
     )
     logger.info("Gemini model initialized successfully")
 except Exception as e:
     logger.error(f"Failed to initialize Gemini model: {e}")
     model = None
 
+
 async def analyze_message(message: str) -> Dict[str, Any]:
     """
     Analyze a message using the Gemini model to extract key information.
-    
+
     Args:
         message: The message text to analyze
-        
+
     Returns:
         Dictionary containing analysis results including:
         - sentiment: The overall sentiment (positive, negative, neutral)
@@ -48,7 +48,7 @@ async def analyze_message(message: str) -> Dict[str, Any]:
     if not model:
         logger.error("Gemini model not initialized, falling back to basic analysis")
         return _fallback_analysis(message)
-    
+
     try:
         # Create a structured prompt for consistent results
         prompt = f"""
@@ -67,20 +67,23 @@ async def analyze_message(message: str) -> Dict[str, Any]:
         
         Only respond with the JSON object and nothing else.
         """
-        
+
         # Generate response asynchronously
         response = await model.generate_content_async(prompt)
         response_text = response.text.strip()
-        
+
         # Try to parse the response as JSON
         import json
+
         try:
             # Extract JSON if it's wrapped in ```json``` code blocks
             if "```json" in response_text:
-                response_text = response_text.split("```json")[1].split("```")[0].strip()
+                response_text = (
+                    response_text.split("```json")[1].split("```")[0].strip()
+                )
             elif "```" in response_text:
                 response_text = response_text.split("```")[1].split("```")[0].strip()
-                
+
             result = json.loads(response_text)
             logger.info(f"Successfully analyzed message with Gemini")
             return result
@@ -88,7 +91,7 @@ async def analyze_message(message: str) -> Dict[str, Any]:
             logger.warning(f"Failed to parse Gemini response as JSON: {response_text}")
             # Fall back to basic analysis
             return _fallback_analysis(message)
-            
+
     except Exception as e:
         logger.error(f"Error analyzing message with Gemini: {e}")
         return _fallback_analysis(message)
@@ -102,11 +105,14 @@ def _fallback_analysis(message: str) -> Dict[str, Any]:
         "category": "general_chat",
         "urgency": False,
         "summary": "A general message",
-        "keywords": []
+        "keywords": [],
     }
-    
+
     # Simple keyword-based analysis
-    if any(word in lowered for word in ["help", "urgent", "emergency", "asap", "immediately"]):
+    if any(
+        word in lowered
+        for word in ["help", "urgent", "emergency", "asap", "immediately"]
+    ):
         result["category"] = "support_request"
         result["urgency"] = True
         result["sentiment"] = "negative"
@@ -121,17 +127,22 @@ def _fallback_analysis(message: str) -> Dict[str, Any]:
         result["sentiment"] = "positive"
         result["summary"] = "A greeting message"
         result["keywords"] = ["greeting", "hello"]
-    elif any(word in lowered for word in ["problem", "issue", "not working", "broken", "fix"]):
+    elif any(
+        word in lowered for word in ["problem", "issue", "not working", "broken", "fix"]
+    ):
         result["category"] = "complaint"
         result["sentiment"] = "negative"
         result["summary"] = "A complaint about an issue"
         result["keywords"] = ["problem", "issue", "fix"]
-    elif any(word in lowered for word in ["thank", "appreciate", "good", "great", "excellent"]):
+    elif any(
+        word in lowered
+        for word in ["thank", "appreciate", "good", "great", "excellent"]
+    ):
         result["category"] = "feedback"
         result["sentiment"] = "positive"
         result["summary"] = "A positive feedback message"
         result["keywords"] = ["thanks", "good", "positive"]
-    
+
     logger.info("Used fallback analysis method")
     return result
 
@@ -139,18 +150,18 @@ def _fallback_analysis(message: str) -> Dict[str, Any]:
 async def generate_response(message: str, context: Optional[str] = None) -> str:
     """
     Generate a response to a message using the Gemini model.
-    
+
     Args:
         message: The message to respond to
         context: Optional context about the conversation
-        
+
     Returns:
         A generated response to the message
     """
     if not model:
         logger.error("Gemini model not initialized, returning default response")
         return "I'm sorry, I can't process your message right now."
-    
+
     try:
         # Create a prompt with context if provided
         if context:
@@ -212,7 +223,7 @@ async def generate_response(message: str, context: Optional[str] = None) -> str:
             - If you're unsure about something, simply provide the information you do know without mentioning limitations
             - Always remain helpful, professional, and conversational
             """
-        
+
         # Generate response asynchronously
         response = await model.generate_content_async(prompt)
         return response.text.strip()
@@ -226,12 +237,13 @@ async def check_ai_service() -> bool:
     """Check if the Gemini AI service is available and working."""
     if not model:
         return False
-        
+
     try:
         # Simple test prompt
-        test_response = await model.generate_content_async("Respond with 'OK' if you're working properly.")
+        test_response = await model.generate_content_async(
+            "Respond with 'OK' if you're working properly."
+        )
         return "OK" in test_response.text
     except Exception as e:
         logger.error(f"AI service check failed: {e}")
         return False
-
