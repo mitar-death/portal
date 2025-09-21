@@ -97,8 +97,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
                    
                     # Set the authenticated user in the request
                     request.scope["user"] = user
-                    request.state.user = user 
-                    await set_active_user_id(user.id)
+                    request.state.user = user
+                    
+                    # SECURITY FIX: Removed global set_active_user_id to prevent cross-user contamination
+                    # User context should be handled per-request, not globally
                     
                     # Set active user for Telegram legacy functions
                     # Legacy function removed - using user-scoped clients

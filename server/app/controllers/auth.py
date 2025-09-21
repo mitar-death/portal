@@ -37,65 +37,66 @@ async def check_auth_status(request: Request, db: AsyncSession = None) -> Dict[s
         Dict with connection status, authorization status, and user info if available
     """
     try:
-        # First check if there are any users with active sessions
-        # For now, we'll check all users to see if any have authenticated sessions
-        # In a more advanced implementation, this would be based on the current user's JWT token
+        # SECURITY FIX: Only check the current authenticated user, not all users
+        current_user = getattr(request.state, 'user', None)
         
-        stmt = select(User)
-        result = await db.execute(stmt)
-        users = result.scalars().all()
-        
-        # If no users exist in the database, return not connected/authorized
-        if not users:
+        if not current_user:
             return standardize_response(
                 {
                     "is_connected": False,
                     "is_authorized": False,
                     "user_info": None
                 },
-                "Authentication status retrieved successfully"
+                "User not authenticated with TGPortal"
             )
         
-        # Check each user to see if they have an authenticated Telegram client
-        for user in users:
-            try:
-                client = await client_manager.get_user_client(user.id)
-                if client and client.is_connected() and await client.is_user_authorized():
-                    # Found an authenticated user
-                    me = await client.get_me()
-                    if me:
-                        user_info = {
-                            "id": me.id,
-                            "username": me.username,
-                            "first_name": me.first_name,
-                            "last_name": me.last_name,
-                            "phone": me.phone
-                        }
-                        
-                        # Set this user as the active user for monitoring
-                        await set_active_user_id(user.id)
-                        logger.info(f"Set active user ID to {user.id} based on authenticated Telegram user")
-                        
-                        return standardize_response(
-                            {
-                                "is_connected": True,
-                                "is_authorized": True,
-                                "user_info": user_info
-                            },
-                            "Authentication status retrieved successfully"
-                        )
-            except Exception as e:
-                logger.debug(f"Error checking auth for user {user.id}: {e}")
-                continue
+        if not current_user.is_active:
+            return standardize_response(
+                {
+                    "is_connected": False,
+                    "is_authorized": False,
+                    "user_info": None
+                },
+                "User account is inactive"
+            )
         
-        # No authenticated users found
+        # Check ONLY the current user's Telegram client status
+        try:
+            client = await client_manager.get_user_client(current_user.id)
+            if client and client.is_connected() and await client.is_user_authorized():
+                # Current user has an authenticated Telegram client
+                me = await client.get_me()
+                if me:
+                    user_info = {
+                        "id": me.id,
+                        "username": me.username,
+                        "first_name": me.first_name,
+                        "last_name": me.last_name,
+                        "phone": me.phone
+                    }
+                    
+                    # Note: Removed global set_active_user_id call to prevent side effects
+                    logger.debug(f"Checked auth status for user {current_user.id} - authenticated")
+                    
+                    return standardize_response(
+                        {
+                            "is_connected": True,
+                            "is_authorized": True,
+                            "user_info": user_info
+                        },
+                        "Authentication status retrieved successfully"
+                    )
+        except Exception as e:
+            logger.warning(f"Error checking auth for current user {current_user.id}: {e}")
+        
+        # Current user is not authenticated with Telegram
         return standardize_response(
             {
                 "is_connected": False,
                 "is_authorized": False,
                 "user_info": None
             },
-            "Authentication status retrieved successfully"
+            "Current user not authenticated with Telegram"
         )
     except HTTPException as e:
         # Pass through HTTP exceptions

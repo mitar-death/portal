@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Dict, Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -46,7 +47,51 @@ async def transfer_session_to_user(guest_client, user_id: int):
             logger.error(f"Failed to extract session string: {e}")
             return
         
-        # Save session metadata for the user
+        # CRITICAL FIX: Actually transfer the session by creating a user client
+        try:
+            from telethon.sessions import StringSession
+            from telethon import TelegramClient
+            
+            # Create a StringSession from the guest session string
+            string_session = StringSession(session_string.decode() if isinstance(session_string, bytes) else session_string)
+            
+            # Get user session path
+            user_session_path = client_manager._get_user_session_path(user_id)
+            
+            # Create user client with the transferred session  
+            user_client = TelegramClient(user_session_path, int(settings.TELEGRAM_API_ID), settings.TELEGRAM_API_HASH)
+            await user_client.connect()
+            
+            # Create temporary client with string session to copy session data
+            temp_client = TelegramClient(string_session, int(settings.TELEGRAM_API_ID), settings.TELEGRAM_API_HASH)
+            await temp_client.connect()
+            
+            # Verify the session is valid
+            if await temp_client.is_user_authorized():
+                # Copy session data to user's file-based session
+                user_client.session.set_dc(temp_client.session.dc_id, temp_client.session.server_address, temp_client.session.port)
+                user_client.session.auth_key = temp_client.session.auth_key
+                user_client.session.save()
+                
+                logger.info(f"Successfully transferred authenticated session to user {user_id}")
+            else:
+                logger.error(f"Guest session is not authorized for user {user_id}")
+                await temp_client.disconnect()
+                await user_client.disconnect()
+                return
+            
+            await temp_client.disconnect() 
+            await user_client.disconnect()
+            
+            # Ensure secure permissions on session files
+            if os.path.exists(f"{user_session_path}.session"):
+                os.chmod(f"{user_session_path}.session", 0o600)
+                
+        except Exception as e:
+            logger.error(f"Failed to transfer session to user client: {e}")
+            return
+        
+        # Save minimal session metadata (NO sensitive session strings)
         metadata_file = client_manager._get_user_metadata_file(user_id)
         try:
             existing_metadata = {}
@@ -54,16 +99,30 @@ async def transfer_session_to_user(guest_client, user_id: int):
                 with open(metadata_file, "r") as f:
                     existing_metadata = json.load(f)
             
-            # Update with session string
-            existing_metadata["session_string"] = session_string.decode() if isinstance(session_string, bytes) else session_string
+            # Only store transfer completion status and timestamp
+            existing_metadata["session_string"] = None  # Clear any existing session string
             existing_metadata["transferred_at"] = datetime.now(timezone.utc).isoformat()
+            existing_metadata["transfer_completed"] = True
             
             with open(metadata_file, "w") as f:
                 json.dump(existing_metadata, f)
             
-            logger.info(f"Successfully saved session string for user {user_id}")
+            # Set secure permissions on metadata file 
+            os.chmod(str(metadata_file), 0o600)
+            
+            logger.info(f"Session transfer completed successfully for user {user_id}")
         except Exception as e:
             logger.error(f"Failed to save session metadata for user {user_id}: {e}")
+            
+        # Clean up guest session to prevent reuse/collisions
+        try:
+            guest_session_file = getattr(guest_client.session, 'filename', None)
+            await guest_client.disconnect()
+            if guest_session_file and os.path.exists(guest_session_file):
+                os.remove(guest_session_file)
+                logger.info(f"Cleaned up guest session file: {guest_session_file}")
+        except Exception as e:
+            logger.warning(f"Failed to clean up guest session: {e}")
             
     except Exception as e:
         logger.error(f"Error transferring session to user {user_id}: {e}")

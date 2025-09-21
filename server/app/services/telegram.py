@@ -31,9 +31,9 @@ class ClientManager:
         self._global_lock = RLock()  # For thread safety when modifying dictionaries
         
     def _get_user_session_dir(self, user_id: int) -> Path:
-        """Get user-specific session directory."""
+        """Get user-specific session directory with secure permissions."""
         user_session_dir = base_session_dir / f"user_{user_id}"
-        user_session_dir.mkdir(exist_ok=True, mode=0o755)  # Ensure proper permissions
+        user_session_dir.mkdir(exist_ok=True, mode=0o700)  # Secure: owner read/write/execute only
         return user_session_dir
         
     def _get_user_session_path(self, user_id: int) -> str:
@@ -90,21 +90,37 @@ class ClientManager:
                 self._locks[user_id] = asyncio.Lock()
             return self._locks[user_id]
             
-    async def get_guest_client(self) -> TelegramClient:
+    async def get_guest_client(self, phone_number: str = None) -> TelegramClient:
         """
         Get a guest client for initial authentication (before user exists).
-        This client is used for sending verification codes during login.
+        Creates a unique session per phone number to prevent collisions.
         
+        Args:
+            phone_number: Phone number for unique session (optional)
+            
         Returns:
             TelegramClient: A temporary client for authentication
         """
-        guest_session_path = str(base_session_dir / "guest_session")
+        import uuid
+        import time
         
-        # Create a temporary client with a guest session
+        # Create unique session identifier to prevent cross-user session collisions
+        if phone_number:
+            # Use phone number hash for consistent session per phone
+            import hashlib
+            phone_hash = hashlib.sha256(phone_number.encode()).hexdigest()[:8]
+            session_id = f"guest_{phone_hash}_{int(time.time())}"
+        else:
+            # Fallback to UUID for anonymous guests
+            session_id = f"guest_{uuid.uuid4().hex[:8]}_{int(time.time())}"
+        
+        guest_session_path = str(base_session_dir / session_id)
+        
+        # Create a temporary client with isolated guest session
         guest_client = TelegramClient(guest_session_path, int(settings.TELEGRAM_API_ID), settings.TELEGRAM_API_HASH)
         await guest_client.connect()
         
-        logger.info("Guest client created for initial authentication")
+        logger.info(f"Guest client created for initial authentication with session: {session_id}")
         return guest_client
             
     async def initialize_user_client(self, user_id: int, force_new_session: bool = False) -> TelegramClient:
@@ -257,9 +273,9 @@ class ClientManager:
                         await new_client.connect()
                         logger.info(f"Telegram client initialized with file-based session for user {user_id}: {user_session_path}")
                         
-                        # Fix permissions on the session file after creation
+                        # Fix permissions on the session file after creation - secure permissions
                         if os.path.exists(f"{user_session_path}.session"):
-                            os.chmod(f"{user_session_path}.session", 0o644)
+                            os.chmod(f"{user_session_path}.session", 0o600)  # Owner read/write only
                     
                     # Store the client
                     with self._global_lock:
