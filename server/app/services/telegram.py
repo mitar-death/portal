@@ -90,6 +90,23 @@ class ClientManager:
                 self._locks[user_id] = asyncio.Lock()
             return self._locks[user_id]
             
+    async def get_guest_client(self) -> TelegramClient:
+        """
+        Get a guest client for initial authentication (before user exists).
+        This client is used for sending verification codes during login.
+        
+        Returns:
+            TelegramClient: A temporary client for authentication
+        """
+        guest_session_path = str(base_session_dir / "guest_session")
+        
+        # Create a temporary client with a guest session
+        guest_client = TelegramClient(guest_session_path, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
+        await guest_client.connect()
+        
+        logger.info("Guest client created for initial authentication")
+        return guest_client
+            
     async def initialize_user_client(self, user_id: int, force_new_session: bool = False) -> TelegramClient:
         """
         Initialize a Telegram client for a specific user.
