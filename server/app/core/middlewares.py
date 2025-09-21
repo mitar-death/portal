@@ -101,7 +101,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     await set_active_user_id(user.id)
                     
                     # Set active user for Telegram legacy functions
-                    await set_active_user_for_legacy_functions(user.id)
+                    # Legacy function removed - using user-scoped clients
                     
                     # Update session activity
                     await update_session_activity(session, jti)
