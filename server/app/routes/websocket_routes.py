@@ -11,6 +11,39 @@ import asyncio
 import json
 import uuid
 
+
+def extract_token_from_websocket(websocket: WebSocket) -> str:
+    """
+    Extract JWT token from WebSocket Sec-WebSocket-Protocol header.
+    The frontend sends the token as 'bearer.{token}' subprotocol for secure authentication.
+    
+    Args:
+        websocket: The WebSocket connection object
+        
+    Returns:
+        JWT token string
+        
+    Raises:
+        ValueError: If no valid token is found in the subprotocol
+    """
+    # Get subprotocol from headers (sent via Sec-WebSocket-Protocol)
+    subprotocol = websocket.headers.get("sec-websocket-protocol", "")
+    
+    if not subprotocol:
+        raise ValueError("No authentication protocol provided")
+    
+    # Parse subprotocol format: "bearer.{token}"
+    if not subprotocol.startswith("bearer."):
+        raise ValueError("Invalid authentication protocol format")
+    
+    # Extract token from subprotocol
+    token = subprotocol[7:]  # Remove "bearer." prefix
+    
+    if not token:
+        raise ValueError("No token found in authentication protocol")
+    
+    return token
+
 # Create a separate router for WebSocket endpoints
 ws_router = APIRouter()
 
@@ -24,9 +57,11 @@ async def websocket_endpoint(websocket: WebSocket):
     
     await websocket.accept()
     
-    # Get token from query parameters
-    token = websocket.query_params.get("token")
-    if not token:
+    # Get token from Sec-WebSocket-Protocol header (secure method)
+    try:
+        token = extract_token_from_websocket(websocket)
+    except ValueError as e:
+        logger.warning(f"WebSocket authentication failed: {e}")
         await websocket.close(code=1008, reason="Authentication required")
         return
         
@@ -88,9 +123,11 @@ async def diagnostics_websocket(websocket: WebSocket):
     # Accept the connection
     await websocket.accept()
     
-    # Get the authentication token from query parameters
-    token = websocket.query_params.get("token")
-    if not token:
+    # Get the authentication token from Sec-WebSocket-Protocol header (secure method)
+    try:
+        token = extract_token_from_websocket(websocket)
+    except ValueError as e:
+        logger.warning(f"WebSocket diagnostics authentication failed: {e}")
         await websocket.close(code=1008, reason="Authentication required")
         return
         
@@ -196,9 +233,11 @@ async def chat_activity_websocket(websocket: WebSocket):
     # Accept the connection
     await websocket.accept()
     
-    # Get the authentication token from query parameters
-    token = websocket.query_params.get("token")
-    if not token:
+    # Get the authentication token from Sec-WebSocket-Protocol header (secure method)
+    try:
+        token = extract_token_from_websocket(websocket)
+    except ValueError as e:
+        logger.warning(f"WebSocket chat activity authentication failed: {e}")
         await websocket.close(code=1008, reason="Authentication required")
         return
     
