@@ -603,6 +603,20 @@ async def transfer_session_to_user(guest_client, user_id: int):
             
         except Exception as e:
             logger.warning(f"Failed to update session metadata: {e}")
+
+        # CRITICAL: Initialize user client with transferred session to ensure immediate authorization
+        try:
+            user_client = await client_manager.get_user_client(user_id, new_session=True)
+            if user_client:
+                # Verify the transferred session is working
+                if await user_client.is_user_authorized():
+                    logger.info(f"Successfully verified transferred session authorization for user {user_id}")
+                else:
+                    logger.warning(f"Transferred session for user {user_id} is not authorized - may need manual re-login")
+            else:
+                logger.warning(f"Failed to initialize user client after session transfer for user {user_id}")
+        except Exception as e:
+            logger.warning(f"Failed to verify transferred session for user {user_id}: {e}")
             
     except Exception as e:
         logger.error(f"Session transfer failed for user {user_id}: {e}")
