@@ -1,0 +1,705 @@
+0>
+messenger_ai = <server.app.services.messenger_ai.MessengerAI object at 0x118cc4640>
+
+    @pytest.mark.asyncio
+    async def test_stop_ai_clients(self, messenger_ai):
+        """Test stopping AI clients."""
+        mock_client1 = AsyncMock()
+        mock_client2 = AsyncMock()
+        messenger_ai.ai_clients = {123: mock_client1, 456: mock_client2}
+
+>       await messenger_ai.stop()
+E       AttributeError: 'MessengerAI' object has no attribute 'stop'
+
+tests/services/test_messenger_ai.py:191: AttributeError
+________________ TestMessengerAI.test_conversation_tracking _________________
+
+self = <tests.services.test_messenger_ai.TestMessengerAI object at 0x10ddf0e20>
+messenger_ai = <server.app.services.messenger_ai.MessengerAI object at 0x11b102c80>
+
+    @pytest.mark.asyncio
+    async def test_conversation_tracking(self, messenger_ai):
+        """Test conversation state tracking."""
+        sender_id = 123456789
+        ai_account_id = 123
+
+        # Start conversation
+>       await messenger_ai._start_conversation(sender_id, ai_account_id)
+E       AttributeError: 'MessengerAI' object has no attribute '_start_conversation'. Did you mean: '_update_conversation'?
+
+tests/services/test_messenger_ai.py:224: AttributeError
+_________ TestMessengerAI.test_error_handling_in_message_processing _________
+
+self = <tests.services.test_messenger_ai.TestMessengerAI object at 0x10ddf1e10>
+messenger_ai = <server.app.services.messenger_ai.MessengerAI object at 0x10fb6d780>
+mock_telegram_message = <MagicMock id='4558618048'>
+
+    @pytest.mark.asyncio
+    async def test_error_handling_in_message_processing(self, messenger_ai, mock_telegram_message):
+        """Test error handling during message processing."""
+        messenger_ai.monitored_keywords = {"hello"}
+        messenger_ai.group_ai_map = {-1001234567890: 123}
+
+        mock_ai_client = AsyncMock()
+        mock_ai_client.send_message.side_effect = Exception("Network error")
+        messenger_ai.ai_clients[123] = mock_ai_client
+
+>       with patch.object(messenger_ai.message_analyzer, 'contains_keywords', return_value=True):
+
+tests/services/test_messenger_ai.py:240:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+../../.pyenv/versions/3.10.14/lib/python3.10/unittest/mock.py:1447: in __enter__
+    original, local = self.get_original()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <unittest.mock._patch object at 0x11b838a90>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+
+        original = DEFAULT
+        local = False
+
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <server.app.services.message_analyzer.MessageAnalyzer object at 0x10fb6ea70> does not have the attribute 'contains_keywords'
+
+../../.pyenv/versions/3.10.14/lib/python3.10/unittest/mock.py:1420: AttributeError
+________________ TestMessengerAI.test_websocket_notification ________________
+
+self = <tests.services.test_messenger_ai.TestMessengerAI object at 0x10ddf20b0>
+messenger_ai = <server.app.services.messenger_ai.MessengerAI object at 0x11b105ab0>
+mock_websocket_manager = <AsyncMock id='4749027808'>
+
+    @pytest.mark.asyncio
+    async def test_websocket_notification(self, messenger_ai, mock_websocket_manager):
+        """Test WebSocket notifications during AI interactions."""
+        messenger_ai.websocket_manager = mock_websocket_manager
+
+        sender_id = 123456789
+        ai_account_id = 123
+        mock_ai_client = AsyncMock()
+        messenger_ai.ai_clients[ai_account_id] = mock_ai_client
+
+        with patch('server.app.services.ai_engine.generate_response') as mock_generate:
+            mock_generate.return_value = "AI response"
+
+            await messenger_ai._handle_dm_message(sender_id, "Test", ai_account_id)
+
+            # Should broadcast message about AI interaction
+>           mock_websocket_manager.broadcast_message.assert_called()
+
+tests/services/test_messenger_ai.py:260:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <AsyncMock name='mock.broadcast_message' id='4749022336'>
+
+    def assert_called(self):
+        """assert that the mock was called at least once
+        """
+        if self.call_count == 0:
+            msg = ("Expected '%s' to have been called." %
+                   (self._mock_name or 'mock'))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'broadcast_message' to have been called.
+
+../../.pyenv/versions/3.10.14/lib/python3.10/unittest/mock.py:898: AssertionError
+--------------------------- Captured stdout call ----------------------------
+2025-09-21 20:52:02 | WARNING  | server.app.services.messenger_ai:_handle_dm_message:741 - No AI account associated with user 123456789
+_____________ TestMessengerAI.test_concurrent_message_handling ______________
+
+self = <tests.services.test_messenger_ai.TestMessengerAI object at 0x10ddf2320>
+messenger_ai = <server.app.services.messenger_ai.MessengerAI object at 0x11a1eb6a0>
+
+    @pytest.mark.asyncio
+    async def test_concurrent_message_handling(self, messenger_ai):
+        """Test handling multiple concurrent messages."""
+        tasks = []
+        for i in range(5):
+>           task = messenger_ai._handle_dm_message(
+                sender_id=123456789 + i,
+                message_text=f"Message {i}",
+                ai_account_id=123
+            )
+E           TypeError: MessengerAI._handle_dm_message() got an unexpected keyword argument 'ai_account_id'
+
+tests/services/test_messenger_ai.py:267: TypeError
+____________ TestMessengerAI.test_cleanup_inactive_conversations ____________
+
+self = <tests.services.test_messenger_ai.TestMessengerAI object at 0x10ddf25c0>
+messenger_ai = <server.app.services.messenger_ai.MessengerAI object at 0x11a0ef2b0>
+
+    @pytest.mark.asyncio
+    async def test_cleanup_inactive_conversations(self, messenger_ai):
+        """Test cleanup of inactive conversations."""
+        # Add some old conversations
+        current_time = asyncio.get_event_loop().time()
+        old_time = current_time - 3600  # 1 hour ago
+
+        messenger_ai.conversations = {
+            123: {'started_at': old_time, 'ai_account_id': 456},
+            456: {'started_at': current_time, 'ai_account_id': 789}
+        }
+
+>       await messenger_ai._cleanup_inactive_conversations()
+E       AttributeError: 'MessengerAI' object has no attribute '_cleanup_inactive_conversations'
+
+tests/services/test_messenger_ai.py:292: AttributeError
+_______________ TestClientManager.test_get_user_session_path ________________
+
+self = <tests.services.test_telegram.TestClientManager object at 0x10dd80d00>
+client_manager = <server.app.services.telegram.ClientManager object at 0x11bab6860>
+temp_session_dir = '/var/folders/s_/2zt80xps63bdqfxb02lzmnym0000gn/T/tmphpqnvegf'
+
+    @pytest.mark.asyncio
+    async def test_get_user_session_path(self, client_manager, temp_session_dir):
+        """Test user session path generation."""
+        user_id = 123
+        session_path = client_manager._get_user_session_path(user_id)
+
+        expected_path = f"{temp_session_dir}/user_{user_id}/user_session"
+>       assert str(session_path) == expected_path
+E       AssertionError: assert '.tgportal_se.../user_session' == '/var/folders.../user_session'
+E
+E         - /var/folders/s_/2zt80xps63bdqfxb02lzmnym0000gn/T/tmphpqnvegf/user_123/user_session
+E         + .tgportal_sessions/user_123/user_session
+
+tests/services/test_telegram.py:26: AssertionError
+________________ TestClientManager.test_get_user_session_dir ________________
+
+self = <tests.services.test_telegram.TestClientManager object at 0x10ddf2110>
+client_manager = <server.app.services.telegram.ClientManager object at 0x10fb6c8b0>
+temp_session_dir = '/var/folders/s_/2zt80xps63bdqfxb02lzmnym0000gn/T/tmpza_7vju0'
+
+    @pytest.mark.asyncio
+    async def test_get_user_session_dir(self, client_manager, temp_session_dir):
+        """Test user session directory creation."""
+        user_id = 123
+        session_dir = client_manager._get_user_session_dir(user_id)
+
+        expected_dir = f"{temp_session_dir}/user_{user_id}"
+>       assert str(session_dir) == expected_dir
+E       AssertionError: assert '.tgportal_sessions/user_123' == '/var/folders...vju0/user_123'
+E
+E         - /var/folders/s_/2zt80xps63bdqfxb02lzmnym0000gn/T/tmpza_7vju0/user_123
+E         + .tgportal_sessions/user_123
+
+tests/services/test_telegram.py:35: AssertionError
+_______________ TestClientManager.test_get_user_metadata_file _______________
+
+self = <tests.services.test_telegram.TestClientManager object at 0x10ddf0b20>
+client_manager = <server.app.services.telegram.ClientManager object at 0x11bab41c0>
+temp_session_dir = '/var/folders/s_/2zt80xps63bdqfxb02lzmnym0000gn/T/tmp6313xd3q'
+
+    @pytest.mark.asyncio
+    async def test_get_user_metadata_file(self, client_manager, temp_session_dir):
+        """Test user metadata file path generation."""
+        user_id = 123
+        metadata_file = client_manager._get_user_metadata_file(user_id)
+
+        expected_file = f"{temp_session_dir}/user_{user_id}/metadata.json"
+>       assert str(metadata_file) == expected_file
+E       AssertionError: assert '.tgportal_se...metadata.json' == '/var/folders...metadata.json'
+E
+E         - /var/folders/s_/2zt80xps63bdqfxb02lzmnym0000gn/T/tmp6313xd3q/user_123/metadata.json
+E         + .tgportal_sessions/user_123/session_metadata.json
+
+tests/services/test_telegram.py:49: AssertionError
+__________ TestClientManager.test_initialize_user_client_new_user ___________
+
+self = <telethon.client.telegramclient.TelegramClient object at 0x10de2d990>
+
+    async def is_user_authorized(self: 'TelegramClient') -> bool:
+        """
+        Returns `True` if the user is authorized (logged in).
+
+        Example
+            .. code-block:: python
+
+                if not await client.is_user_authorized():
+                    await client.send_code_request(phone)
+                    code = input('enter code: ')
+                    await client.sign_in(phone, code)
+        """
+        if self._authorized is None:
+            try:
+                # Any request that requires authorization will work
+>               await self(functions.updates.GetStateRequest())
+
+.venv/lib/python3.10/site-packages/telethon/client/users.py:222:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv/lib/python3.10/site-packages/telethon/client/users.py:30: in __call__
+    return await self._call(self._sender, request, ordered=ordered)
+.venv/lib/python3.10/site-packages/telethon/client/users.py:92: in _call
+    result = await future
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = None
+future = <Future finished exception=AuthKeyUnregisteredError('The key is not registered in the system (caused by GetStateRequest)')>
+
+    def __wakeup(self, future):
+        try:
+>           future.result()
+E           telethon.errors.rpcerrorlist.AuthKeyUnregisteredError: The key is not registered in the system (caused by GetStateRequest)
+
+../../.pyenv/versions/3.10.14/lib/python3.10/asyncio/tasks.py:304: AuthKeyUnregisteredError
+
+During handling of the above exception, another exception occurred:
+
+self = <tests.services.test_telegram.TestClientManager object at 0x10ddf0490>
+client_manager = <server.app.services.telegram.ClientManager object at 0x10fb6ff70>
+temp_session_dir = '/var/folders/s_/2zt80xps63bdqfxb02lzmnym0000gn/T/tmpz2hikspl'
+
+    @pytest.mark.asyncio
+    async def test_initialize_user_client_new_user(self, client_manager, temp_session_dir):
+        """Test initializing client for new user."""
+        user_id = 123
+
+        with patch('telethon.TelegramClient') as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client.is_connected.return_value = False
+            mock_client.connect.return_value = None
+            mock_client_class.return_value = mock_client
+
+            client = await client_manager.initialize_user_client(user_id)
+
+>           assert client == mock_client
+E           AssertionError: assert <telethon.client.telegramclient.TelegramClient object at 0x10de2d990> == <AsyncMock name='TelegramClient()' id='4558618384'>
+
+tests/services/test_telegram.py:64: AssertionError
+--------------------------- Captured stdout call ----------------------------
+2025-09-21 20:52:02 | INFO     | server.app.services.telegram:initialize_user_client:185 - Initializing Telegram client with Redis session for user 123
+2025-09-21 20:52:02 | INFO     | server.app.services.redis_client:init_redis_with_retry:83 - Redis connection established successfully on attempt 1
+2025-09-21 20:52:02 | INFO     | server.app.services.telegram:_get_session_name_for_user:90 - Generated and stored new session name for user 123: tgportal_user_123_rzzaio6a
+2025-09-21 20:52:05 | INFO     | server.app.services.telegram:initialize_user_client:254 - Telegram client initialized with Redis session for user 123: tgportal_user_123_rzzaio6a
+--------------------------- Captured stderr call ----------------------------
+2025-09-21 20:52:02,775 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.51:443/TcpFull...
+2025-09-21 20:52:04,794 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.51:443/TcpFull complete!
+----------------------------- Captured log call -----------------------------
+INFO     telethon.network.mtprotosender:mtprotosender.py:228 Connecting to 149.154.167.51:443/TcpFull...
+INFO     telethon.network.mtprotosender:mtprotosender.py:279 Connection to 149.154.167.51:443/TcpFull complete!
+______________ TestClientManager.test_get_user_client_existing ______________
+
+self = <tests.services.test_telegram.TestClientManager object at 0x10ddf2fe0>
+client_manager = <server.app.services.telegram.ClientManager object at 0x11b97e200>
+
+    @pytest.mark.asyncio
+    async def test_get_user_client_existing(self, client_manager):
+        """Test getting existing user client."""
+        user_id = 123
+        mock_client = AsyncMock()
+>       client_manager.clients[user_id] = mock_client
+E       AttributeError: 'ClientManager' object has no attribute 'clients'. Did you mean: '_clients'?
+
+tests/services/test_telegram.py:72: AttributeError
+__________ TestClientManager.test_get_guest_client_unique_sessions __________
+
+self = <telethon.client.telegramclient.TelegramClient object at 0x11a71cfd0>
+input_peer = False
+
+    async def get_me(self: 'TelegramClient', input_peer: bool = False) \
+            -> 'typing.Union[types.User, types.InputPeerUser]':
+        """
+        Gets "me", the current :tl:`User` who is logged in.
+
+        If the user has not logged in yet, this method returns `None`.
+
+        Arguments
+            input_peer (`bool`, optional):
+                Whether to return the :tl:`InputPeerUser` version or the normal
+                :tl:`User`. This can be useful if you just need to know the ID
+                of yourself.
+
+        Returns
+            Your own :tl:`User`.
+
+        Example
+            .. code-block:: python
+
+                me = await client.get_me()
+                print(me.username)
+        """
+        if input_peer and self._mb_entity_cache.self_id:
+            return self._mb_entity_cache.get(self._mb_entity_cache.self_id)._as_input_peer()
+
+        try:
+>           me = (await self(
+                functions.users.GetUsersRequest([types.InputUserSelf()])))[0]
+
+.venv/lib/python3.10/site-packages/telethon/client/users.py:170:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv/lib/python3.10/site-packages/telethon/client/users.py:30: in __call__
+    return await self._call(self._sender, request, ordered=ordered)
+.venv/lib/python3.10/site-packages/telethon/client/users.py:92: in _call
+    result = await future
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = None
+future = <Future finished exception=AuthKeyUnregisteredError('The key is not registered in the system (caused by GetUsersRequest)')>
+
+    def __wakeup(self, future):
+        try:
+>           future.result()
+E           telethon.errors.rpcerrorlist.AuthKeyUnregisteredError: The key is not registered in the system (caused by GetUsersRequest)
+
+../../.pyenv/versions/3.10.14/lib/python3.10/asyncio/tasks.py:304: AuthKeyUnregisteredError
+
+During handling of the above exception, another exception occurred:
+
+self = <tests.services.test_telegram.TestClientManager object at 0x10ddf3550>
+client_manager = <server.app.services.telegram.ClientManager object at 0x11b97eb00>
+temp_session_dir = '/var/folders/s_/2zt80xps63bdqfxb02lzmnym0000gn/T/tmpypcd7epq'
+
+    @pytest.mark.asyncio
+    async def test_get_guest_client_unique_sessions(self, client_manager, temp_session_dir):
+        """Test that guest clients get unique session files."""
+        phone1 = "+1234567890"
+        phone2 = "+9876543210"
+
+        with patch('telethon.TelegramClient') as mock_client_class:
+            mock_client = AsyncMock()
+            mock_client_class.return_value = mock_client
+
+            client1 = await client_manager.get_guest_client(phone1)
+            client2 = await client_manager.get_guest_client(phone2)
+
+            # Should have different session files
+>           assert len(mock_client_class.call_args_list) == 2
+E           AssertionError: assert 0 == 2
+E            +  where 0 = len([])
+E            +    where [] = <MagicMock name='TelegramClient' id='4757901984'>.call_args_list
+
+tests/services/test_telegram.py:106: AssertionError
+--------------------------- Captured stdout call ----------------------------
+2025-09-21 20:52:09 | INFO     | server.app.services.telegram:get_guest_client:140 - Guest client created for initial authentication with session: guest_422ce82c_1758484326
+2025-09-21 20:52:13 | INFO     | server.app.services.telegram:get_guest_client:140 - Guest client created for initial authentication with session: guest_16b53897_1758484329
+--------------------------- Captured stderr call ----------------------------
+2025-09-21 20:52:06,008 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.51:443/TcpFull...
+2025-09-21 20:52:08,188 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.51:443/TcpFull complete!
+2025-09-21 20:52:09,196 - telethon.network.mtprotosender - INFO - Connecting to 149.154.167.51:443/TcpFull...
+2025-09-21 20:52:12,198 - telethon.network.mtprotosender - INFO - Connection to 149.154.167.51:443/TcpFull complete!
+----------------------------- Captured log call -----------------------------
+INFO     telethon.network.mtprotosender:mtprotosender.py:228 Connecting to 149.154.167.51:443/TcpFull...
+INFO     telethon.network.mtprotosender:mtprotosender.py:279 Connection to 149.154.167.51:443/TcpFull complete!
+INFO     telethon.network.mtprotosender:mtprotosender.py:228 Connecting to 149.154.167.51:443/TcpFull...
+INFO     telethon.network.mtprotosender:mtprotosender.py:279 Connection to 149.154.167.51:443/TcpFull complete!
+_______________ TestClientManager.test_disconnect_user_client _______________
+
+self = <tests.services.test_telegram.TestClientManager object at 0x10ddf37f0>
+client_manager = <server.app.services.telegram.ClientManager object at 0x11a6a2fe0>
+
+    @pytest.mark.asyncio
+    async def test_disconnect_user_client(self, client_manager):
+        """Test disconnecting user client."""
+        user_id = 123
+        mock_client = AsyncMock()
+>       client_manager.clients[user_id] = mock_client
+E       AttributeError: 'ClientManager' object has no attribute 'clients'. Did you mean: '_clients'?
+
+tests/services/test_telegram.py:117: AttributeError
+_______________ TestClientManager.test_disconnect_all_clients _______________
+
+self = <tests.services.test_telegram.TestClientManager object at 0x10ddf3ac0>
+client_manager = <server.app.services.telegram.ClientManager object at 0x11a6a1840>
+
+    @pytest.mark.asyncio
+    async def test_disconnect_all_clients(self, client_manager):
+        """Test disconnecting all clients."""
+        mock_client1 = AsyncMock()
+        mock_client2 = AsyncMock()
+>       client_manager.clients[1] = mock_client1
+E       AttributeError: 'ClientManager' object has no attribute 'clients'. Did you mean: '_clients'?
+
+tests/services/test_telegram.py:129: AttributeError
+_________ TestClientManager.test_get_ai_client_from_session_string __________
+
+self = <tests.services.test_telegram.TestClientManager object at 0x10ddf3d90>
+client_manager = <server.app.services.telegram.ClientManager object at 0x11a6a0760>
+
+    @pytest.mark.asyncio
+    async def test_get_ai_client_from_session_string(self, client_manager):
+        """Test creating AI client from session string."""
+        ai_account_id = 456
+        session_string = "test_session_string"
+
+        with patch('telethon.sessions.StringSession') as mock_string_session, \
+             patch('telethon.TelegramClient') as mock_client_class:
+
+            mock_session = MagicMock()
+            mock_string_session.return_value = mock_session
+            mock_client = AsyncMock()
+            mock_client_class.return_value = mock_client
+
+>           client = await client_manager.get_ai_client(ai_account_id, session_string)
+E           AttributeError: 'ClientManager' object has no attribute 'get_ai_client'. Did you mean: 'get_user_client'?
+
+tests/services/test_telegram.py:152: AttributeError
+_________________ TestClientManager.test_user_client_locks __________________
+
+self = <tests.services.test_telegram.TestClientManager object at 0x10dd940a0>
+client_manager = <server.app.services.telegram.ClientManager object at 0x11b1f4940>
+
+    @pytest.mark.asyncio
+    async def test_user_client_locks(self, client_manager):
+        """Test that user clients use proper locking."""
+        user_id = 123
+
+        # First call should create lock
+        lock1 = client_manager._get_user_lock(user_id)
+        lock2 = client_manager._get_user_lock(user_id)
+
+        # Should be the same lock object
+>       assert lock1 is lock2
+E       assert <coroutine object ClientManager._get_user_lock at 0x11a67a500> is <coroutine object ClientManager._get_user_lock at 0x11a67ac70>
+
+tests/services/test_telegram.py:168: AssertionError
+============================= warnings summary ==============================
+.venv/lib/python3.10/site-packages/pydantic/_internal/_config.py:295
+.venv/lib/python3.10/site-packages/pydantic/_internal/_config.py:295
+  /Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/pydantic/_internal/_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+tests/integration/test_ai_messaging_flow.py: 5 warnings
+tests/integration/test_auth_flow.py: 3 warnings
+tests/integration/test_error_handling.py: 9 warnings
+tests/routes/test_ai.py: 8 warnings
+tests/routes/test_auth.py: 11 warnings
+tests/routes/test_groups.py: 7 warnings
+tests/routes/test_health.py: 3 warnings
+tests/routes/test_keywords.py: 9 warnings
+tests/services/test_telegram.py: 1 warning
+  /Users/mazibuckler/apps/tgportal/server/app/services/redis_client.py:33: DeprecationWarning: Call to '__init__' function with deprecated usage of input argument/s 'retry_on_timeout'. (TimeoutError is included by default.) -- Deprecated since version 6.0.0.
+    test_client = redis.Redis(
+
+tests/integration/test_ai_messaging_flow.py: 5 warnings
+tests/integration/test_auth_flow.py: 3 warnings
+tests/integration/test_error_handling.py: 9 warnings
+tests/routes/test_ai.py: 8 warnings
+tests/routes/test_auth.py: 11 warnings
+tests/routes/test_groups.py: 7 warnings
+tests/routes/test_health.py: 3 warnings
+tests/routes/test_keywords.py: 9 warnings
+tests/services/test_telegram.py: 1 warning
+  /Users/mazibuckler/apps/tgportal/server/app/services/redis_client.py:68: DeprecationWarning: Call to '__init__' function with deprecated usage of input argument/s 'retry_on_timeout'. (TimeoutError is included by default.) -- Deprecated since version 6.0.0.
+    client = redis.Redis(
+
+tests/integration/test_auth_flow.py::TestAuthenticationFlow::test_auth_flow_with_invalid_code
+tests/routes/test_auth.py::TestAuthRoutes::test_request_code_success
+  /Users/mazibuckler/apps/tgportal/server/app/controllers/main.py:246: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    if client and client.is_connected():
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/integration/test_auth_flow.py::TestAuthenticationFlow::test_auth_flow_with_invalid_code
+tests/routes/test_auth.py::TestAuthRoutes::test_verify_code_invalid
+  /Users/mazibuckler/apps/tgportal/server/app/controllers/main.py:474: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    if client and client.is_connected():
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/routes/test_ai.py::TestAIRoutes::test_create_ai_account_success
+  /Users/mazibuckler/.pyenv/versions/3.10.14/lib/python3.10/pathlib.py:69: RuntimeWarning: coroutine 'Connection._cancel' was never awaited
+    for x in reversed(rel.split(sep)):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/routes/test_auth.py::TestAuthRoutes::test_request_code_invalid_phone
+  /Users/mazibuckler/.pyenv/versions/3.10.14/lib/python3.10/asyncio/tasks.py:270: RuntimeWarning: coroutine 'Connection._cancel' was never awaited
+    self.__wakeup, context=self._context)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/routes/test_health.py::TestHealthRoutes::test_ready_check_success
+  /Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/sentry_sdk/serializer.py:315: RuntimeWarning: coroutine 'Connection._cancel' was never awaited
+    obj = dict(obj.items())
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/services/test_ai_engine.py::TestAIEngine::test_generate_response_none_message
+tests/services/test_conversation_manager.py::TestConversationManager::test_get_conversation_history
+tests/services/test_messenger_ai.py::TestMessengerAI::test_initialize_success
+  /Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/_pytest/unraisableexception.py:67: PytestUnraisableExceptionWarning: Exception ignored in: <function InterceptedCall.__del__ at 0x10ca67ac0>
+
+  Traceback (most recent call last):
+    File "/Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/grpc/aio/_interceptor.py", line 320, in __del__
+      self.cancel()
+    File "/Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/grpc/aio/_interceptor.py", line 355, in cancel
+      if not self._interceptors_task.done():
+  AttributeError: 'InterceptedUnaryUnaryCall' object has no attribute '_interceptors_task'
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))
+
+tests/services/test_ai_engine.py::TestAIEngine::test_generate_response_long_message
+  /Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/sentry_sdk/serializer.py:238: RuntimeWarning: coroutine 'InterceptedUnaryUnaryCall._invoke' was never awaited
+    def _flatten_annotated(obj):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/services/test_ai_engine.py::TestAIEngine::test_generate_response_long_message
+  /Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/_pytest/unraisableexception.py:67: PytestUnraisableExceptionWarning: Exception ignored in: <function InterceptedCall.__del__ at 0x10ca67ac0>
+
+  Traceback (most recent call last):
+    File "/Users/mazibuckler/apps/tgportal/server/app/services/ai_engine.py", line 228, in generate_response
+      response = await model.generate_content_async(prompt)
+    File "/Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/google/generativeai/generative_models.py", line 385, in generate_content_async
+      response = await self._async_client.generate_content(
+    File "/Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/google/ai/generativelanguage_v1beta/services/generative_service/async_client.py", line 440, in generate_content
+      response = await rpc(
+    File "/Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/google/api_core/retry/retry_unary_async.py", line 231, in retry_wrapped_func
+      return await retry_target(
+    File "/Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/google/api_core/retry/retry_unary_async.py", line 163, in retry_target
+      next_sleep = _retry_error_helper(
+    File "/Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/google/api_core/retry/retry_base.py", line 214, in _retry_error_helper
+      raise final_exc from source_exc
+    File "/Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/google/api_core/retry/retry_unary_async.py", line 158, in retry_target
+      return await target()
+    File "/Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/google/api_core/timeout.py", line 130, in func_with_timeout
+      return func(*args, **kwargs)
+    File "/Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/google/api_core/grpc_helpers_async.py", line 165, in error_remapped_callable
+      call = callable_(*args, **kwargs)
+    File "/Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/grpc/aio/_channel.py", line 163, in __call__
+      call = InterceptedUnaryUnaryCall(
+    File "/Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/grpc/aio/_interceptor.py", line 636, in __init__
+      interceptors_task = loop.create_task(
+    File "/Users/mazibuckler/.pyenv/versions/3.10.14/lib/python3.10/asyncio/base_events.py", line 436, in create_task
+      self._check_closed()
+    File "/Users/mazibuckler/.pyenv/versions/3.10.14/lib/python3.10/asyncio/base_events.py", line 515, in _check_closed
+      raise RuntimeError('Event loop is closed')
+  RuntimeError: Event loop is closed
+
+  During handling of the above exception, another exception occurred:
+
+  Traceback (most recent call last):
+    File "/Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/grpc/aio/_interceptor.py", line 320, in __del__
+      self.cancel()
+    File "/Users/mazibuckler/apps/tgportal/.venv/lib/python3.10/site-packages/grpc/aio/_interceptor.py", line 355, in cancel
+      if not self._interceptors_task.done():
+  AttributeError: 'InterceptedUnaryUnaryCall' object has no attribute '_interceptors_task'
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+========================== short test summary info ==========================
+FAILED tests/integration/test_auth_flow.py::TestAuthenticationFlow::test_protected_routes_without_auth - AssertionError: AuthenticationMiddleware must be installed to access req...
+FAILED tests/routes/test_ai.py::TestAIRoutes::test_generate_response_unauthenticated - assert 404 == 401
+FAILED tests/routes/test_auth.py::TestAuthRoutes::test_request_code_invalid_phone - assert 500 == 422
+FAILED tests/routes/test_auth.py::TestAuthRoutes::test_request_code_missing_phone - assert 400 == 422
+FAILED tests/routes/test_auth.py::TestAuthRoutes::test_logout_unauthenticated - AssertionError: AuthenticationMiddleware must be installed to access req...
+FAILED tests/routes/test_groups.py::TestGroupsRoutes::test_get_groups_unauthenticated - AssertionError: AuthenticationMiddleware must be installed to access req...
+FAILED tests/routes/test_health.py::TestHealthRoutes::test_ready_check_success - assert 404 == 200
+FAILED tests/routes/test_health.py::TestHealthRoutes::test_live_check_success - assert 404 == 200
+FAILED tests/routes/test_keywords.py::TestKeywordsRoutes::test_get_keywords_unauthenticated - AssertionError: AuthenticationMiddleware must be installed to access req...
+FAILED tests/services/test_ai_engine.py::TestAIEngine::test_generate_response_success - assert "I'm doing we...lp you today?" == 'This is a test AI response.'
+FAILED tests/services/test_ai_engine.py::TestAIEngine::test_generate_response_with_context - assert "I'm sorry, I... again later." == 'Context-aware response.'
+FAILED tests/services/test_ai_engine.py::TestAIEngine::test_generate_response_empty_message - assert "I'm sorry, I... again later." == "I'm sorry, I...se try again?"
+FAILED tests/services/test_ai_engine.py::TestAIEngine::test_generate_response_none_message - assert "I'm sorry, I... again later." == "I'm sorry, I...se try again?"
+FAILED tests/services/test_ai_engine.py::TestAIEngine::test_generate_response_api_error - assert "I'm sorry, I'm having trouble" in "I'm sorry, I couldn't generat...
+FAILED tests/services/test_ai_engine.py::TestAIEngine::test_generate_response_long_message - assert "I'm sorry, I... again later." == 'Response to long message.'
+FAILED tests/services/test_ai_engine.py::TestAIEngine::test_generate_response_special_characters - assert "I'm sorry, I... again later." == 'Handled special characters.'
+FAILED tests/services/test_conversation_manager.py::TestConversationManager::test_start_conversation - AttributeError: 'ConversationManager' object has no attribute 'start_con...
+FAILED tests/services/test_conversation_manager.py::TestConversationManager::test_add_message_to_conversation - AttributeError: 'ConversationManager' object has no attribute 'start_con...
+FAILED tests/services/test_conversation_manager.py::TestConversationManager::test_get_conversation_history - AttributeError: 'ConversationManager' object has no attribute 'start_con...
+FAILED tests/services/test_conversation_manager.py::TestConversationManager::test_end_conversation - AttributeError: 'ConversationManager' object has no attribute 'start_con...
+FAILED tests/services/test_conversation_manager.py::TestConversationManager::test_is_conversation_active - AttributeError: 'ConversationManager' object has no attribute 'is_conver...
+FAILED tests/services/test_conversation_manager.py::TestConversationManager::test_get_conversation_context - AttributeError: 'ConversationManager' object has no attribute 'start_con...
+FAILED tests/services/test_conversation_manager.py::TestConversationManager::test_get_conversation_context_limit - AttributeError: 'ConversationManager' object has no attribute 'start_con...
+FAILED tests/services/test_conversation_manager.py::TestConversationManager::test_cleanup_old_conversations - AttributeError: 'ConversationManager' object has no attribute 'start_con...
+FAILED tests/services/test_conversation_manager.py::TestConversationManager::test_get_active_conversations_count - AttributeError: 'ConversationManager' object has no attribute 'get_activ...
+FAILED tests/services/test_conversation_manager.py::TestConversationManager::test_get_conversation_summary - AttributeError: 'ConversationManager' object has no attribute 'start_con...
+FAILED tests/services/test_message_analyzer.py::TestMessageAnalyzer::test_contains_keywords_simple_match - AttributeError: 'MessageAnalyzer' object has no attribute 'contains_keyw...
+FAILED tests/services/test_message_analyzer.py::TestMessageAnalyzer::test_contains_keywords_case_insensitive - AttributeError: 'MessageAnalyzer' object has no attribute 'contains_keyw...
+FAILED tests/services/test_message_analyzer.py::TestMessageAnalyzer::test_contains_keywords_no_match - AttributeError: 'MessageAnalyzer' object has no attribute 'contains_keyw...
+FAILED tests/services/test_message_analyzer.py::TestMessageAnalyzer::test_contains_keywords_empty_keywords - AttributeError: 'MessageAnalyzer' object has no attribute 'contains_keyw...
+FAILED tests/services/test_message_analyzer.py::TestMessageAnalyzer::test_contains_keywords_empty_message - AttributeError: 'MessageAnalyzer' object has no attribute 'contains_keyw...
+FAILED tests/services/test_message_analyzer.py::TestMessageAnalyzer::test_contains_keywords_partial_match - AttributeError: 'MessageAnalyzer' object has no attribute 'contains_keyw...
+FAILED tests/services/test_message_analyzer.py::TestMessageAnalyzer::test_extract_keywords_found - AttributeError: 'MessageAnalyzer' object has no attribute 'extract_keywo...
+FAILED tests/services/test_message_analyzer.py::TestMessageAnalyzer::test_extract_keywords_none_found - AttributeError: 'MessageAnalyzer' object has no attribute 'extract_keywo...
+FAILED tests/services/test_message_analyzer.py::TestMessageAnalyzer::test_should_respond_to_message_with_keywords - AttributeError: <server.app.services.message_analyzer.MessageAnalyzer ob...
+FAILED tests/services/test_message_analyzer.py::TestMessageAnalyzer::test_should_respond_to_message_without_keywords - AttributeError: <server.app.services.message_analyzer.MessageAnalyzer ob...
+FAILED tests/services/test_message_analyzer.py::TestMessageAnalyzer::test_should_respond_to_message_empty_text - AttributeError: 'MessageAnalyzer' object has no attribute 'should_respon...
+FAILED tests/services/test_message_analyzer.py::TestMessageAnalyzer::test_analyze_message_sentiment - AttributeError: 'MessageAnalyzer' object has no attribute 'analyze_senti...
+FAILED tests/services/test_messenger_ai.py::TestMessengerAI::test_handle_group_message_with_keywords - AttributeError: <server.app.services.message_analyzer.MessageAnalyzer ob...
+FAILED tests/services/test_messenger_ai.py::TestMessengerAI::test_handle_group_message_without_keywords - AttributeError: <server.app.services.message_analyzer.MessageAnalyzer ob...
+FAILED tests/services/test_messenger_ai.py::TestMessengerAI::test_handle_group_message_no_ai_mapping - AttributeError: <server.app.services.message_analyzer.MessageAnalyzer ob...
+FAILED tests/services/test_messenger_ai.py::TestMessengerAI::test_initiate_dm_conversation - AttributeError: 'MessengerAI' object has no attribute '_initiate_dm_conv...
+FAILED tests/services/test_messenger_ai.py::TestMessengerAI::test_handle_dm_message - AssertionError: Expected 'send_message' to be called once. Called 0 times.
+FAILED tests/services/test_messenger_ai.py::TestMessengerAI::test_start_ai_clients - AttributeError: 'MessengerAI' object has no attribute 'start'
+FAILED tests/services/test_messenger_ai.py::TestMessengerAI::test_stop_ai_clients - AttributeError: 'MessengerAI' object has no attribute 'stop'
+FAILED tests/services/test_messenger_ai.py::TestMessengerAI::test_conversation_tracking - AttributeError: 'MessengerAI' object has no attribute '_start_conversati...
+FAILED tests/services/test_messenger_ai.py::TestMessengerAI::test_error_handling_in_message_processing - AttributeError: <server.app.services.message_analyzer.MessageAnalyzer ob...
+FAILED tests/services/test_messenger_ai.py::TestMessengerAI::test_websocket_notification - AssertionError: Expected 'broadcast_message' to have been called.
+FAILED tests/services/test_messenger_ai.py::TestMessengerAI::test_concurrent_message_handling - TypeError: MessengerAI._handle_dm_message() got an unexpected keyword ar...
+FAILED tests/services/test_messenger_ai.py::TestMessengerAI::test_cleanup_inactive_conversations - AttributeError: 'MessengerAI' object has no attribute '_cleanup_inactive...
+FAILED tests/services/test_telegram.py::TestClientManager::test_get_user_session_path - AssertionError: assert '.tgportal_se.../user_session' == '/var/folders.....
+FAILED tests/services/test_telegram.py::TestClientManager::test_get_user_session_dir - AssertionError: assert '.tgportal_sessions/user_123' == '/var/folders......
+FAILED tests/services/test_telegram.py::TestClientManager::test_get_user_metadata_file - AssertionError: assert '.tgportal_se...metadata.json' == '/var/folders.....
+FAILED tests/services/test_telegram.py::TestClientManager::test_initialize_user_client_new_user - AssertionError: assert <telethon.client.telegramclient.TelegramClient ob...
+FAILED tests/services/test_telegram.py::TestClientManager::test_get_user_client_existing - AttributeError: 'ClientManager' object has no attribute 'clients'. Did y...
+FAILED tests/services/test_telegram.py::TestClientManager::test_get_guest_client_unique_sessions - AssertionError: assert 0 == 2
+FAILED tests/services/test_telegram.py::TestClientManager::test_disconnect_user_client - AttributeError: 'ClientManager' object has no attribute 'clients'. Did y...
+FAILED tests/services/test_telegram.py::TestClientManager::test_disconnect_all_clients - AttributeError: 'ClientManager' object has no attribute 'clients'. Did y...
+FAILED tests/services/test_telegram.py::TestClientManager::test_get_ai_client_from_session_string - AttributeError: 'ClientManager' object has no attribute 'get_ai_client'....
+FAILED tests/services/test_telegram.py::TestClientManager::test_user_client_locks - assert <coroutine object ClientManager._get_user_lock at 0x11a67a500> is...
+ERROR tests/integration/test_ai_messaging_flow.py::TestAIMessagingFlow::test_complete_ai_messaging_flow - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/integration/test_ai_messaging_flow.py::TestAIMessagingFlow::test_ai_response_generation_flow - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/integration/test_ai_messaging_flow.py::TestAIMessagingFlow::test_keyword_management_flow - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/integration/test_ai_messaging_flow.py::TestAIMessagingFlow::test_group_monitoring_flow - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/integration/test_ai_messaging_flow.py::TestAIMessagingFlow::test_ai_account_management_flow - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/integration/test_auth_flow.py::TestAuthenticationFlow::test_complete_auth_flow_success - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/integration/test_error_handling.py::TestErrorHandling::test_database_error_handling - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/integration/test_error_handling.py::TestErrorHandling::test_telegram_api_error_handling - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/integration/test_error_handling.py::TestErrorHandling::test_ai_service_error_handling - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/integration/test_error_handling.py::TestErrorHandling::test_malformed_request_handling - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/integration/test_error_handling.py::TestErrorHandling::test_concurrent_request_handling - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/integration/test_error_handling.py::TestErrorHandling::test_file_system_error_handling - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_ai.py::TestAIRoutes::test_generate_response_success - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_ai.py::TestAIRoutes::test_generate_response_missing_message - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_ai.py::TestAIRoutes::test_generate_response_ai_error - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_ai.py::TestAIRoutes::test_get_ai_accounts_success - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_ai.py::TestAIRoutes::test_create_ai_account_success - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_ai.py::TestAIRoutes::test_delete_ai_account_success - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_ai.py::TestAIRoutes::test_delete_ai_account_not_found - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_auth.py::TestAuthRoutes::test_verify_code_success - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_auth.py::TestAuthRoutes::test_refresh_token_success - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_auth.py::TestAuthRoutes::test_auth_status_authenticated - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_auth.py::TestAuthRoutes::test_logout_success - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_groups.py::TestGroupsRoutes::test_get_groups_success - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_groups.py::TestGroupsRoutes::test_get_groups_telegram_error - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_groups.py::TestGroupsRoutes::test_update_group_monitoring_success - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_groups.py::TestGroupsRoutes::test_update_group_monitoring_not_found - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_groups.py::TestGroupsRoutes::test_get_group_details_success - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_groups.py::TestGroupsRoutes::test_get_group_details_not_found - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_keywords.py::TestKeywordsRoutes::test_get_keywords_success - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_keywords.py::TestKeywordsRoutes::test_create_keyword_success - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_keywords.py::TestKeywordsRoutes::test_create_keyword_duplicate - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_keywords.py::TestKeywordsRoutes::test_update_keyword_success - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_keywords.py::TestKeywordsRoutes::test_update_keyword_not_found - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_keywords.py::TestKeywordsRoutes::test_delete_keyword_success - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_keywords.py::TestKeywordsRoutes::test_delete_keyword_not_found - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/routes/test_keywords.py::TestKeywordsRoutes::test_bulk_update_keywords_success - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/services/test_messenger_ai.py::TestMessengerAI::test_initialize_success - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/services/test_messenger_ai.py::TestMessengerAI::test_load_ai_accounts - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/services/test_messenger_ai.py::TestMessengerAI::test_load_group_ai_mappings - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+ERROR tests/services/test_messenger_ai.py::TestMessengerAI::test_load_keywords - sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) NOT NULL constra...
+===== 60 failed, 14 passed, 126 warnings, 41 errors in 81.40s (0:01:21) =====
+Sentry is attempting to send 1 pending events
+Waiting up to 2 seconds
+Press Ctrl-C to quit
+sys:1: RuntimeWarning: coroutine 'ClientManager._get_user_lock' was never awaited

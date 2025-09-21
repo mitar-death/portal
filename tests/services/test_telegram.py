@@ -4,6 +4,7 @@ Tests for Telegram service.
 import pytest
 import os
 import tempfile
+from pathlib import Path
 from unittest.mock import patch, AsyncMock, MagicMock, mock_open
 from server.app.services.telegram import ClientManager
 
@@ -14,7 +15,8 @@ class TestClientManager:
     @pytest.fixture
     def client_manager(self, temp_session_dir):
         """Create ClientManager instance with temp directory."""
-        return ClientManager()
+        with patch('server.app.services.telegram.base_session_dir', Path(temp_session_dir)):
+            return ClientManager()
 
     @pytest.mark.asyncio
     async def test_get_user_session_path(self, client_manager, temp_session_dir):
@@ -45,7 +47,7 @@ class TestClientManager:
         user_id = 123
         metadata_file = client_manager._get_user_metadata_file(user_id)
         
-        expected_file = f"{temp_session_dir}/user_{user_id}/metadata.json"
+        expected_file = f"{temp_session_dir}/user_{user_id}/session_metadata.json"
         assert str(metadata_file) == expected_file
 
     @pytest.mark.asyncio
@@ -57,19 +59,23 @@ class TestClientManager:
             mock_client = AsyncMock()
             mock_client.is_connected.return_value = False
             mock_client.connect.return_value = None
+            mock_client.is_user_authorized.return_value = False
             mock_client_class.return_value = mock_client
             
-            client = await client_manager.initialize_user_client(user_id)
+            # Mock telethon session as well
+            with patch('server.app.services.telegram.RedisSession') as mock_redis_session:
+                mock_redis_session.return_value = None  # Use file session
+                client = await client_manager.initialize_user_client(user_id)
             
-            assert client == mock_client
-            mock_client.connect.assert_called_once()
+                assert client == mock_client
+                mock_client.connect.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_get_user_client_existing(self, client_manager):
         """Test getting existing user client."""
         user_id = 123
         mock_client = AsyncMock()
-        client_manager.clients[user_id] = mock_client
+        client_manager._clients[user_id] = mock_client
         
         client = await client_manager.get_user_client(user_id)
         
@@ -114,12 +120,12 @@ class TestClientManager:
         """Test disconnecting user client."""
         user_id = 123
         mock_client = AsyncMock()
-        client_manager.clients[user_id] = mock_client
+        client_manager._clients[user_id] = mock_client
         
         await client_manager.disconnect_user_client(user_id)
         
         mock_client.disconnect.assert_called_once()
-        assert user_id not in client_manager.clients
+        assert user_id not in client_manager._clients
 
     @pytest.mark.asyncio
     async def test_disconnect_all_clients(self, client_manager):

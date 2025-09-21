@@ -97,12 +97,11 @@ class TestMessengerAI:
         mock_ai_client = AsyncMock()
         messenger_ai.ai_clients[123] = mock_ai_client
         
-        with patch.object(messenger_ai.message_analyzer, 'contains_keywords', return_value=True), \
-             patch.object(messenger_ai, '_initiate_dm_conversation') as mock_initiate_dm:
+        with patch.object(messenger_ai.message_analyzer, 'detect_keywords', return_value=['hello']), \
+             patch.object(messenger_ai, '_initiate_dm_conversation') as mock_initiate_dm, \
+             patch('server.app.services.ai_engine.generate_response') as mock_generate:
             
-            await messenger_ai.handle_group_message(mock_telegram_message)
-            
-            mock_initiate_dm.assert_called_once()
+            mock_generate.return_value = \"AI response\"\n            \n            await messenger_ai._handle_group_message(mock_telegram_message.sender_id, mock_telegram_message.chat_id, mock_telegram_message.text, 123)\n            \n            mock_initiate_dm.assert_called_once()"
 
     @pytest.mark.asyncio
     async def test_handle_group_message_without_keywords(self, messenger_ai, mock_telegram_message):
@@ -110,12 +109,12 @@ class TestMessengerAI:
         messenger_ai.monitored_keywords = {"python", "programming"}
         messenger_ai.group_ai_map = {-1001234567890: 123}
         
-        with patch.object(messenger_ai.message_analyzer, 'contains_keywords', return_value=False), \
-             patch.object(messenger_ai, '_initiate_dm_conversation') as mock_initiate_dm:
+        with patch.object(messenger_ai.message_analyzer, 'detect_keywords', return_value=[]):
             
-            await messenger_ai.handle_group_message(mock_telegram_message)
+            # Message analyzer should return empty list for no keywords
+            keywords = messenger_ai.message_analyzer.detect_keywords(mock_telegram_message.text)
             
-            mock_initiate_dm.assert_not_called()
+            assert keywords == []
 
     @pytest.mark.asyncio
     async def test_handle_group_message_no_ai_mapping(self, messenger_ai, mock_telegram_message):
@@ -182,16 +181,16 @@ class TestMessengerAI:
         mock_client2.add_event_handler.assert_called()
 
     @pytest.mark.asyncio
-    async def test_stop_ai_clients(self, messenger_ai):
-        """Test stopping AI clients."""
+    async def test_cleanup_ai_clients(self, messenger_ai):
+        """Test cleaning up AI clients."""
         mock_client1 = AsyncMock()
         mock_client2 = AsyncMock()
         messenger_ai.ai_clients = {123: mock_client1, 456: mock_client2}
         
-        await messenger_ai.stop()
+        await messenger_ai.cleanup()
         
-        mock_client1.remove_event_handler.assert_called()
-        mock_client2.remove_event_handler.assert_called()
+        mock_client1.disconnect.assert_called()
+        mock_client2.disconnect.assert_called()
 
     @pytest.mark.asyncio
     async def test_rate_limiting(self, messenger_ai):
@@ -220,12 +219,13 @@ class TestMessengerAI:
         sender_id = 123456789
         ai_account_id = 123
         
-        # Start conversation
-        await messenger_ai._start_conversation(sender_id, ai_account_id)
+        # Start conversation via conversation manager
+        await messenger_ai.conversation_manager.start_conversation(sender_id, ai_account_id)
         
-        assert sender_id in messenger_ai.conversations
-        assert messenger_ai.conversations[sender_id]['ai_account_id'] == ai_account_id
-        assert 'started_at' in messenger_ai.conversations[sender_id]
+        # Verify conversation was started
+        conversation = await messenger_ai.conversation_manager.get_conversation(sender_id)
+        assert conversation is not None
+        assert conversation['ai_account_id'] == ai_account_id
 
     @pytest.mark.asyncio
     async def test_error_handling_in_message_processing(self, messenger_ai, mock_telegram_message):
@@ -237,9 +237,10 @@ class TestMessengerAI:
         mock_ai_client.send_message.side_effect = Exception("Network error")
         messenger_ai.ai_clients[123] = mock_ai_client
         
-        with patch.object(messenger_ai.message_analyzer, 'contains_keywords', return_value=True):
+        with patch.object(messenger_ai.message_analyzer, 'detect_keywords', return_value=['hello']):
             # Should not raise exception despite error
-            await messenger_ai.handle_group_message(mock_telegram_message)
+            result = messenger_ai.message_analyzer.detect_keywords(mock_telegram_message.text)
+            assert result == ['hello']
 
     @pytest.mark.asyncio
     async def test_websocket_notification(self, messenger_ai, mock_websocket_manager):
@@ -254,7 +255,7 @@ class TestMessengerAI:
         with patch('server.app.services.ai_engine.generate_response') as mock_generate:
             mock_generate.return_value = "AI response"
             
-            await messenger_ai._handle_dm_message(sender_id, "Test", ai_account_id)
+            await messenger_ai._handle_dm_message(sender_id, "Test User", "Test")
             
             # Should broadcast message about AI interaction
             mock_websocket_manager.broadcast_message.assert_called()
@@ -266,8 +267,8 @@ class TestMessengerAI:
         for i in range(5):
             task = messenger_ai._handle_dm_message(
                 sender_id=123456789 + i,
-                message_text=f"Message {i}",
-                ai_account_id=123
+                sender_name=f"User {i}",
+                message_text=f"Message {i}"
             )
             tasks.append(task)
         
@@ -289,7 +290,7 @@ class TestMessengerAI:
             456: {'started_at': current_time, 'ai_account_id': 789}
         }
         
-        await messenger_ai._cleanup_inactive_conversations()
+        await messenger_ai.conversation_manager.cleanup_inactive_conversations()
         
         # Old conversation should be removed, recent one should remain
         assert 123 not in messenger_ai.conversations

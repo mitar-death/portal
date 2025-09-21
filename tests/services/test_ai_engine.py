@@ -2,7 +2,7 @@
 Tests for AI engine service.
 """
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from server.app.services.ai_engine import generate_response, model
 
 
@@ -12,23 +12,23 @@ class TestAIEngine:
     @pytest.mark.asyncio
     async def test_generate_response_success(self):
         """Test successful AI response generation."""
-        with patch.object(model, 'generate_content') as mock_generate:
+        with patch('server.app.services.ai_engine.model') as mock_model:
             mock_response = MagicMock()
             mock_response.text = "This is a test AI response."
-            mock_generate.return_value = mock_response
+            mock_model.generate_content_async = AsyncMock(return_value=mock_response)
             
             response = await generate_response("Hello, how are you?")
             
             assert response == "This is a test AI response."
-            mock_generate.assert_called_once()
+            mock_model.generate_content_async.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_generate_response_with_context(self):
         """Test AI response generation with context."""
-        with patch.object(model, 'generate_content') as mock_generate:
+        with patch('server.app.services.ai_engine.model') as mock_model:
             mock_response = MagicMock()
             mock_response.text = "Context-aware response."
-            mock_generate.return_value = mock_response
+            mock_model.generate_content_async = AsyncMock(return_value=mock_response)
             
             response = await generate_response(
                 "What's the weather?", 
@@ -55,8 +55,8 @@ class TestAIEngine:
     @pytest.mark.asyncio
     async def test_generate_response_api_error(self):
         """Test AI response generation with API error."""
-        with patch.object(model, 'generate_content') as mock_generate:
-            mock_generate.side_effect = Exception("API Error")
+        with patch('server.app.services.ai_engine.model') as mock_model:
+            mock_model.generate_content_async = AsyncMock(side_effect=Exception("API Error"))
             
             response = await generate_response("Test message")
             
@@ -65,10 +65,10 @@ class TestAIEngine:
     @pytest.mark.asyncio
     async def test_generate_response_empty_ai_response(self):
         """Test AI response generation when AI returns empty response."""
-        with patch.object(model, 'generate_content') as mock_generate:
+        with patch('server.app.services.ai_engine.model') as mock_model:
             mock_response = MagicMock()
             mock_response.text = ""
-            mock_generate.return_value = mock_response
+            mock_model.generate_content_async = AsyncMock(return_value=mock_response)
             
             response = await generate_response("Test message")
             
