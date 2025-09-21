@@ -490,10 +490,30 @@ async def transfer_session_to_user(guest_client, user_id: int):
             logger.warning(f"Guest client is not authorized, cannot transfer session to user {user_id}")
             return False
             
-        # Export session string from guest client
-        session_string = guest_client.session.save()
-        if not session_string:
-            logger.warning(f"Failed to export session string from guest client for user {user_id}")
+        # Export session string from guest client using StringSession format
+        try:
+            from telethon.sessions import StringSession
+            # Convert the guest client's session to StringSession format
+            session_string = StringSession.save(guest_client.session)
+            if not session_string:
+                # Fallback: Try to extract auth key directly
+                if hasattr(guest_client.session, 'auth_key') and guest_client.session.auth_key:
+                    # Create a temporary StringSession with auth key data
+                    temp_string_session = StringSession()
+                    temp_string_session.set_dc(
+                        guest_client.session.dc_id, 
+                        guest_client.session.server_address, 
+                        guest_client.session.port
+                    )
+                    temp_string_session.auth_key = guest_client.session.auth_key
+                    session_string = temp_string_session.save()
+                    logger.info(f"Used fallback method to export session for user {user_id}")
+                
+            if not session_string:
+                logger.warning(f"Failed to export session string from guest client for user {user_id}")
+                return False
+        except Exception as export_error:
+            logger.error(f"Error during session export for user {user_id}: {export_error}")
             return False
             
         logger.info(f"Successfully exported session string from guest client for user {user_id}")
