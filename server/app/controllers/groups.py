@@ -6,6 +6,7 @@ from server.app.models.models import  SelectedGroup,  Group
 from server.app.core.logging import logger
 from server.app.services.monitor import  start_monitoring
 from server.app.services.monitor import set_active_user_id
+from server.app.services.telegram import set_active_user_for_legacy_functions
 
 from server.app.utils.controller_helpers import (
     ensure_client_connected,
@@ -31,6 +32,11 @@ async def get_user_groups(request: Request, db: AsyncSession = None) -> List[Dic
         HTTPException: For authentication or Telegram API errors
     """
     user = await ensure_user_authenticated(request)
+    
+    # Set active user for Telegram legacy functions
+    await set_active_user_for_legacy_functions(user.id)
+    logger.info(f"Set active user {user.id} for Telegram legacy functions")
+    
     client = await ensure_client_connected()
     if client is None:
         raise HTTPException(status_code=500, detail="Failed to connect to Telegram client")

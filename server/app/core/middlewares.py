@@ -7,6 +7,7 @@ from sqlalchemy import select
 from starlette.middleware.base import BaseHTTPMiddleware
 from server.app.core.databases import AsyncSessionLocal, db_context
 from server.app.services.monitor import set_active_user_id
+from server.app.services.telegram import set_active_user_for_legacy_functions
 from server.app.core.logging import logger
 from server.app.models.models import User
 from server.app.core.config import settings 
@@ -98,6 +99,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     request.scope["user"] = user
                     request.state.user = user 
                     await set_active_user_id(user.id)
+                    
+                    # Set active user for Telegram legacy functions
+                    await set_active_user_for_legacy_functions(user.id)
                     
                     # Update session activity
                     await update_session_activity(session, jti)
