@@ -242,12 +242,14 @@ class ClientManager:
                         logger.info(f"Using transferred StringSession for user {user_id}")
                         session = StringSession(session_string)
                         new_client = TelegramClient(session, int(settings.TELEGRAM_API_ID), settings.TELEGRAM_API_HASH)
+                        await new_client.connect()
+                        logger.info(f"Telegram client initialized with StringSession for user {user_id}")
                     else:
                         # Fall back to file-based session
                         user_session_path = self._get_user_session_path(user_id)
                         new_client = TelegramClient(user_session_path, int(settings.TELEGRAM_API_ID), settings.TELEGRAM_API_HASH)
-                    await new_client.connect()
-                    logger.info(f"Telegram client initialized with file-based session for user {user_id}: {user_session_path}")
+                        await new_client.connect()
+                        logger.info(f"Telegram client initialized with file-based session for user {user_id}: {user_session_path}")
                     
                     # Store the client
                     with self._global_lock:
