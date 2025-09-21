@@ -101,7 +101,7 @@ class ClientManager:
         guest_session_path = str(base_session_dir / "guest_session")
         
         # Create a temporary client with a guest session
-        guest_client = TelegramClient(guest_session_path, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
+        guest_client = TelegramClient(guest_session_path, int(settings.TELEGRAM_API_ID), settings.TELEGRAM_API_HASH)
         await guest_client.connect()
         
         logger.info("Guest client created for initial authentication")
@@ -148,7 +148,18 @@ class ClientManager:
                         logger.warning(f"Redis connection returned None for user {user_id}, falling back to file-based session")
                         use_redis = False
                     else:
-                        # If forcing new session, clear the old Redis session
+                        # Check for transferred session string first
+                        session_string = None
+                        metadata_file = self._get_user_metadata_file(user_id)
+                        if metadata_file.exists():
+                            try:
+                                with open(metadata_file, "r") as f:
+                                    metadata = json.load(f)
+                                    session_string = metadata.get("session_string")
+                            except Exception as e:
+                                logger.warning(f"Failed to read session metadata for user {user_id}: {e}")
+                        
+                        # If forcing new session, clear the old Redis session and metadata
                         if force_new_session:
                             session_name = self._get_session_name_for_user(user_id)
                             try:
@@ -157,17 +168,24 @@ class ClientManager:
                             except Exception as e:
                                 logger.warning(f"Failed to clear Redis session for user {user_id}: {e}")
                             
-                            metadata_file = self._get_user_metadata_file(user_id)
                             if metadata_file.exists():
                                 metadata_file.unlink()
                             logger.info(f"Forced new session for user {user_id}, cleared previous session metadata")
+                            session_string = None  # Clear transferred session too
                         
                         # Get (or generate) a session name for this user
                         session_name = self._get_session_name_for_user(user_id)
-                        redis_session = RedisSession(session_name, redis_connection=redis_connection)
+                        
+                        # Use StringSession if we have transferred session data
+                        if session_string:
+                            from telethon.sessions import StringSession
+                            logger.info(f"Using transferred StringSession for user {user_id}")
+                            session = StringSession(session_string)
+                        else:
+                            session = RedisSession(session_name, redis_connection=redis_connection)
                         
                         # Create new client instance
-                        new_client = TelegramClient(redis_session, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
+                        new_client = TelegramClient(session, int(settings.TELEGRAM_API_ID), settings.TELEGRAM_API_HASH)
                         
                         # Connect the client
                         await new_client.connect()
@@ -191,23 +209,41 @@ class ClientManager:
                                 logger.warning(f"Failed to update user info in session metadata for user {user_id}: {e}")
                 
                 if not use_redis:
-                    logger.info(f"Initializing Telegram client with file-based session for user {user_id}")
+                    logger.info(f"Initializing Telegram client with StringSession/file-based session for user {user_id}")
                     
-                    user_session_path = self._get_user_session_path(user_id)
+                    # Check for transferred session string first
+                    session_string = None
+                    metadata_file = self._get_user_metadata_file(user_id)
+                    if metadata_file.exists():
+                        try:
+                            with open(metadata_file, "r") as f:
+                                metadata = json.load(f)
+                                session_string = metadata.get("session_string")
+                        except Exception as e:
+                            logger.warning(f"Failed to read session metadata for user {user_id}: {e}")
                     
-                    # If forcing new session, clear the old file session
+                    # If forcing new session, clear everything
                     if force_new_session:
+                        user_session_path = self._get_user_session_path(user_id)
                         if os.path.exists(user_session_path):
                             os.remove(user_session_path)
                             logger.info(f"Cleared file session for user {user_id}: {user_session_path}")
                         
-                        metadata_file = self._get_user_metadata_file(user_id)
                         if metadata_file.exists():
                             metadata_file.unlink()
                         logger.info(f"Forced new session for user {user_id}, cleared previous session metadata")
+                        session_string = None  # Clear transferred session too
                     
-                    # Create new client with file-based session
-                    new_client = TelegramClient(user_session_path, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
+                    # Use StringSession if we have transferred session data
+                    if session_string:
+                        from telethon.sessions import StringSession
+                        logger.info(f"Using transferred StringSession for user {user_id}")
+                        session = StringSession(session_string)
+                        new_client = TelegramClient(session, int(settings.TELEGRAM_API_ID), settings.TELEGRAM_API_HASH)
+                    else:
+                        # Fall back to file-based session
+                        user_session_path = self._get_user_session_path(user_id)
+                        new_client = TelegramClient(user_session_path, int(settings.TELEGRAM_API_ID), settings.TELEGRAM_API_HASH)
                     await new_client.connect()
                     logger.info(f"Telegram client initialized with file-based session for user {user_id}: {user_session_path}")
                     
@@ -236,7 +272,7 @@ class ClientManager:
                     logger.info(f"Falling back to file-based session as last resort for user {user_id}")
                     try:
                         user_session_path = self._get_user_session_path(user_id)
-                        new_client = TelegramClient(user_session_path, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
+                        new_client = TelegramClient(user_session_path, int(settings.TELEGRAM_API_ID), settings.TELEGRAM_API_HASH)
                         await new_client.connect()
                         with self._global_lock:
                             self._clients[user_id] = new_client
@@ -433,194 +469,108 @@ class ClientManager:
 # Global client manager instance
 client_manager = ClientManager()
 
-# Legacy compatibility functions - these maintain backward compatibility
-# while internally using the new ClientManager
-
-# For backward compatibility, we need to maintain some global state
-# to know which user is "active" for the legacy functions
-_active_user_id: Optional[int] = None
-_active_user_lock = asyncio.Lock()
-
-async def set_active_user_for_legacy_functions(user_id: int):
-    """
-    Set the active user ID for legacy function compatibility.
-    
-    Args:
-        user_id: The user ID to set as active
-    """
-    global _active_user_id
-    async with _active_user_lock:
-        _active_user_id = user_id
-        logger.info(f"Set active user ID for legacy functions: {user_id}")
-
-async def get_active_user_for_legacy_functions() -> Optional[int]:
-    """Get the currently active user ID for legacy functions."""
-    return _active_user_id
-
-# Legacy function compatibility
-async def initialize_client(force_new_session=False):
-    """
-    Legacy function - initializes client for the active user.
-    
-    Args:
-        force_new_session: If True, creates a new session
-        
-    Returns:
-        TelegramClient: The client for the active user
-    """
-    if _active_user_id is None:
-        raise ValueError("No active user set. Use set_active_user_for_legacy_functions() first.")
-    
-    return await client_manager.initialize_user_client(_active_user_id, force_new_session)
-
-async def get_client(new_session=False):
-    """
-    Legacy function - gets client for the active user.
-    
-    Args:
-        new_session: If True, creates a new session
-        
-    Returns:
-        TelegramClient: The client for the active user
-    """
-    if _active_user_id is None:
-        raise ValueError("No active user set. Use set_active_user_for_legacy_functions() first.")
-    
-    return await client_manager.get_user_client(_active_user_id, new_session)
-
-async def reset_client():
-    """Legacy function - resets client for the active user."""
-    if _active_user_id is None:
-        raise ValueError("No active user set. Use set_active_user_for_legacy_functions() first.")
-    
-    return await client_manager.get_user_client(_active_user_id, new_session=True)
-
-def get_session_name():
-    """Legacy function - gets session name for the active user."""
-    if _active_user_id is None:
-        raise ValueError("No active user set. Use set_active_user_for_legacy_functions() first.")
-    
-    return client_manager._get_session_name_for_user(_active_user_id)
-
-def update_session_metadata(user_info=None):
-    """Legacy function - updates metadata for the active user."""
-    if _active_user_id is None:
-        logger.warning("No active user set for updating session metadata")
-        return
-    
-    client_manager._update_user_session_metadata(_active_user_id, user_info)
+# Legacy compatibility functions removed - use client_manager directly
+# All client operations now require explicit user context via request parameters
 
 
 async def transfer_session_to_user(guest_client, user_id: int):
     """
     Transfer the authenticated session from guest client to user-specific client.
-    This fixes the issue where guest authentication isn't available to user client.
+    Uses StringSession export/import instead of file copying to prevent SQLite corruption.
     
     Args:
         guest_client: The authenticated guest TelegramClient
         user_id: The user ID to transfer the session to
     """
-    import shutil
-    import os
-    import json
-    from pathlib import Path
+    from telethon.sessions import StringSession
     
     try:
-        # Get the guest session path
-        guest_session_path = str(base_session_dir / "guest_session")
+        # Export the guest session as a string
+        if not await guest_client.is_user_authorized():
+            logger.warning(f"Guest client is not authorized, cannot transfer session to user {user_id}")
+            return False
+            
+        # Export session string from guest client
+        session_string = guest_client.session.save()
+        if not session_string:
+            logger.warning(f"Failed to export session string from guest client for user {user_id}")
+            return False
+            
+        logger.info(f"Successfully exported session string from guest client for user {user_id}")
         
-        # Get the user session name and path
-        user_session_name = client_manager._get_session_name_for_user(user_id)
-        
-        # Determine if we're using Redis or file-based sessions
+        # Determine session type for user client
         use_redis = is_redis_available()
         
         if use_redis:
-            # For Redis sessions, we need to copy the session data in Redis
+            # Store session string in Redis
             try:
                 redis_connection = init_redis(decode_responses=False)
                 if redis_connection:
-                    # Read guest session from Redis (if it exists)
-                    guest_session_key = "guest_session"
-                    guest_session_data = redis_connection.get(guest_session_key)
+                    user_session_name = client_manager._get_session_name_for_user(user_id)
                     
-                    if guest_session_data:
-                        # Write to user session key
-                        redis_connection.set(user_session_name, guest_session_data)
-                        logger.info(f"Transferred Redis session from guest to user {user_id}")
-                    else:
-                        logger.warning(f"No guest session data found in Redis")
+                    # Create a StringSession and save it to Redis format
+                    string_session = StringSession(session_string)
+                    redis_session = RedisSession(user_session_name, redis_connection=redis_connection)
+                    
+                    # Transfer session data to Redis using RedisSession directly
+                    string_session_obj = StringSession(session_string)
+                    redis_session.set_dc(string_session_obj.dc_id, string_session_obj.server_address, string_session_obj.port)
+                    redis_session.auth_key = string_session_obj.auth_key
+                    await redis_session.save()
+                    
+                    logger.info(f"Transferred session to Redis for user {user_id}: {user_session_name}")
                 else:
                     logger.warning("Redis connection failed during session transfer")
+                    use_redis = False
             except Exception as e:
-                logger.warning(f"Redis session transfer failed: {e}, falling back to file-based transfer")
+                logger.warning(f"Redis session transfer failed: {e}, falling back to StringSession storage")
                 use_redis = False
         
         if not use_redis:
-            # For file-based sessions, copy the session files
-            guest_session_file = f"{guest_session_path}.session"
-            user_session_path = str(base_session_dir / f"{user_session_name}.session")
-            
-            # Copy the main session file
-            if os.path.exists(guest_session_file):
-                shutil.copy2(guest_session_file, user_session_path)
-                logger.info(f"Copied session file from {guest_session_file} to {user_session_path}")
-            else:
-                logger.warning(f"Guest session file not found: {guest_session_file}")
-            
-            # Copy any associated session files (journal, etc.)
-            for ext in [".session-journal", ".session-wal", ".session-shm"]:
-                guest_extra_file = f"{guest_session_path}{ext}"
-                user_extra_file = f"{user_session_path.rsplit('.', 1)[0]}{ext}"
+            # Store session string in metadata for file-based fallback
+            try:
+                metadata_file = client_manager._get_user_metadata_file(user_id)
+                metadata = {}
                 
-                if os.path.exists(guest_extra_file):
-                    try:
-                        shutil.copy2(guest_extra_file, user_extra_file)
-                        logger.debug(f"Copied additional session file: {ext}")
-                    except Exception as e:
-                        logger.debug(f"Could not copy {ext} file: {e}")
+                if metadata_file.exists():
+                    with open(metadata_file, "r") as f:
+                        metadata = json.load(f)
+                
+                metadata.update({
+                    "session_string": session_string,
+                    "transferred_at": asyncio.get_event_loop().time(),
+                    "user_id": user_id
+                })
+                
+                with open(metadata_file, "w") as f:
+                    json.dump(metadata, f)
+                    
+                logger.info(f"Stored session string in metadata for user {user_id}")
+            except Exception as e:
+                logger.error(f"Failed to store session string for user {user_id}: {e}")
+                return False
         
-        # Update session metadata for the user
-        try:
-            metadata_file = base_session_dir / "session_metadata.json"
-            metadata = {}
-            
-            if metadata_file.exists():
-                with open(metadata_file, "r") as f:
-                    metadata = json.load(f)
-            
-            metadata[str(user_id)] = {
-                "session_name": user_session_name,
-                "user_id": user_id,
-                "transferred_at": asyncio.get_event_loop().time(),
-                "source": "guest_session_transfer"
-            }
-            
-            with open(metadata_file, "w") as f:
-                json.dump(metadata, f, indent=2)
-                
-            logger.info(f"Updated session metadata for user {user_id}")
-            
-        except Exception as e:
-            logger.warning(f"Failed to update session metadata: {e}")
-
         # CRITICAL: Initialize user client with transferred session to ensure immediate authorization
         try:
-            user_client = await client_manager.get_user_client(user_id, new_session=True)
+            user_client = await client_manager.initialize_user_client(user_id, force_new_session=True)
             if user_client:
                 # Verify the transferred session is working
                 if await user_client.is_user_authorized():
                     logger.info(f"Successfully verified transferred session authorization for user {user_id}")
+                    return True
                 else:
                     logger.warning(f"Transferred session for user {user_id} is not authorized - may need manual re-login")
+                    return False
             else:
                 logger.warning(f"Failed to initialize user client after session transfer for user {user_id}")
+                return False
         except Exception as e:
             logger.warning(f"Failed to verify transferred session for user {user_id}: {e}")
+            return False
             
     except Exception as e:
         logger.error(f"Session transfer failed for user {user_id}: {e}")
-        raise
+        return False
 
 
 # Backward compatibility exports for session paths

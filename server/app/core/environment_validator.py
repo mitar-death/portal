@@ -341,9 +341,18 @@ class EnvironmentValidator:
                     }
                 )
             
-            # Try to get client and test connection
-            from server.app.services.telegram import get_client
-            client = await asyncio.wait_for(get_client(), timeout=5.0)
+            # Skip client testing - now using user-scoped clients
+            # Basic configuration check only
+            return ServiceHealth(
+                name="telegram",
+                status=ServiceStatus.HEALTHY,
+                available=True,
+                details={
+                    "api_id_configured": True,
+                    "api_hash_configured": True,
+                    "note": "Using user-scoped clients - no global client testing"
+                }
+            )
             
             if not client:
                 return ServiceHealth(

@@ -6,7 +6,7 @@ from server.app.models.models import  SelectedGroup,  Group
 from server.app.core.logging import logger
 from server.app.services.monitor import  start_monitoring
 from server.app.services.monitor import set_active_user_id
-from server.app.services.telegram import set_active_user_for_legacy_functions
+# Legacy import removed - using explicit user context
 
 from server.app.utils.controller_helpers import (
     ensure_client_connected,
@@ -33,16 +33,18 @@ async def get_user_groups(request: Request, db: AsyncSession = None) -> List[Dic
     """
     user = await ensure_user_authenticated(request)
     
-    # Set active user for Telegram legacy functions
-    await set_active_user_for_legacy_functions(user.id)
-    logger.info(f"Set active user {user.id} for Telegram legacy functions")
+    # User context now explicit via client_manager.get_user_client(user.id)
+    logger.info(f"Handling groups request for user {user.id}")
     
-    client = await ensure_client_connected()
+    client = await ensure_client_connected(request)
     if client is None:
         raise HTTPException(status_code=500, detail="Failed to connect to Telegram client")
-    is_telegram_authorized = await ensure_telegram_authorized(client)
+    is_telegram_authorized = await ensure_telegram_authorized(request, client)
     if not is_telegram_authorized:
-        raise HTTPException(status_code=401, detail="Telegram authorization required")
+        raise HTTPException(
+            status_code=401, 
+            detail={"code": "TELEGRAM_UNAUTHORIZED", "message": "Telegram authorization required"}
+        )
     
     groups = []
     
@@ -140,12 +142,15 @@ async def monitor_groups(request: Request, selected_groups: Dict[str, Any], db: 
         HTTPException: For authentication or Telegram API errors
     """
     user = await ensure_user_authenticated(request)
-    client = await ensure_client_connected()
+    client = await ensure_client_connected(request)
     if client is None:
         raise HTTPException(status_code=500, detail="Failed to connect to Telegram client")
-    is_telegram_authorized = await ensure_telegram_authorized(client)
+    is_telegram_authorized = await ensure_telegram_authorized(request, client)
     if not is_telegram_authorized:
-        raise HTTPException(status_code=401, detail="Telegram authorization required")
+        raise HTTPException(
+            status_code=401, 
+            detail={"code": "TELEGRAM_UNAUTHORIZED", "message": "Telegram authorization required"}
+        )
     
         
     logger.info(f"Adding selected groups for user {user.id} with group IDs: {selected_groups.group_ids}")

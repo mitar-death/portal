@@ -24,7 +24,9 @@ def create_async_database_engine() -> AsyncEngine:
         )
 
     database_url = settings.get_database_url()
-    logger.info(f"Creating async database engine with URL: {database_url}")
+    # Log URL with masked password for security
+    masked_url = database_url.split('@')[0].split(':')[:-1] + ['***'] + ['@' + database_url.split('@')[1]] if '@' in database_url else [database_url]
+    logger.info(f"Creating async database engine with URL: {''.join(masked_url)}")
 
     # Replace with async-compatible dialect and handle SSL parameters
     if settings.DB_TYPE == "postgres":
@@ -40,7 +42,8 @@ def create_async_database_engine() -> AsyncEngine:
             import re
             database_url = re.sub(r'[?&]sslmode=[^&]*', '', database_url)
             
-        logger.info(f"Using asyncpg for PostgreSQL with URL: {database_url}")
+        # Log driver info without exposing credentials
+        logger.info(f"Using asyncpg for PostgreSQL connection")
         
         # For asyncpg, we handle SSL through connection arguments if needed
         engine_kwargs = {"pool_pre_ping": True, "echo": False}

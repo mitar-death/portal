@@ -2,7 +2,7 @@ import os
 from fastapi import HTTPException, Request
 from server.app.core.logging import logger
 from server.app.services.monitor import set_active_user_id
-from server.app.services.telegram import client_manager, set_active_user_for_legacy_functions
+from server.app.services.telegram import client_manager
 from server.app.models.models import User
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,10 +17,7 @@ from server.app.utils.controller_helpers import (
     sanitize_log_data,
     standardize_response
 )
-from  server.app.services.telegram import (session_dir, 
-                                           session_path,
-                                           get_session_name,
-                                           metadata_file)
+# Legacy session imports removed - use client_manager directly
 from server.app.services.redis_client import init_redis, safe_redis_operation
 from server.app.core.jwt_utils import create_token_pair, verify_token, JWTManager
 from server.app.models.models import BlacklistedToken
@@ -75,9 +72,8 @@ async def check_auth_status(request: Request, db: AsyncSession = None) -> Dict[s
                             "phone": me.phone
                         }
                         
-                        # Set this user as the active user for monitoring and legacy functions
+                        # Set this user as the active user for monitoring
                         await set_active_user_id(user.id)
-                        await set_active_user_for_legacy_functions(user.id)
                         logger.info(f"Set active user ID to {user.id} based on authenticated Telegram user")
                         
                         return standardize_response(

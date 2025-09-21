@@ -7,7 +7,7 @@ from telethon.errors import PhoneCodeInvalidError, SessionPasswordNeededError, S
 from server.app.core.logging import logger
 from server.app.services.monitor import start_monitoring, start_health_check_task
 from server.app.services.monitor import set_active_user_id
-from server.app.services.telegram import (get_client)
+from server.app.services.telegram import client_manager
 from server.app.utils.controller_helpers import (safe_db_operation,
                                                  sanitize_log_data,
                                                  standardize_response)

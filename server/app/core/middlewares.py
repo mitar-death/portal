@@ -7,7 +7,7 @@ from sqlalchemy import select
 from starlette.middleware.base import BaseHTTPMiddleware
 from server.app.core.databases import AsyncSessionLocal, db_context
 from server.app.services.monitor import set_active_user_id
-from server.app.services.telegram import set_active_user_for_legacy_functions
+# Legacy telegram import removed - use explicit user context
 from server.app.core.logging import logger
 from server.app.models.models import User
 from server.app.core.config import settings 

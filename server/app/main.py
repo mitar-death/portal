@@ -11,7 +11,7 @@ from server.app.routes.base_router import router
 from server.app.routes.websocket_routes import ws_router
 from server.app.routes.pusher_routes import pusher_router
 from server.app.core.middlewares import DBSessionMiddleware, AuthMiddleware, RequestLoggingMiddleware
-from server.app.services.telegram import get_client
+from server.app.services.telegram import client_manager
 from server.app.services.monitor import start_monitoring, stop_monitoring, start_health_check_task
 from server.app.core.exceptions import (
     AppException,
@@ -67,54 +67,11 @@ async def lifespan(app: FastAPI):
                     logger.warning(warning)
             else:
                 logger.info("✅ Environment validation passed - all systems operational")
-            # Initialize client with timeout protection (only if Telegram is available)
-            telegram_health = validation_result["services"].get("telegram")
-            client = None
-            if telegram_health and telegram_health.available:
-                try:
-                    client = await asyncio.wait_for(get_client(), timeout=5)
-                    if not client.is_connected():
-                        await asyncio.wait_for(client.connect(), timeout=5)
-                    logger.info("Telegram client initialized successfully")
-                except asyncio.TimeoutError:
-                    logger.warning("Telegram client initialization timed out, will retry in background")
-                    client = None
-                except Exception as e:
-                    logger.error(f"Error initializing Telegram client: {e}")
-                    client = None
-            else:
-                logger.info("Skipping Telegram client initialization - service unavailable")
+            # Skip global Telegram client initialization - now using user-scoped clients
+            logger.info("Skipping global Telegram client initialization - using user-scoped clients")
             
-            # Check authorization status if client is available
-            if client and client.is_connected():
-                try:
-                    is_authorized = await asyncio.wait_for(client.is_user_authorized(), timeout=5)
-                    if is_authorized:
-                        try:
-                            me = await asyncio.wait_for(client.get_me(), timeout=5)
-                            if me:
-                                logger.info(f"Found authorized Telegram user: {me.first_name} {me.last_name} (@{me.username})")
-                                
-                                # Find the user in the database
-                                async with AsyncSessionLocal() as session:
-                                    stmt = select(User).where(User.telegram_id == str(me.id))
-                                    result = await session.execute(stmt)
-                                    user = result.scalars().first()
-                                    
-                                    if user:
-                                        # Set this user as the active user for monitoring
-                                        await set_active_user_id(user.id)
-                                        logger.info(f"Set active user ID to {user.id} during application startup")
-                                    else:
-                                        logger.warning(f"Found authorized Telegram user but no matching user in database: {me.id}")
-                        except asyncio.TimeoutError:
-                            logger.warning("Getting user info timed out")
-                        except Exception as e:
-                            logger.error(f"Error getting authorized user info: {e}")
-                except asyncio.TimeoutError:
-                    logger.warning("Authorization check timed out")
-                except Exception as e:
-                    logger.error(f"Error checking authorization: {e}")
+            # Authorization status is now checked per-user via user-scoped clients
+            # Global authorization check removed - users authenticate individually
             
             # Start monitoring in background without blocking app startup
             try:
@@ -195,12 +152,10 @@ async def lifespan(app: FastAPI):
         except asyncio.TimeoutError:
             logger.warning("Some background tasks didn't terminate in time")
     
-    # Get telegram client to disconnect it
+    # Disconnect all user clients via client manager
     try:
-        client = await asyncio.wait_for(get_client(), timeout=2)
-        if client and client.is_connected():
-            await asyncio.wait_for(client.disconnect(), timeout=3)
-            logger.info("Telegram client disconnected")
+        await asyncio.wait_for(client_manager.disconnect_all_clients(), timeout=5)
+        logger.info("All Telegram clients disconnected")
     except (asyncio.TimeoutError, Exception) as e:
         logger.error(f"Error disconnecting Telegram client: {e}")
     

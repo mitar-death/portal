@@ -9,20 +9,26 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from server.app.core.logging import logger
 from server.app.core.databases import db_context
 from contextlib import asynccontextmanager
-from server.app.services.telegram import get_client
+from server.app.services.telegram import client_manager
 T = TypeVar('T')
 
 # Semaphore to limit concurrent operations
 API_SEMAPHORE = asyncio.Semaphore(10)
 
-async def ensure_client_connected():
+async def ensure_client_connected(request: Request):
     """
-    Ensure the Telegram client is connected. Returns the connected client.
+    Ensure the Telegram client is connected for the authenticated user. Returns the connected client.
     Uses timeout protection to prevent blocking indefinitely.
+    
+    Args:
+        request: HTTP request containing user context
     """
+    # Get user from request state (set by AuthMiddleware)
+    user = await ensure_user_authenticated(request)
+    user_id = user.id
     
-    
-    client = await get_client()
+    # Get user-specific client
+    client = await client_manager.get_user_client(user_id)
     
     # Always explicitly check connection state
     if not client.is_connected():
@@ -89,16 +95,23 @@ async def ensure_user_authenticated(request: Request):
     """
     user = getattr(request.state, "user", None) or getattr(request, "user", None)
     if not user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+        raise HTTPException(
+            status_code=401, 
+            detail={"code": "JWT_UNAUTHORIZED", "message": "Authentication required"}
+        )
     return user
 
-async def ensure_telegram_authorized(client=None):
+async def ensure_telegram_authorized(request: Request, client=None):
     """
     Ensure the Telegram client is authorized with timeout protection.
     Returns the authorized client or raises an exception.
+    
+    Args:
+        request: HTTP request containing user context
+        client: Optional pre-existing client to check, otherwise creates one for user
     """
     if client is None:
-        client = await ensure_client_connected()
+        client = await ensure_client_connected(request)
     
     try:
         async with API_SEMAPHORE:
