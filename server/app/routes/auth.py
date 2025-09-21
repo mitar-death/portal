@@ -1,18 +1,15 @@
-
 from fastapi import APIRouter, Request
 
-
 from server.app.schemas.schemas import (
-    CodeVerification, 
-    AuthResponse, 
+    CodeVerification,
+    AuthResponse,
 )
 from server.app.controllers.main import (
-    verify_code,
-)
-from server.app.controllers.auth import (check_auth_status,
-                                         logout_telegram as telegram_logout_service,
-                                         refresh_access_token,
-                                         logout_user as jwt_logout_service)
+    verify_code, )
+from server.app.controllers.auth import (check_auth_status, logout_telegram as
+                                         telegram_logout_service,
+                                         refresh_access_token, logout_user as
+                                         jwt_logout_service)
 
 auth_routes = APIRouter()
 
@@ -25,14 +22,17 @@ async def check_auth_status_endpoint(request: Request):
     return await check_auth_status(request)
 
 
-@auth_routes.post('/auth/verify-code', tags=['Auth'], response_model=AuthResponse)
-async def verify_login_code(verification: CodeVerification):
+@auth_routes.post('/auth/verify-code',
+                  tags=['Auth'],
+                  response_model=AuthResponse)
+async def verify_login_code(request: Request, verification: CodeVerification):
     """
     Verify Telegram login code
     """
-    return await verify_code(verification.phone_number, verification.code, verification.phone_code_hash)
-
-
+    return await verify_code(request=request,
+                             verification.phone_number,
+                             verification.code,
+                             verification.phone_code_hash)
 
 
 @auth_routes.post('/auth/logout', tags=['Auth'])
