@@ -211,13 +211,14 @@ export default {
             }
 
             try {
-                const response = await fetchWithAuth(`${apiUrl}/auth/refresh`, {
+                // Use native fetch to prevent recursion (refresh endpoint shouldn't trigger another refresh)
+                const response = await fetch(`${apiUrl}/auth/refresh`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${state.refreshToken}`
                     }
-                }, { redirect: false, clearAuth: false })
+                })
 
                 if (!response.ok) {
                     throw new Error('Token refresh failed')
