@@ -33,7 +33,7 @@ class ClientManager:
     def _get_user_session_dir(self, user_id: int) -> Path:
         """Get user-specific session directory."""
         user_session_dir = base_session_dir / f"user_{user_id}"
-        user_session_dir.mkdir(exist_ok=True)
+        user_session_dir.mkdir(exist_ok=True, mode=0o755)  # Ensure proper permissions
         return user_session_dir
         
     def _get_user_session_path(self, user_id: int) -> str:
@@ -245,11 +245,21 @@ class ClientManager:
                         await new_client.connect()
                         logger.info(f"Telegram client initialized with StringSession for user {user_id}")
                     else:
-                        # Fall back to file-based session
+                        # Fall back to file-based session with proper permissions
                         user_session_path = self._get_user_session_path(user_id)
+                        
+                        # Ensure the session file directory exists and has proper permissions
+                        user_session_dir = self._get_user_session_dir(user_id)
+                        if user_session_dir.exists():
+                            os.chmod(str(user_session_dir), 0o755)
+                        
                         new_client = TelegramClient(user_session_path, int(settings.TELEGRAM_API_ID), settings.TELEGRAM_API_HASH)
                         await new_client.connect()
                         logger.info(f"Telegram client initialized with file-based session for user {user_id}: {user_session_path}")
+                        
+                        # Fix permissions on the session file after creation
+                        if os.path.exists(f"{user_session_path}.session"):
+                            os.chmod(f"{user_session_path}.session", 0o644)
                     
                     # Store the client
                     with self._global_lock:

@@ -32,9 +32,18 @@ async def transfer_session_to_user(guest_client, user_id: int):
             return
         
         # Export session string from authenticated guest client
-        session_string = guest_client.session.save()
-        if not session_string:
-            logger.warning("No session string available from guest client")
+        try:
+            session_string = guest_client.session.save()
+            if not session_string:
+                # Try alternative method to get session data
+                logger.warning("session.save() returned None, trying to get session data directly")
+                if hasattr(guest_client.session, '_session_data'):
+                    session_string = str(guest_client.session._session_data).encode()
+                else:
+                    logger.warning("No session string available from guest client")
+                    return
+        except Exception as e:
+            logger.error(f"Failed to extract session string: {e}")
             return
         
         # Save session metadata for the user

@@ -224,18 +224,8 @@ async def refresh_access_token(request: Request, db: AsyncSession = None) -> Dic
         session = session_result.scalars().first()
         
         if session:
-            # Blacklist old access token if it exists
-            if session.access_token_jti:
-                old_blacklisted_token = BlacklistedToken(
-                    jti=session.access_token_jti,
-                    token_type="access",
-                    user_id=user_id,
-                    expires_at=session.access_token_expires_at or datetime.now(timezone.utc),
-                    reason="token_refresh"
-                )
-                db.add(old_blacklisted_token)
-            
-            # Update session with new access token info
+            # Update session with new access token info FIRST
+            old_access_jti = session.access_token_jti  # Store old JTI for delayed blacklisting
             session.access_token_jti = new_access_jti
             session.access_token_expires_at = datetime.fromtimestamp(
                 new_access_payload["exp"], tz=timezone.utc
@@ -243,6 +233,18 @@ async def refresh_access_token(request: Request, db: AsyncSession = None) -> Dic
             session.last_activity = datetime.now(timezone.utc)
             db.add(session)
             await db.commit()
+            
+            # Blacklist old access token AFTER committing the new token (prevents race condition)
+            if old_access_jti:
+                old_blacklisted_token = BlacklistedToken(
+                    jti=old_access_jti,
+                    token_type="access",
+                    user_id=user_id,
+                    expires_at=session.access_token_expires_at or datetime.now(timezone.utc),
+                    reason="token_refresh"
+                )
+                db.add(old_blacklisted_token)
+                await db.commit()
         
         logger.info(f"Access token refreshed for user {user_id}")
         
