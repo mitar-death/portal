@@ -67,11 +67,7 @@ async def lifespan(app: FastAPI):
                     logger.warning(warning)
             else:
                 logger.info("✅ Environment validation passed - all systems operational")
-            # Skip global Telegram client initialization - now using user-scoped clients
-            logger.info("Skipping global Telegram client initialization - using user-scoped clients")
-            
-            # Authorization status is now checked per-user via user-scoped clients
-            # Global authorization check removed - users authenticate individually
+            # Using user-scoped clients - no global client initialization needed
             
             # Start monitoring in background without blocking app startup
             try:
