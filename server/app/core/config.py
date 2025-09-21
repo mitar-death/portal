@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # FastAPI server settings
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
-    HOST: str = os.getenv("HOST", "127.0.0.1")
+    HOST: str = os.getenv("HOST", "localhost")
     SERVER_PORT: int = int(os.getenv("SERVER_PORT", "8030"))
 
     # Database

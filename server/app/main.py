@@ -196,9 +196,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "localhost", 
-        "http://localhost:8080", 
-        "http://127.0.0.1:8080",
-        "https://gen-lang-client-0560055117.web.app" 
+        "http://localhost:5000", 
+        "http://127.0.0.1:5000",
+        "https://bbd506a1-322a-4a63-b208-7792a6078304-00-ualde7y289ys.worf.replit.dev",
+        "https://gen-lang-client-0560055117.web.app",
+        "*"  # Allow all origins for development
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
