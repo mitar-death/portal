@@ -2,7 +2,7 @@
 Database helper functions for group mappings.
 """
 
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from server.app.core.databases import AsyncSessionLocal
 from server.app.core.logging import logger
 from server.app.models.models import GroupAIAccount, Group
