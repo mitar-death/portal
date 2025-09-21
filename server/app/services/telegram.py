@@ -510,6 +510,105 @@ def update_session_metadata(user_info=None):
     
     client_manager._update_user_session_metadata(_active_user_id, user_info)
 
+
+async def transfer_session_to_user(guest_client, user_id: int):
+    """
+    Transfer the authenticated session from guest client to user-specific client.
+    This fixes the issue where guest authentication isn't available to user client.
+    
+    Args:
+        guest_client: The authenticated guest TelegramClient
+        user_id: The user ID to transfer the session to
+    """
+    import shutil
+    import os
+    import json
+    from pathlib import Path
+    
+    try:
+        # Get the guest session path
+        guest_session_path = str(base_session_dir / "guest_session")
+        
+        # Get the user session name and path
+        user_session_name = client_manager._get_session_name_for_user(user_id)
+        
+        # Determine if we're using Redis or file-based sessions
+        use_redis = is_redis_available()
+        
+        if use_redis:
+            # For Redis sessions, we need to copy the session data in Redis
+            try:
+                redis_connection = init_redis(decode_responses=False)
+                if redis_connection:
+                    # Read guest session from Redis (if it exists)
+                    guest_session_key = "guest_session"
+                    guest_session_data = redis_connection.get(guest_session_key)
+                    
+                    if guest_session_data:
+                        # Write to user session key
+                        redis_connection.set(user_session_name, guest_session_data)
+                        logger.info(f"Transferred Redis session from guest to user {user_id}")
+                    else:
+                        logger.warning(f"No guest session data found in Redis")
+                else:
+                    logger.warning("Redis connection failed during session transfer")
+            except Exception as e:
+                logger.warning(f"Redis session transfer failed: {e}, falling back to file-based transfer")
+                use_redis = False
+        
+        if not use_redis:
+            # For file-based sessions, copy the session files
+            guest_session_file = f"{guest_session_path}.session"
+            user_session_path = str(base_session_dir / f"{user_session_name}.session")
+            
+            # Copy the main session file
+            if os.path.exists(guest_session_file):
+                shutil.copy2(guest_session_file, user_session_path)
+                logger.info(f"Copied session file from {guest_session_file} to {user_session_path}")
+            else:
+                logger.warning(f"Guest session file not found: {guest_session_file}")
+            
+            # Copy any associated session files (journal, etc.)
+            for ext in [".session-journal", ".session-wal", ".session-shm"]:
+                guest_extra_file = f"{guest_session_path}{ext}"
+                user_extra_file = f"{user_session_path.rsplit('.', 1)[0]}{ext}"
+                
+                if os.path.exists(guest_extra_file):
+                    try:
+                        shutil.copy2(guest_extra_file, user_extra_file)
+                        logger.debug(f"Copied additional session file: {ext}")
+                    except Exception as e:
+                        logger.debug(f"Could not copy {ext} file: {e}")
+        
+        # Update session metadata for the user
+        try:
+            metadata_file = base_session_dir / "session_metadata.json"
+            metadata = {}
+            
+            if metadata_file.exists():
+                with open(metadata_file, "r") as f:
+                    metadata = json.load(f)
+            
+            metadata[str(user_id)] = {
+                "session_name": user_session_name,
+                "user_id": user_id,
+                "transferred_at": asyncio.get_event_loop().time(),
+                "source": "guest_session_transfer"
+            }
+            
+            with open(metadata_file, "w") as f:
+                json.dump(metadata, f, indent=2)
+                
+            logger.info(f"Updated session metadata for user {user_id}")
+            
+        except Exception as e:
+            logger.warning(f"Failed to update session metadata: {e}")
+            
+    except Exception as e:
+        logger.error(f"Session transfer failed for user {user_id}: {e}")
+        raise
+
+
 # Backward compatibility exports for session paths
 session_dir = base_session_dir  # For backward compatibility
 session_path = str(base_session_dir / config_session_name)  # For backward compatibility 

@@ -138,7 +138,7 @@ async def verify_code(request: Request,
         HTTPException: If verification fails
     """
     # Use guest client for verification (consistent with request_code)
-    from server.app.services.telegram import client_manager
+    from server.app.services.telegram import client_manager, transfer_session_to_user
     client = await client_manager.get_guest_client()
 
     try:
@@ -257,6 +257,14 @@ async def verify_code(request: Request,
 
         # Record successful login attempt for rate limiting
         login_rate_limiter.record_attempt(phone_number, success=True)
+
+        # CRITICAL FIX: Transfer session from guest client to user client
+        try:
+            await transfer_session_to_user(client, user.id)
+            logger.info(f"Successfully transferred session from guest to user {user.id}")
+        except Exception as e:
+            logger.error(f"Failed to transfer session to user {user.id}: {e}")
+            # Don't fail the login for session transfer issues, but log it
 
         # Set this user as the active user for the monitoring service
         await set_active_user_id(user.id)
