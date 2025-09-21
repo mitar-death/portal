@@ -29,11 +29,10 @@ async def verify_login_code(request: Request, verification: CodeVerification):
     """
     Verify Telegram login code
     """
-    return await verify_code(
-                             verification.phone_number,
-                             verification.code,
-                             request=request,
-                             verification.phone_code_hash)
+    return await verify_code(request=request,
+                             phone_number=verification.phone_number,
+                             code=verification.code,
+                             phone_code_hash=verification.phone_code_hash)
 
 
 @auth_routes.post('/auth/logout', tags=['Auth'])
