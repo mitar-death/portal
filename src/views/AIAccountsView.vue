@@ -23,114 +23,73 @@
             </p>
 
             <!-- Loading indicator -->
-            <v-progress-linear
-              v-if="loading"
-              indeterminate
-              color="primary"
-            ></v-progress-linear>
+            <v-progress-linear v-if="loading" indeterminate color="primary"></v-progress-linear>
 
             <!-- Account List -->
-            <v-alert
-              v-if="aiAccounts.length === 0 && !loading"
-              type="info"
-              class="mt-4"
-            >
+            <v-alert v-if="aiAccounts.length === 0 && !loading" type="info" class="mt-4">
               You don't have any AI messenger accounts yet. Add one to start
               responding to messages automatically.
             </v-alert>
 
             <v-row v-else>
               <v-col v-for="account in aiAccounts" :key="account.id" cols="12" md="6" lg="4">
-              <v-card elevation="2" class="mb-4">
-                <v-list-item three-line>
-                <v-list-item-avatar>
-                  <v-icon :color="account.is_active ? 'success' : 'grey'">
-                  {{ account.is_active ? "mdi-account-check" : "mdi-account-off" }}
-                  </v-icon>
-                </v-list-item-avatar>
+                <v-card elevation="2" class="mb-4">
+                  <v-list-item three-line>
+                    <v-list-item-avatar>
+                      <v-icon :color="account.is_active ? 'success' : 'grey'">
+                        {{ account.is_active ? "mdi-account-check" : "mdi-account-off" }}
+                      </v-icon>
+                    </v-list-item-avatar>
 
-                <v-list-item-content>
-                  <v-list-item-title class="text-h6">{{ account.name }}</v-list-item-title>
-                  <v-list-item-subtitle>
-                  +{{ account.phone_number }}
-                  </v-list-item-subtitle>
-                  <div class="mt-2">
-                  <v-chip
-                    v-if="account.session_status === 'authorized'"
-                    x-small
-                    color="success"
-                  >
-                    Authenticated
-                  </v-chip>
-                  <v-chip
-                    v-else-if="account.session_status === 'unauthorized'"
-                    x-small
-                    color="warning"
-                  >
-                    Login Required
-                  </v-chip>
-                  <v-chip
-                    v-else-if="account.session_status === 'error'"
-                    x-small
-                    color="error"
-                  >
-                    Error
-                  </v-chip>
-                  </div>
-                </v-list-item-content>
-                </v-list-item>
+                    <v-list-item-content>
+                      <v-list-item-title class="text-h6">{{ account.name }}</v-list-item-title>
+                      <v-list-item-subtitle>
+                        +{{ account.phone_number }}
+                      </v-list-item-subtitle>
+                      <div class="mt-2">
+                        <v-chip v-if="account.session_status === 'authorized'" x-small color="success">
+                          Authenticated
+                        </v-chip>
+                        <v-chip v-else-if="account.session_status === 'unauthorized'" x-small color="warning">
+                          Login Required
+                        </v-chip>
+                        <v-chip v-else-if="account.session_status === 'error'" x-small color="error">
+                          Error
+                        </v-chip>
+                      </div>
+                    </v-list-item-content>
+                  </v-list-item>
 
-                <v-divider></v-divider>
+                  <v-divider></v-divider>
 
-                <v-card-actions>
-                <v-switch
-                  v-model="account.is_active"
-                  @update:model-value="toggleAccountStatus(account)"
-                  color="success"
-                  hide-details
-                  label="Active"
-                  class="ml-2"
-                ></v-switch>
-                <v-spacer></v-spacer>
+                  <v-card-actions>
+                    <v-switch v-model="account.is_active" @update:model-value="toggleAccountStatus(account)"
+                      color="success" hide-details label="Active" class="ml-2"></v-switch>
+                    <v-spacer></v-spacer>
 
-                <v-btn small icon @click="testAccount(account.id)" title="Test Account">
-                  <v-icon color="primary">mdi-test-tube</v-icon>
-                </v-btn>
+                    <v-btn small icon @click="testAccount(account.id)" title="Test Account">
+                      <v-icon color="primary">mdi-test-tube</v-icon>
+                    </v-btn>
 
-                <v-btn
-                  small
-                  icon
-                  @click="showLoginDialogForAccount(account)"
-                  v-if="account.session_status !== 'authorized'"
-                  title="Login"
-                >
-                  <v-icon color="primary">mdi-login</v-icon>
-                </v-btn>
+                    <v-btn small icon @click="showLoginDialogForAccount(account)"
+                      v-if="account.session_status !== 'authorized'" title="Login">
+                      <v-icon color="primary">mdi-login</v-icon>
+                    </v-btn>
 
-                <v-btn
-                  small
-                  icon
-                  @click="logoutAccount(account)"
-                  v-if="account.session_status === 'authorized'"
-                  title="Logout"
-                >
-                  <v-icon color="warning">mdi-logout</v-icon>
-                </v-btn>
+                    <v-btn small icon @click="logoutAccount(account)" v-if="account.session_status === 'authorized'"
+                      title="Logout">
+                      <v-icon color="warning">mdi-logout</v-icon>
+                    </v-btn>
 
-                <v-btn
-                  small
-                  icon
-                  @click="showEditDialog(account)"
-                  title="Edit"
-                >
-                  <v-icon color="primary">mdi-pencil</v-icon>
-                </v-btn>
+                    <v-btn small icon @click="showEditDialog(account)" title="Edit">
+                      <v-icon color="primary">mdi-pencil</v-icon>
+                    </v-btn>
 
-                <v-btn small icon @click="confirmDeleteAccount(account)" title="Delete">
-                  <v-icon color="red">mdi-delete</v-icon>
-                </v-btn>
-                </v-card-actions>
-              </v-card>
+                    <v-btn small icon @click="confirmDeleteAccount(account)" title="Delete">
+                      <v-icon color="red">mdi-delete</v-icon>
+                    </v-btn>
+                  </v-card-actions>
+                </v-card>
               </v-col>
             </v-row>
           </v-card-text>
@@ -142,74 +101,39 @@
     <v-dialog v-model="showNewAccountDialog" max-width="600px">
       <v-card>
         <v-card-title>Add New AI Messenger Account</v-card-title>
-        <v-alert
-          v-if="validationError"
-          type="error"
-          dismissible
-          @click:close="validationError = ''"
-          class="mb-4 m-3"
-        >
+        <v-alert v-if="validationError" type="error" dismissible @click:close="validationError = ''" class="mb-4 m-3">
           {{ validationError }}
         </v-alert>
         <v-card-text>
           <v-form ref="form" v-model="valid" lazy-validation>
-            <v-text-field
-              v-model="newAccount.name"
-              label="Account Name"
-              required
-              :rules="[(v) => !!v || 'Name is required']"
-            ></v-text-field>
+            <v-text-field v-model="newAccount.name" label="Account Name" required
+              :rules="[(v) => !!v || 'Name is required']"></v-text-field>
 
-            <v-text-field
-              v-model="newAccount.phone_number"
-              label="Phone Number"
-              required
-              prefix="+"
-              :rules="[
-                (v) => !!v || 'Phone number is required',
-                (v) =>
-                  /^\d+$/.test(v) || 'Phone number must contain only digits',
-              ]"
-            ></v-text-field>
+            <v-text-field v-model="newAccount.phone_number" label="Phone Number" required prefix="+" :rules="[
+              (v) => !!v || 'Phone number is required',
+              (v) =>
+                /^\d+$/.test(v) || 'Phone number must contain only digits',
+            ]"></v-text-field>
 
-            <v-text-field
-              v-model="newAccount.api_id"
-              label="API ID"
-              required
-              :rules="[(v) => !!v || 'API ID is required']"
-            ></v-text-field>
+            <v-text-field v-model="newAccount.api_id" label="API ID" required
+              :rules="[(v) => !!v || 'API ID is required']"></v-text-field>
 
-            <v-text-field
-              v-model="newAccount.api_hash"
-              label="API Hash"
-              required
-              :rules="[(v) => !!v || 'API Hash is required']"
-            ></v-text-field>
+            <v-text-field v-model="newAccount.api_hash" label="API Hash" required
+              :rules="[(v) => !!v || 'API Hash is required']"></v-text-field>
 
             <v-alert type="info" class="mt-4">
               You need to get API ID and API Hash from
-              <a href="https://my.telegram.org/apps" target="_blank"
-                >https://my.telegram.org/apps</a
-              >
+              <a href="https://my.telegram.org/apps" target="_blank">https://my.telegram.org/apps</a>
             </v-alert>
           </v-form>
         </v-card-text>
 
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn
-            color="grey darken-1"
-            text
-            @click="showNewAccountDialog = false"
-          >
+          <v-btn color="grey darken-1" text @click="showNewAccountDialog = false">
             Cancel
           </v-btn>
-          <v-btn
-            color="primary"
-            :disabled="!valid"
-            :loading="saving"
-            @click="saveNewAccount"
-          >
+          <v-btn color="primary" :disabled="!valid" :loading="saving" @click="saveNewAccount">
             Save
           </v-btn>
         </v-card-actions>
@@ -230,12 +154,7 @@
           <v-btn color="grey darken-1" text @click="showDeleteDialog = false">
             Cancel
           </v-btn>
-          <v-btn
-            color="red darken-1"
-            text
-            :loading="deleting"
-            @click="deleteAccount"
-          >
+          <v-btn color="red darken-1" text :loading="deleting" @click="deleteAccount">
             Delete
           </v-btn>
         </v-card-actions>
@@ -246,10 +165,7 @@
     <v-dialog v-model="showTestResultDialog" max-width="500px">
       <v-card>
         <v-card-title class="headline">
-          <v-icon
-            :color="testResult.success ? 'success' : 'error'"
-            class="mr-2"
-          >
+          <v-icon :color="testResult.success ? 'success' : 'error'" class="mr-2">
             {{ testResult.success ? "mdi-check-circle" : "mdi-alert-circle" }}
           </v-icon>
           Account Test Result
@@ -257,11 +173,7 @@
         <v-card-text>
           <p>{{ testResult.message }}</p>
 
-          <v-alert
-            v-if="testResult.success && !testResult.is_authorized"
-            type="warning"
-            class="mt-4"
-          >
+          <v-alert v-if="testResult.success && !testResult.is_authorized" type="warning" class="mt-4">
             This account is not authorized yet. You'll need to perform login
             steps before it can be used.
             <div class="text-center mt-3">
@@ -271,11 +183,7 @@
             </div>
           </v-alert>
 
-          <v-alert
-            v-if="testResult.success && testResult.is_authorized"
-            type="success"
-            class="mt-4"
-          >
+          <v-alert v-if="testResult.success && testResult.is_authorized" type="success" class="mt-4">
             This account is properly authenticated and ready to use.
             <div v-if="testResult.session_path" class="text-caption mt-2">
               Session file location: {{ testResult.session_path }}
@@ -306,40 +214,24 @@
           Login to AI Account
         </v-card-title>
         <v-card-text>
-          <v-alert
-            v-if="
-              accountForLogin && accountForLogin.session_status === 'authorized'
-            "
-            type="info"
-          >
+          <v-alert v-if="accountForLogin && accountForLogin.session_status === 'authorized'
+            " type="info">
             This account appears to be already authenticated. Testing the
             connection can verify its status.
           </v-alert>
-          <p
-            v-if="
-              accountForLogin && accountForLogin.session_status !== 'authorized'
-            "
-          >
+          <p v-if="accountForLogin && accountForLogin.session_status !== 'authorized'
+            ">
             To use this AI account, you need to login to Telegram first.
           </p>
-          <p
-            v-if="
-              accountForLogin && accountForLogin.session_status !== 'authorized'
-            "
-          >
+          <p v-if="accountForLogin && accountForLogin.session_status !== 'authorized'
+            ">
             Click the button below to request a verification code. A code will
             be sent to the Telegram app on your phone.
           </p>
           <div class="mt-4 text-center">
-            <v-btn
-              v-if="
-                accountForLogin &&
-                accountForLogin.session_status !== 'authorized'
-              "
-              color="primary"
-              :loading="requestingCode"
-              @click="requestLoginCode"
-            >
+            <v-btn v-if="accountForLogin &&
+              accountForLogin.session_status !== 'authorized'
+              " color="primary" :loading="requestingCode" @click="requestLoginCode">
               Request Verification Code
             </v-btn>
             <v-btn v-else color="info" @click="testAccount(accountForLogin.id, true)">
@@ -369,44 +261,19 @@
             code below.
           </p>
           <v-form ref="codeForm" v-model="codeValid">
-            <v-text-field
-              v-model="verificationCode"
-              label="Verification Code"
-              required
-              :rules="[(v) => !!v || 'Code is required']"
-              autofocus
-              type="text"
-              outlined
-              class="mt-4"
-            ></v-text-field>
+            <v-text-field v-model="verificationCode" label="Verification Code" required
+              :rules="[(v) => !!v || 'Code is required']" autofocus type="text" outlined class="mt-4"></v-text-field>
 
-            <v-text-field
-              v-if="twoFactorRequired"
-              v-model="twoFactorPassword"
-              label="Two-Factor Password"
-              required
-              :rules="[(v) => !!v || 'Password is required']"
-              type="password"
-              outlined
-              class="mt-4"
-            ></v-text-field>
+            <v-text-field v-if="twoFactorRequired" v-model="twoFactorPassword" label="Two-Factor Password" required
+              :rules="[(v) => !!v || 'Password is required']" type="password" outlined class="mt-4"></v-text-field>
           </v-form>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn
-            color="grey darken-1"
-            text
-            @click="showCodeVerificationDialog = false"
-          >
+          <v-btn color="grey darken-1" text @click="showCodeVerificationDialog = false">
             Cancel
           </v-btn>
-          <v-btn
-            color="primary"
-            :loading="verifyingCode"
-            :disabled="!codeValid"
-            @click="verifyCode"
-          >
+          <v-btn color="primary" :loading="verifyingCode" :disabled="!codeValid" @click="verifyCode">
             Submit
           </v-btn>
         </v-card-actions>
@@ -436,11 +303,7 @@
           <v-btn color="grey darken-1" text @click="showLogoutDialog = false">
             Cancel
           </v-btn>
-          <v-btn
-            color="warning"
-            :loading="verifyingCode"
-            @click="confirmLogout"
-          >
+          <v-btn color="warning" :loading="verifyingCode" @click="confirmLogout">
             Logout
           </v-btn>
         </v-card-actions>
@@ -481,64 +344,30 @@
           Edit AI Account
         </v-card-title>
         <v-card-text>
-          <v-alert
-            v-if="editValidationError"
-            type="error"
-            dismissible
-            @click:close="editValidationError = ''"
-            class="mb-4"
-          >
+          <v-alert v-if="editValidationError" type="error" dismissible @click:close="editValidationError = ''"
+            class="mb-4">
             {{ editValidationError }}
           </v-alert>
           <v-form ref="editForm" v-model="editFormValid" lazy-validation>
-            <v-text-field
-              v-model="editAccount.name"
-              label="Account Name"
-              required
-              :rules="[(v) => !!v || 'Name is required']"
-            ></v-text-field>
+            <v-text-field v-model="editAccount.name" label="Account Name" required
+              :rules="[(v) => !!v || 'Name is required']"></v-text-field>
 
-            <v-switch
-              v-model="editAccount.is_active"
-              color="success"
-              label="Active"
-              hide-details
-              class="mb-4"
-            ></v-switch>
+            <v-switch v-model="editAccount.is_active" color="success" label="Active" hide-details class="mb-4"></v-switch>
 
-            <v-text-field
-              v-model="editAccount.shareable_link"
-              label="Shareable Link"
-              hint="Optional shareable link for this account"
-              persistent-hint
-            ></v-text-field>
+            <v-text-field v-model="editAccount.shareable_link" label="Shareable Link"
+              hint="Optional shareable link for this account" persistent-hint></v-text-field>
 
-            <v-textarea
-              v-model="editAccount.ai_response_context"
-              label="AI Response Context"
-              hint="Additional context for AI responses (optional)"
-              persistent-hint
-              rows="4"
-              auto-grow
-            ></v-textarea>
+            <v-textarea v-model="editAccount.ai_response_context" label="AI Response Context"
+              hint="Additional context for AI responses (optional)" persistent-hint rows="4" auto-grow></v-textarea>
           </v-form>
         </v-card-text>
 
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn
-            color="grey darken-1"
-            text
-            @click="showEditAccountDialog = false"
-          >
+          <v-btn color="grey darken-1" text @click="showEditAccountDialog = false">
             Cancel
           </v-btn>
-          <v-btn
-            color="primary"
-            :disabled="!editFormValid"
-            :loading="editingSaving"
-            @click="updateAccount"
-          >
+          <v-btn color="primary" :disabled="!editFormValid" :loading="editingSaving" @click="updateAccount">
             Save Changes
           </v-btn>
         </v-card-actions>
@@ -622,7 +451,7 @@ const getAccountSessionStatus = async (account, forceRefresh = false) => {
       return cachedStatus.is_authorized;
     }
   }
-  
+
   // If no cache or force refresh, check via API
   return await checkAccountSessionStatus(account);
 };
@@ -632,16 +461,16 @@ const getAccountStatusFromCache = (accountId) => {
   try {
     const cacheKey = `ai_account_status_${accountId}`;
     const cachedData = localStorage.getItem(cacheKey);
-    
+
     if (cachedData) {
       const parsedData = JSON.parse(cachedData);
-      
+
       // Check if cache is still valid (24 hours)
       const now = new Date().getTime();
       const cacheTime = parsedData.timestamp;
       const cacheAge = now - cacheTime;
       const cacheExpiration = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-      
+
       if (cacheAge < cacheExpiration) {
         return parsedData;
       } else {
@@ -654,7 +483,7 @@ const getAccountStatusFromCache = (accountId) => {
     // Clear potentially corrupted cache
     localStorage.removeItem(`ai_account_status_${accountId}`);
   }
-  
+
   return null;
 };
 
@@ -666,7 +495,7 @@ const saveAccountStatusToCache = (accountId, status) => {
       ...status,
       timestamp: new Date().getTime()
     };
-    
+
     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
   } catch (error) {
     console.error("Error saving to localStorage:", error);
@@ -681,10 +510,10 @@ const checkAccountSessionStatus = async (account) => {
     account.session_status = result.is_authorized
       ? "authorized"
       : "unauthorized";
-    
+
     // Save the result to cache
     saveAccountStatusToCache(account.id, result);
-    
+
     return result.is_authorized;
   } catch (error) {
     console.error(
@@ -710,7 +539,7 @@ const saveNewAccount = async () => {
     // Reset form and close dialog
     form.value.reset();
     showNewAccountDialog.value = false;
-    
+
     // If we have an account ID in the result, initialize its cache
     if (result && result.data && result.data.account_id) {
       saveAccountStatusToCache(result.data.account_id, {
@@ -721,8 +550,8 @@ const saveNewAccount = async () => {
     }
   } catch (error) {
     console.error("Error creating account:", error);
-      // Display validation error from the server
-      validationError.value = error || "Validation error";
+    // Display validation error from the server
+    validationError.value = error || "Validation error";
 
   } finally {
     saving.value = false;
@@ -748,10 +577,10 @@ const showEditDialog = (account) => {
   editAccount.is_active = account.is_active;
   editAccount.shareable_link = account.shareable_link || "";
   editAccount.ai_response_context = account.ai_response_context || "";
-  
+
   // Reset validation
   editValidationError.value = "";
-  
+
   // Show the dialog
   showEditAccountDialog.value = true;
 };
@@ -760,7 +589,7 @@ const updateAccount = async () => {
   if (!editFormValid.value) {
     return;
   }
-  
+
   editingSaving.value = true;
   try {
     await store.dispatch("ai/updateAIAccount", {
@@ -770,7 +599,7 @@ const updateAccount = async () => {
       shareable_link: editAccount.shareable_link,
       ai_response_context: editAccount.ai_response_context
     });
-    
+
     // Close dialog after successful update
     showEditAccountDialog.value = false;
   } catch (error) {
@@ -794,10 +623,10 @@ const deleteAccount = async () => {
   deleting.value = true;
   try {
     await store.dispatch("ai/deleteAIAccount", accountToDelete.value.id);
-    
+
     // Remove the account from localStorage cache
     localStorage.removeItem(`ai_account_status_${accountToDelete.value.id}`);
-    
+
     showDeleteDialog.value = false;
   } catch (error) {
     console.error("Error deleting account:", error);
@@ -813,7 +642,7 @@ const testAccount = async (accountId, forceRefresh = true) => {
 
     // Find the account object
     const account = aiAccounts.value.find(acc => acc.id === accountId);
-    
+
     // Test the account with force refresh (skip cache)
     let result;
     if (account) {
@@ -824,13 +653,13 @@ const testAccount = async (accountId, forceRefresh = true) => {
       // Fallback if account not found in local state
       result = await store.dispatch("ai/testAIAccount", accountId);
     }
-    
+
     console.log("Test result:", result);
     Object.assign(testResult, result);
-    
+
     // Update the cache with the fresh result
     saveAccountStatusToCache(accountId, result);
-    
+
     showTestResultDialog.value = true;
   } catch (error) {
     console.error("Error testing account:", error);
@@ -857,7 +686,7 @@ const showLoginDialogForAccount = (account) => {
   if (cachedStatus) {
     account.session_status = cachedStatus.is_authorized ? "authorized" : "unauthorized";
   }
-  
+
   accountForLogin.value = account;
   showLoginDialog.value = true;
   verificationCode.value = "";
@@ -873,10 +702,10 @@ const logoutAccount = async (account) => {
 const confirmLogout = async () => {
   try {
     await store.dispatch("ai/logoutAIAccount", accountForLogout.value.id);
-    
+
     // Clear the cache for this account
     localStorage.removeItem(`ai_account_status_${accountForLogout.value.id}`);
-    
+
     // Session status will be updated in the fetchAIAccounts call triggered by the action
     showLogoutDialog.value = false;
   } catch (error) {
@@ -891,12 +720,12 @@ const cleanupAllSessions = async () => {
 const confirmCleanup = async () => {
   try {
     await store.dispatch("ai/cleanupAISessions");
-    
+
     // Clear all account status caches
     aiAccounts.value.forEach(account => {
       localStorage.removeItem(`ai_account_status_${account.id}`);
     });
-    
+
     // Session status will be updated in the fetchAIAccounts call triggered by the action
     showCleanupDialog.value = false;
   } catch (error) {
@@ -964,7 +793,7 @@ const verifyCode = async () => {
 
       // Refresh the accounts list
       await store.dispatch("ai/fetchAIAccounts");
-      
+
       // Update account statuses from cache
       for (const account of aiAccounts.value) {
         await getAccountSessionStatus(account, account.id === accountForLogin.value.id);
@@ -984,7 +813,7 @@ const verifyCode = async () => {
 onMounted(async () => {
   // Load accounts from store first for quick UI rendering
   await store.dispatch("ai/fetchAIAccounts");
-  
+
   // Then check their status (from cache when available)
   loading.value = true;
   try {
