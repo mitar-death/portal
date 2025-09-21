@@ -12,8 +12,9 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
 from server.app.main import app
-from server.app.core.databases import Base, get_async_session
-from server.app.models.models import User, Group, Keyword, AIAccount
+from server.app.core.databases import get_db
+from server.app.models.base import BaseModel as Base
+from server.app.models.models import User, Group, Keywords, AIAccount
 from server.app.core.config import settings
 
 
@@ -70,7 +71,7 @@ def client(async_session):
     def override_get_async_session():
         return async_session
     
-    app.dependency_overrides[get_async_session] = override_get_async_session
+    app.dependency_overrides[get_db] = override_get_async_session
     
     with TestClient(app) as test_client:
         yield test_client
@@ -113,7 +114,7 @@ async def test_group(async_session):
 @pytest.fixture
 async def test_keyword(async_session, test_user):
     """Create a test keyword."""
-    keyword = Keyword(
+    keyword = Keywords(
         user_id=test_user.id,
         keyword="test",
         is_active=True

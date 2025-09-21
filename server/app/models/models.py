@@ -27,8 +27,8 @@ class User(Base):
     last_name = Column(String, nullable=True)
     phone_number = Column(String, unique=True, index=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now)
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     selected_groups = relationship("SelectedGroup", back_populates="user")
     active_sessions = relationship("ActiveSession", back_populates="user")
@@ -45,8 +45,8 @@ class SelectedGroup(Base):
     group_id = Column(
         String
     )  # Changed from BIGINT to String to match how it's used in code
-    created_at = Column(DateTime(timezone=True), server_default=func.now)
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     user = relationship("User", back_populates="selected_groups")
 
@@ -73,13 +73,13 @@ class ActiveSession(Base):
     refresh_token_expires_at = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, default=True)  # Session status
     last_activity = Column(
-        DateTime(timezone=True), server_default=func.now
+        DateTime(timezone=True), server_default=func.now()
     )  # Last activity timestamp
     device_info = Column(String, nullable=True)  # Optional device/browser info
     ip_address = Column(String, nullable=True)  # Client IP address
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now)
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     user = relationship("User", back_populates="active_sessions")
 
 
@@ -89,8 +89,8 @@ class Keywords(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(BIGINT, ForeignKey("users.id"))
     keywords = Column(MutableList.as_mutable(JSON), nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now)
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     user = relationship("User", back_populates="keywords")
 
@@ -149,8 +149,8 @@ class AIAccount(Base):
     ai_response_context = Column(
         Text, nullable=True
     )  # Large text field for AI response context
-    created_at = Column(DateTime(timezone=True), server_default=func.now)
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     user = relationship("User", back_populates="ai_accounts")
     group_assignments = relationship("GroupAIAccount", back_populates="ai_account")
@@ -167,8 +167,8 @@ class Group(Base):
     description = Column(String, nullable=True)
     member_count = Column(Integer, default=0)
     is_channel = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now)
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     is_monitored = Column(Boolean, default=False)
 
     user = relationship("User", back_populates="groups")
@@ -184,8 +184,8 @@ class GroupAIAccount(Base):
     group_id = Column(BIGINT, ForeignKey("groups.id"))
     ai_account_id = Column(BIGINT, ForeignKey("ai_accounts.id"))
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now)
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     group = relationship("Group", back_populates="ai_assignments")
     ai_account = relationship("AIAccount", back_populates="group_assignments")
@@ -204,7 +204,7 @@ class BlacklistedToken(Base):
         DateTime(timezone=True), nullable=False
     )  # When the token would have expired
     blacklisted_at = Column(
-        DateTime(timezone=True), server_default=func.now
+        DateTime(timezone=True), server_default=func.now()
     )  # When it was blacklisted
     reason = Column(
         String, nullable=True
@@ -222,6 +222,6 @@ class LoginAttempt(Base):
     phone_number = Column(String, index=True, nullable=False)
     ip_address = Column(String, index=True, nullable=True)
     success = Column(Boolean, default=False)
-    attempted_at = Column(DateTime(timezone=True), server_default=func.now)
+    attempted_at = Column(DateTime(timezone=True), server_default=func.now())
     user_agent = Column(String, nullable=True)
     failure_reason = Column(String, nullable=True)  # Invalid code, etc.

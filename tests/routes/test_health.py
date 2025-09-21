@@ -8,8 +8,7 @@ from fastapi import status
 class TestHealthRoutes:
     """Test health check route endpoints."""
 
-    @pytest.mark.asyncio
-    async def test_health_check_success(self, client):
+    def test_health_check_success(self, client):
         """Test successful health check."""
         response = client.get("/api/health")
         
@@ -19,8 +18,7 @@ class TestHealthRoutes:
         assert "timestamp" in data
         assert "version" in data
 
-    @pytest.mark.asyncio
-    async def test_ready_check_success(self, client):
+    def test_ready_check_success(self, client):
         """Test successful readiness check."""
         response = client.get("/api/health/ready")
         
@@ -28,8 +26,7 @@ class TestHealthRoutes:
         data = response.json()
         assert data["status"] == "ready"
 
-    @pytest.mark.asyncio
-    async def test_live_check_success(self, client):
+    def test_live_check_success(self, client):
         """Test successful liveness check."""
         response = client.get("/api/health/live")
         
