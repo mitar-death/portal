@@ -145,18 +145,24 @@ async function loadGroupsData() {
     loadingState.hasError = true;
     
     // Provide user-friendly error messages
-    if (error.message.includes('Not authenticated')) {
+    const errorMessage = error.message || error.toString() || 'Unknown error';
+    
+    if (errorMessage.includes('Not authenticated')) {
       loadingState.errorMessage = 'Authentication expired. Please log in again.';
       // Redirect to login after a short delay
       setTimeout(() => {
         router.push('/login');
       }, 2000);
-    } else if (error.message.includes('Failed to fetch')) {
-      loadingState.errorMessage = 'Network error. Please check your internet connection and try again.';
-    } else if (error.message.includes('timeout')) {
+    } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('401')) {
+      loadingState.errorMessage = 'Authentication error. Please log in again.';
+      // Redirect to login immediately for auth errors
+      setTimeout(() => {
+        router.push('/login');
+      }, 1000);
+    } else if (errorMessage.includes('timeout')) {
       loadingState.errorMessage = 'Loading timed out. Please try again.';
     } else {
-      loadingState.errorMessage = error.message || 'An unexpected error occurred while loading groups.';
+      loadingState.errorMessage = errorMessage || 'An unexpected error occurred while loading groups.';
     }
   } finally {
     loadingState.isLoading = false;
