@@ -276,9 +276,11 @@ export default {
                 const response = await fetch(`${apiUrl}/auth/refresh`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${state.refreshToken}`
-                    }
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        refresh_token: state.refreshToken
+                    })
                 })
 
                 if (!response.ok) {
