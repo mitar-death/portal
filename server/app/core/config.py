@@ -22,20 +22,20 @@ class Settings(BaseSettings):
 
     # Database
     table_prefix: str = "tgportal_"
-    database_url: str = ""
+    database_url: str = os.getenv("DATABASE_URL", "")
     DB_TYPE: str = "postgres"
-    DB_PORT: int = int(os.getenv("DB_PORT", "5432"))
-    DB_USERNAME: str = os.getenv("DB_USERNAME", "homestead")
-    DB_PASSWORD: str = os.getenv("DB_PASSWORD" , "password")
-    DB_HOST: str = os.getenv("DB_HOST", "localhost")
-    DB_DATABASE: str = os.getenv("DB_DATABASE", "tgportal")
+    DB_PORT: int = int(os.getenv("PGPORT", "5432"))
+    DB_USERNAME: str = os.getenv("PGUSER", "homestead")
+    DB_PASSWORD: str = os.getenv("PGPASSWORD", "password")
+    DB_HOST: str = os.getenv("PGHOST", "localhost")
+    DB_DATABASE: str = os.getenv("PGDATABASE", "tgportal")
     GOOGLE_STUDIO_API_KEY: str = os.getenv("GOOGLE_STUDIO_API_KEY", "")
     
     #REDIS
     REDIS_HOST: str = os.getenv("REDIS_HOST", "localhost")
-    REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
-    REDIS_DB: int = int(os.getenv("REDIS_DB", 0))
-    REDIS_PASSWORD: str = os.getenv("REDIS_PASSWORD", None)
+    REDIS_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
+    REDIS_DB: int = int(os.getenv("REDIS_DB", "0"))
+    REDIS_PASSWORD: str = os.getenv("REDIS_PASSWORD", "")
     
     # Telegram
     TELEGRAM_API_ID: str = os.getenv("TELEGRAM_API_ID", "")
