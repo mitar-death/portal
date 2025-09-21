@@ -122,9 +122,16 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
+        # Security: Filter out sensitive headers to prevent token exposure in logs
+        sensitive_headers = {'authorization', 'cookie', 'set-cookie', 'x-api-key'}
+        safe_headers = {
+            key: '***REDACTED***' if key.lower() in sensitive_headers else value
+            for key, value in request.headers.items()
+        }
+        
         logger.info(f"Request path: {request.url.path}")
         logger.info(f"Request method: {request.method}")
-        logger.info(f"Request headers: {request.headers}")
+        logger.info(f"Request headers: {safe_headers}")
         
         response = await call_next(request)
         return response

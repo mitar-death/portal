@@ -6,12 +6,14 @@ import { apiUrl } from '@/services/api-service'
 // Load stored authentication data from local storage
 const loadStoredAuth = () => {
     try {
-        const user = JSON.parse(localStorage.getItem('tgportal_user'))
+        const userItem = localStorage.getItem('tgportal_user')
+        const user = userItem ? JSON.parse(userItem) : null
         const accessToken = localStorage.getItem('tgportal_access_token')
         const refreshToken = localStorage.getItem('tgportal_refresh_token')
         const tokenExpiry = localStorage.getItem('tgportal_token_expiry')
         // Legacy token support for backward compatibility
         const legacyToken = localStorage.getItem('tgportal_token')
+        
         return { user, accessToken: accessToken || legacyToken, refreshToken, tokenExpiry }
     } catch (e) {
         return { user: null, accessToken: null, refreshToken: null, tokenExpiry: null }
@@ -41,7 +43,24 @@ export default {
     }),
 
     getters: {
-        isAuthenticated: state => state.isAuthenticated && !!state.accessToken && !isTokenExpired(state.tokenExpiry),
+        isAuthenticated: state => {
+            // Comprehensive auth check with fallback to localStorage
+            const stateToken = state.accessToken
+            const localStorageToken = localStorage.getItem('tgportal_access_token')
+            const activeToken = stateToken || localStorageToken
+            
+            if (!activeToken) return false
+            
+            // Check token expiry with fallback
+            const stateExpiry = state.tokenExpiry
+            const localStorageExpiry = localStorage.getItem('tgportal_token_expiry')
+            const activeExpiry = stateExpiry || localStorageExpiry
+            
+            if (!activeExpiry) return !!activeToken // If no expiry info, just check token existence
+            
+            const isExpired = isTokenExpired(activeExpiry)
+            return !!activeToken && !isExpired
+        },
         currentUser: state => state.user,
         authToken: state => state.accessToken,
         accessToken: state => state.accessToken,
@@ -74,8 +93,24 @@ export default {
 
     actions: {
         async checkAuthStatus({ commit, dispatch, state, getters }) {
+            // Ensure state is in sync with localStorage first
+            const localStorageToken = localStorage.getItem('tgportal_access_token')
+            const localStorageUser = localStorage.getItem('tgportal_user')
+            const localStorageRefreshToken = localStorage.getItem('tgportal_refresh_token')
+            const localStorageExpiry = localStorage.getItem('tgportal_token_expiry')
+            
+            // If localStorage has tokens but state doesn't, update state
+            if (localStorageToken && !state.accessToken) {
+                commit('SET_AUTH', {
+                    user: localStorageUser ? JSON.parse(localStorageUser) : null,
+                    accessToken: localStorageToken,
+                    refreshToken: localStorageRefreshToken,
+                    tokenExpiry: localStorageExpiry
+                })
+            }
+            
             // If we've already checked auth and have a valid non-expired token/user, avoid unnecessary checks
-            if (getters.isAuthenticated && state.user && state.accessToken) {
+            if (getters.isAuthenticated && (state.user || localStorageUser) && (state.accessToken || localStorageToken)) {
                 return true;
             }
 
@@ -120,7 +155,7 @@ export default {
                     // If backend is authenticated but frontend is not,
                     // update the frontend state
                     const localUser = JSON.parse(localStorage.getItem('tgportal_user'));
-                    const localToken = localStorage.getItem('tgportal_token');
+                    const localToken = localStorage.getItem('tgportal_access_token');
 
                     if (!localUser || !localToken) {
                         // Backend says authorized but no local tokens - need to re-authenticate
