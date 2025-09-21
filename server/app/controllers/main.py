@@ -58,7 +58,7 @@ async def request_code(request: Request,
         # Get a client for initial authentication (no user required yet)
         from server.app.services.telegram import client_manager
         client = await client_manager.get_guest_client()
-        
+
         try:
             if await client.is_user_authorized():
                 logger.info("User already authorized")
@@ -107,7 +107,8 @@ async def request_code(request: Request,
                     await client.disconnect()
                     logger.info("Guest client disconnected successfully")
             except Exception as disconnect_error:
-                logger.warning(f"Error disconnecting guest client: {disconnect_error}")
+                logger.warning(
+                    f"Error disconnecting guest client: {disconnect_error}")
     except Exception as e:
         if isinstance(e, HTTPException):
             raise
@@ -116,10 +117,10 @@ async def request_code(request: Request,
 
 
 @safe_db_operation()
-async def verify_code(phone_number: str,
+async def verify_code(request: Request,
+                      phone_number: str,
                       code: str,
                       phone_code_hash: str,
-                      request: Request,
                       db: AsyncSession = None):
     """
     Verify the code provided by the user.
@@ -139,7 +140,7 @@ async def verify_code(phone_number: str,
     # Use guest client for verification (consistent with request_code)
     from server.app.services.telegram import client_manager
     client = await client_manager.get_guest_client()
-    
+
     try:
         # Check if we have an active session
         stmt = select(ActiveSession).where(
@@ -150,7 +151,7 @@ async def verify_code(phone_number: str,
         if not session or not session.code_requested:
             raise HTTPException(status_code=400,
                                 detail="No active login session found")
-                                
+
         # Check rate limiting for login attempts
         is_limited, limit_message = login_rate_limiter.is_rate_limited(
             phone_number)
@@ -319,6 +320,10 @@ async def verify_code(phone_number: str,
         try:
             if client and client.is_connected():
                 await client.disconnect()
-                logger.info("Guest client disconnected successfully after verification")
+                logger.info(
+                    "Guest client disconnected successfully after verification"
+                )
         except Exception as disconnect_error:
-            logger.warning(f"Error disconnecting guest client after verification: {disconnect_error}")
+            logger.warning(
+                f"Error disconnecting guest client after verification: {disconnect_error}"
+            )

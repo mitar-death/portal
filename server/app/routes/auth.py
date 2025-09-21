@@ -29,9 +29,10 @@ async def verify_login_code(request: Request, verification: CodeVerification):
     """
     Verify Telegram login code
     """
-    return await verify_code(request=request,
+    return await verify_code(
                              verification.phone_number,
                              verification.code,
+                             request=request,
                              verification.phone_code_hash)
 
 
