@@ -1,3 +1,4 @@
+import json
 from typing import Dict, Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,48 @@ from server.app.core.jwt_utils import create_token_pair, JWTManager
 from datetime import datetime, timezone, timedelta
 from server.app.core.config import settings
 from server.app.core.rate_limiter import login_rate_limiter
+
+
+async def transfer_session_to_user(guest_client, user_id: int):
+    """
+    Transfer Telegram session from guest client to user client.
+    
+    Args:
+        guest_client: The authenticated guest Telegram client
+        user_id: The user ID to transfer the session to
+    """
+    try:
+        if not guest_client or not guest_client.is_connected():
+            logger.warning("Guest client is not connected, cannot transfer session")
+            return
+        
+        # Export session string from authenticated guest client
+        session_string = guest_client.session.save()
+        if not session_string:
+            logger.warning("No session string available from guest client")
+            return
+        
+        # Save session metadata for the user
+        metadata_file = client_manager._get_user_metadata_file(user_id)
+        try:
+            existing_metadata = {}
+            if metadata_file.exists():
+                with open(metadata_file, "r") as f:
+                    existing_metadata = json.load(f)
+            
+            # Update with session string
+            existing_metadata["session_string"] = session_string.decode() if isinstance(session_string, bytes) else session_string
+            existing_metadata["transferred_at"] = datetime.now(timezone.utc).isoformat()
+            
+            with open(metadata_file, "w") as f:
+                json.dump(existing_metadata, f)
+            
+            logger.info(f"Successfully saved session string for user {user_id}")
+        except Exception as e:
+            logger.error(f"Failed to save session metadata for user {user_id}: {e}")
+            
+    except Exception as e:
+        logger.error(f"Error transferring session to user {user_id}: {e}")
 
 
 @safe_db_operation()
