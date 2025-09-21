@@ -49,17 +49,43 @@ export default {
             const localStorageToken = localStorage.getItem('tgportal_access_token')
             const activeToken = stateToken || localStorageToken
             
-            if (!activeToken) return false
+            console.log('🔍 Auth Debug:', { 
+                stateToken: stateToken ? '***EXISTS***' : 'null', 
+                localStorageToken: localStorageToken ? '***EXISTS***' : 'null',
+                activeToken: activeToken ? '***EXISTS***' : 'null'
+            })
+            
+            if (!activeToken) {
+                console.log('❌ Auth failed: No token found')
+                return false
+            }
             
             // Check token expiry with fallback
             const stateExpiry = state.tokenExpiry
             const localStorageExpiry = localStorage.getItem('tgportal_token_expiry')
             const activeExpiry = stateExpiry || localStorageExpiry
             
-            if (!activeExpiry) return !!activeToken // If no expiry info, just check token existence
+            console.log('🕒 Expiry check:', { 
+                stateExpiry, 
+                localStorageExpiry, 
+                activeExpiry 
+            })
+            
+            if (!activeExpiry) {
+                console.log('✅ Auth success: No expiry, token exists')
+                return !!activeToken // If no expiry info, just check token existence
+            }
             
             const isExpired = isTokenExpired(activeExpiry)
-            return !!activeToken && !isExpired
+            const result = !!activeToken && !isExpired
+            
+            console.log(`${result ? '✅' : '❌'} Auth result:`, { 
+                hasToken: !!activeToken, 
+                isExpired, 
+                result 
+            })
+            
+            return result
         },
         currentUser: state => state.user,
         authToken: state => state.accessToken,

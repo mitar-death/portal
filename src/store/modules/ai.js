@@ -1,6 +1,7 @@
 // ai.js - AI module for Vuex store
 
 import { apiUrl } from '@/services/api-service';
+import { fetchWithAuth } from '@/services/auth-interceptor';
 
 console.log("API URL in ai.js:", apiUrl);
 
@@ -28,16 +29,13 @@ export default {
 
     actions: {
         // AI Account Actions
-        async fetchAIAccounts({ commit, rootState }) {
-            if (!rootState.auth.token) return Promise.reject('Not authenticated')
+        async fetchAIAccounts({ commit }) {
+            // Let the backend handle authentication - it validates JWT tokens properly
+            console.log('🚀 Attempting to fetch AI accounts (letting backend handle auth validation)');
 
             try {
-                const response = await fetch(`${apiUrl}/ai/accounts`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${rootState.auth.token}`
-                    },
-                    credentials: 'include'
+                const response = await fetchWithAuth(`${apiUrl}/ai/accounts`, {
+                    method: 'GET'
                 })
 
                 if (!response.ok) {
@@ -427,16 +425,13 @@ export default {
         },
 
         // Group AI Assignment Actions
-        async fetchGroupAssignments({ commit, rootState }) {
-            if (!rootState.auth.token) return Promise.reject('Not authenticated')
+        async fetchGroupAssignments({ commit }) {
+            // Let the backend handle authentication - it validates JWT tokens properly
+            console.log('🚀 Attempting to fetch group assignments (letting backend handle auth validation)');
 
             try {
-                const response = await fetch(`${apiUrl}/ai/group-assignments`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${rootState.auth.token}`
-                    },
-                    credentials: 'include'
+                const response = await fetchWithAuth(`${apiUrl}/ai/group-assignments`, {
+                    method: 'GET'
                 })
 
                 if (!response.ok) {

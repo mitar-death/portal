@@ -256,19 +256,30 @@ const aiAccountOptions = computed(() => {
 const assignGroupsCount = computed(() => groupsToAssign.value.length);
 
 onMounted(async () => {
-  await store.dispatch("telegram/fetchTelegramGroups");
-  await store.dispatch("ai/fetchAIAccounts");
-  await store.dispatch("ai/fetchGroupAssignments");
+  try {
+    console.log('🚀 TelegramGroups mounting - fetching data...');
+    await store.dispatch("telegram/fetchTelegramGroups");
+    await store.dispatch("ai/fetchAIAccounts");
+    await store.dispatch("ai/fetchGroupAssignments");
 
-  // Pre-select groups that are already being monitored
-  if (groups.value.length > 0) {
-    const monitoredGroups = groups.value
-      .filter(group => group.is_monitored === true)
-      .map(group => group.id);  // Store just the IDs to match item-value
-    if (monitoredGroups.length > 0) {
-      selected.value = monitoredGroups;
-      console.log(`Pre-selected ${monitoredGroups.length} monitored groups:`, monitoredGroups);
+    // Pre-select groups that are already being monitored
+    if (groups.value.length > 0) {
+      const monitoredGroups = groups.value
+        .filter(group => group.is_monitored === true)
+        .map(group => group.id);  // Store just the IDs to match item-value
+      if (monitoredGroups.length > 0) {
+        selected.value = monitoredGroups;
+        console.log(`Pre-selected ${monitoredGroups.length} monitored groups:`, monitoredGroups);
+      }
     }
+    console.log('✅ TelegramGroups mounted successfully');
+  } catch (error) {
+    console.error('❌ Error in TelegramGroups mounted hook:', error);
+    // Don't throw the error, just handle it gracefully
+    store.dispatch("ui/showSnackbar", {
+      text: "Unable to load some data. Please refresh the page.",
+      color: "warning",
+    });
   }
 });
 

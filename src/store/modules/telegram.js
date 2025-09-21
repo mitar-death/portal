@@ -32,10 +32,9 @@ export default {
 
     actions: {
         async fetchTelegramGroups({ commit, rootGetters }) {
-            // Use JWT authentication instead of old token system
-            if (!rootGetters['auth/isAuthenticated']) {
-                return Promise.reject('Not authenticated')
-            }
+            // Bypass the problematic isAuthenticated check and let the backend handle auth
+            // The backend properly validates JWT tokens and returns appropriate errors
+            console.log('🚀 Attempting to fetch groups (letting backend handle auth validation)');
 
             try {
                 // Use fetchWithAuth for proper JWT handling and token refresh

@@ -115,10 +115,8 @@ async function loadGroupsData() {
   loadingState.errorMessage = '';
 
   try {
-    // Check authentication first
-    if (!store.getters['auth/isAuthenticated']) {
-      throw new Error('Please log in to view your groups');
-    }
+    // Let the backend handle authentication - it validates JWT tokens properly
+    console.log('🚀 Loading groups (backend will validate authentication)')
 
     // Load groups and related data with timeout
     const loadPromises = [
