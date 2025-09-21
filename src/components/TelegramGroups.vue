@@ -210,6 +210,7 @@ const groupAssignments = computed(
   () => store.getters["ai/groupAssignments"] || []
 );
 import { apiUrl } from '@/services/api-service';
+import { fetchWithAuth } from '@/services/auth-interceptor';
 
 console.log("API URL in TelegramGroups.vue:", apiUrl);
 const loading = ref(false);
@@ -233,8 +234,6 @@ const headers = [
   { text: "AI Assignment", value: "ai_assignment" },
   { text: "Actions", value: "actions", sortable: false },
 ];
-
-const token = computed(() => store.state.auth.token);
 
 const aiAccountOptions = computed(() => {
   // Create options array for v-select with an empty option
@@ -314,14 +313,7 @@ function showAssignAIDialog(groups = null) {
 }
 
 async function assignAIToGroups() {
-  if (!token.value) {
-    store.dispatch("ui/showSnackbar", {
-      text: "You need to be logged in to assign AI accounts",
-      color: "error",
-    });
-    return;
-  }
-
+  // Validate selection first
   if (groupsToAssign.value.length === 0) {
     store.dispatch("ui/showSnackbar", {
       text: "Please select at least one group",
@@ -363,14 +355,7 @@ async function assignAIToGroups() {
 }
 
 async function monitorSelectedGroups() {
-  if (!token.value) {
-    store.dispatch("ui/showSnackbar", {
-      text: "You need to be logged in to monitor groups",
-      color: "error",
-    });
-    return;
-  }
-
+  // Validate selection first
   if (selected.value.length === 0) {
     store.dispatch("ui/showSnackbar", {
       text: "Please select at least one group to monitor",
@@ -385,13 +370,12 @@ async function monitorSelectedGroups() {
   
   loading.value = true;
   try {
-    const response = await fetch(`${apiUrl}/add/selected-groups`, {
+    // Use fetchWithAuth to handle JWT token automatically
+    const response = await fetchWithAuth(`${apiUrl}/add/selected-groups`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token.value}`,
       },
-      credentials: "include",
       body: JSON.stringify({ group_ids: groupIds }),
     });
 

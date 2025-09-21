@@ -138,7 +138,7 @@ async def verify_code(request: Request,
         HTTPException: If verification fails
     """
     # Use guest client for verification (consistent with request_code)
-    from server.app.services.telegram import client_manager, transfer_session_to_user
+    from server.app.services.telegram import client_manager
     client = await client_manager.get_guest_client()
 
     try:
