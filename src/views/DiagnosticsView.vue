@@ -49,6 +49,16 @@
         :expandedErrors="expandedErrors"
         @toggle-error="toggleErrorExpand"
       />
+
+      <!-- Real-time AI Messages -->
+      <RealtimeMessagesCard 
+        :messages="realtimeAiMessages"
+        :connectionStatus="websocketConnectionStatus"
+        :isConnected="isWebSocketConnected"
+        @connect="connectWebSocket"
+        @disconnect="disconnectWebSocket"
+        @clear="clearRealtimeMessages"
+      />
       
       <!-- AI Clients -->
       <AIClientsTable 
@@ -73,6 +83,7 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useStore } from "vuex";
 import { initPusher, disconnectPusher } from "@/utils/pusher-setup";
+import webSocketService from "@/services/websocket";
 import {
   loadConversationsFromStorage,
   updateConversationInStorage,
@@ -90,6 +101,7 @@ import AIStatusCard from "@/components/diagnostics/AIStatusCard.vue";
 import AIClientsTable from "@/components/diagnostics/AIClientsTable.vue";
 import GroupMappingsTable from "@/components/diagnostics/GroupMappingsTable.vue";
 import ErrorLogCard from "@/components/diagnostics/ErrorLogCard.vue";
+import RealtimeMessagesCard from "@/components/diagnostics/RealtimeMessagesCard.vue";
 
 
 const store = useStore();
@@ -105,6 +117,11 @@ const messageSearchQuery = ref("");
 const searchResults = ref([]);
 const expandedErrors = ref([]);
 const selectedConversation = ref(null); // Track which conversation history is being viewed
+
+// WebSocket state
+const websocketConnected = ref(false);
+const websocketConnecting = ref(false);
+const websocketConnectionStatus = ref('disconnected');
 
 console.log("Checking system health...", diagnostics.value.ai_status);
 import { apiUrl } from "@/services/api-service";
@@ -288,6 +305,26 @@ const filteredConversations = computed(() => {
   } else {
     return groupConversations.value;
   }
+});
+
+// WebSocket computed properties
+const isWebSocketConnected = computed(() => {
+  return store.getters['websocket/isConnected'];
+});
+
+const realtimeAiMessages = computed(() => {
+  return [
+    ...store.getters['websocket/aiMessages'],
+    ...store.getters['websocket/diagnosticsMessages']
+  ].sort((a, b) => {
+    const timeA = new Date(a.timestamp || 0);
+    const timeB = new Date(b.timestamp || 0);
+    return timeB - timeA; // Most recent first
+  }).slice(0, 20); // Keep only latest 20 messages
+});
+
+const websocketConnectionStatusComputed = computed(() => {
+  return store.getters['websocket/connectionStatus'];
 });
 
 // Helper functions
@@ -486,6 +523,38 @@ function toggleConversationHistory(conversationId) {
       console.log(`No history available for conversation: ${conversationId}`);
     }
   }
+}
+
+// WebSocket connection methods
+async function connectWebSocket() {
+  try {
+    websocketConnecting.value = true;
+    websocketConnectionStatus.value = 'connecting';
+    
+    await store.dispatch('websocket/connect');
+    
+    websocketConnected.value = true;
+    websocketConnectionStatus.value = 'connected';
+  } catch (error) {
+    console.error('Failed to connect WebSocket:', error);
+    websocketConnectionStatus.value = 'error';
+  } finally {
+    websocketConnecting.value = false;
+  }
+}
+
+function disconnectWebSocket() {
+  try {
+    store.dispatch('websocket/disconnect');
+    websocketConnected.value = false;
+    websocketConnectionStatus.value = 'disconnected';
+  } catch (error) {
+    console.error('Error disconnecting WebSocket:', error);
+  }
+}
+
+function clearRealtimeMessages() {
+  store.dispatch('websocket/clearMessages');
 }
 
 // Function to handle message search
@@ -1220,6 +1289,16 @@ onMounted(() => {
   fetchDiagnostics();
 
   setupPusher();
+
+  // Initialize WebSocket connection after authentication is ready
+  const authStatus = store.getters['auth/isAuthenticated'];
+  if (authStatus) {
+    // Setup WebSocket connection listeners to sync with local state
+    store.dispatch('websocket/setupWebSocketListeners');
+    
+    // Optionally auto-connect to WebSocket for diagnostics
+    // connectWebSocket();
+  }
 
   // Fallback polling in case Pusher fails - use a longer interval to reduce load
   const intervalId = setInterval(() => {
