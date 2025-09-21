@@ -9,15 +9,24 @@ from server.app.core.config import settings
 
 class ConnectionManager:
     def __init__(self):
-        logger.info(f"Initializing WebSocket Connection Manager with: ", settings.PUSHER_APP_ID, settings.PUSHER_KEY, settings.PUSHER_CLUSTER)
-        # Initialize Pusher client
-        self.pusher_client = pusher.Pusher(
-            app_id=settings.PUSHER_APP_ID,
-            key=settings.PUSHER_KEY,
-            secret=settings.PUSHER_SECRET,
-            cluster=settings.PUSHER_CLUSTER,
-            ssl=True
-        )
+        logger.info(f"Initializing WebSocket Connection Manager")
+        # Initialize Pusher client only if credentials are provided
+        self.pusher_client = None
+        if settings.PUSHER_APP_ID and settings.PUSHER_KEY and settings.PUSHER_SECRET:
+            try:
+                self.pusher_client = pusher.Pusher(
+                    app_id=settings.PUSHER_APP_ID,
+                    key=settings.PUSHER_KEY,
+                    secret=settings.PUSHER_SECRET,
+                    cluster=settings.PUSHER_CLUSTER,
+                    ssl=True
+                )
+                logger.info("Pusher client initialized successfully")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Pusher client: {e}")
+                self.pusher_client = None
+        else:
+            logger.info("Pusher credentials not provided, running without Pusher support")
 
         self.active_connections: Dict[str, WebSocket] = {}
         self.user_connections: Dict[str, Set[str]] = {}  # user_id -> set of connection_ids
@@ -212,7 +221,8 @@ class ConnectionManager:
             }
             
             # Use Pusher to broadcast diagnostics - send just the data for better frontend compatibility
-            self.pusher_client.trigger('diagnostics', 'diagnostics_update', diagnostics_data)
+            if self.pusher_client:
+                self.pusher_client.trigger('diagnostics', 'diagnostics_update', diagnostics_data)
             
             # Fallback to WebSockets if needed - include the full message structure
             if self.active_connections:
@@ -230,7 +240,8 @@ class ConnectionManager:
             "data": message_data
         }
         # Use Pusher with public channels
-        self.pusher_client.trigger('chat', 'new_message', data)
+        if self.pusher_client:
+            self.pusher_client.trigger('chat', 'new_message', data)
         # Fallback to WebSockets if needed
         if self.active_connections:
             await self.broadcast_json(data)
@@ -264,7 +275,8 @@ class ConnectionManager:
         logger.info(f"Sending conversation update for {conversation_data.get('conversation_id')} (type: {conversation_data.get('chat_type', 'direct')})")
         
         # Use Pusher with public channels
-        self.pusher_client.trigger('diagnostics', 'conversation_update', conversation_data)
+        if self.pusher_client:
+            self.pusher_client.trigger('diagnostics', 'conversation_update', conversation_data)
         
         # Fallback to WebSockets if needed
         if self.active_connections:

@@ -13,12 +13,12 @@ class Settings(BaseSettings):
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-here")
     API_PREFIX: str = os.getenv("API_PREFIX", "/api")
     ENV: str = os.getenv("ENV", "development")
-    PORT: int = int(os.getenv("PORT", 8030))
+    PORT: int = int(os.getenv("PORT", 8000))
 
     # FastAPI server settings
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
     HOST: str = os.getenv("HOST", "localhost")
-    SERVER_PORT: int = int(os.getenv("SERVER_PORT", "8030"))
+    SERVER_PORT: int = int(os.getenv("SERVER_PORT", "8000"))
 
     # Database
     table_prefix: str = "tgportal_"
@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     SENTRY_ENABLE_TRACING: str = str(os.getenv("SENTRY_ENABLE_TRACING", "true"))
     
 
-    BACKEND_URL: str = os.getenv("BACKEND_URL", "http://127.0.0.1:8030")
+    BACKEND_URL: str = os.getenv("BACKEND_URL", "http://localhost:8000")
     FIREBASE_PROJECT_ID: str = os.getenv("FIREBASE_PROJECT_ID", "")
     FIREBASE_PROJECT_NUMBER: str = os.getenv("FIREBASE_PROJECT_NUMBER", "")
     

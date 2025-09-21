@@ -10,14 +10,20 @@ from server.app.core.config import settings
 
 pusher_router = APIRouter(prefix="/pusher", tags=["pusher"])
 
-# Initialize Pusher client
-pusher_client = pusher.Pusher(
-    app_id=settings.PUSHER_APP_ID,
-    key=settings.PUSHER_KEY,
-    secret=settings.PUSHER_SECRET,
-    cluster=settings.PUSHER_CLUSTER,
-    ssl=True
-)
+# Initialize Pusher client only if credentials are provided
+pusher_client = None
+if settings.PUSHER_APP_ID and settings.PUSHER_KEY and settings.PUSHER_SECRET:
+    try:
+        pusher_client = pusher.Pusher(
+            app_id=settings.PUSHER_APP_ID,
+            key=settings.PUSHER_KEY,
+            secret=settings.PUSHER_SECRET,
+            cluster=settings.PUSHER_CLUSTER,
+            ssl=True
+        )
+    except Exception as e:
+        print(f"Failed to initialize Pusher client: {e}")
+        pusher_client = None
 
 @pusher_router.post("/auth")
 async def pusher_auth(request: Request, user: User = Depends(get_current_user)):
