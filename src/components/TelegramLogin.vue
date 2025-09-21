@@ -4,59 +4,121 @@
 
     <v-card-text>
       <div v-if="step === 'authenticated'">
-        <v-alert type="success" class="mb-4">
-          You are already logged in as {{ currentUser && currentUser.username }}
+        <v-alert type="success" variant="tonal" class="mb-4">
+          <v-alert-title>
+            <v-icon icon="mdi-check-circle" class="me-2"></v-icon>
+            Welcome Back!
+          </v-alert-title>
+          You are already logged in as <strong>{{ currentUser && currentUser.username }}</strong>
         </v-alert>
 
-        <v-btn color="primary" block class="mt-4" @click="redirectToHome">
-          Go to Dashboard
+        <v-btn 
+          color="primary" 
+          block 
+          class="mt-4" 
+          @click="redirectToHome"
+          prepend-icon="mdi-view-dashboard"
+          size="large"
+        >
+          Go to Your Groups
         </v-btn>
 
-        <v-btn color="error" outlined block class="mt-2" @click="logout">
+        <v-btn 
+          color="error" 
+          variant="outlined" 
+          block 
+          class="mt-3" 
+          @click="logout"
+          prepend-icon="mdi-logout"
+          :loading="loading"
+        >
           Logout
         </v-btn>
       </div>
 
       <div v-else-if="step === 'phone'">
+        <div class="text-body-2 text-medium-emphasis mb-4 text-center">
+          <v-icon icon="mdi-telegram" color="primary" class="me-2"></v-icon>
+          Enter your phone number to receive a verification code via Telegram
+        </div>
+        
         <v-text-field
           v-model="phone"
           label="Phone Number"
-          prepend-icon="mdi-phone"
-          hint="Enter your Telegram phone number with country code"
+          placeholder="+1234567890"
+          prepend-inner-icon="mdi-phone"
+          variant="outlined"
+          hint="Include country code (e.g., +1 for US)"
+          persistent-hint
           :rules="[rules.required]"
+          :error-messages="phoneError"
+          @keydown.enter="requestCode"
+          @input="clearPhoneError"
+          :disabled="loading"
         ></v-text-field>
 
         <v-btn
           color="primary"
           block
+          size="large"
           class="mt-4"
           :loading="loading"
+          :disabled="!phone || loading"
           @click="requestCode"
+          prepend-icon="mdi-send"
         >
-          Request Code
+          {{ loading ? 'Connecting to Telegram...' : 'Get Verification Code' }}
         </v-btn>
       </div>
 
       <div v-else-if="step === 'code'">
+        <div class="text-body-2 text-medium-emphasis mb-4 text-center">
+          <v-icon icon="mdi-message-text" color="success" class="me-2"></v-icon>
+          Check your Telegram app for the verification code
+        </div>
+        
         <v-text-field
           v-model="code"
           label="Verification Code"
-          prepend-icon="mdi-lock"
-          hint="Enter the code sent to your Telegram"
-          :rules="[rules.required]"
+          placeholder="12345"
+          prepend-inner-icon="mdi-lock"
+          variant="outlined"
+          hint="Enter the 5-digit code from Telegram"
+          persistent-hint
+          :rules="[rules.required, rules.codeLength]"
+          :error-messages="codeError"
+          @keydown.enter="verifyCode"
+          @input="clearCodeError"
+          :disabled="loading"
+          maxlength="5"
+          type="text"
+          inputmode="numeric"
+          pattern="[0-9]{5}"
         ></v-text-field>
 
         <v-btn
           color="primary"
           block
+          size="large"
           class="mt-4"
           :loading="loading"
+          :disabled="!code || loading"
           @click="verifyCode"
+          prepend-icon="mdi-check-circle"
         >
-          Verify Code
+          {{ loading ? 'Verifying...' : 'Complete Login' }}
         </v-btn>
 
-        <v-btn text block class="mt-2" @click="step = 'phone'"> Back </v-btn>
+        <v-btn 
+          variant="outlined" 
+          block 
+          class="mt-3" 
+          @click="step = 'phone'"
+          :disabled="loading"
+          prepend-icon="mdi-arrow-left"
+        > 
+          Use Different Number 
+        </v-btn>
       </div>
     </v-card-text>
 
@@ -82,6 +144,10 @@ const code = ref("");
 const phone_code_hash = ref(""); // Store phone code hash for verification
 const loading = ref(false);
 
+// Error handling for enhanced UX
+const phoneError = ref("");
+const codeError = ref("");
+
 import { apiUrl } from "@/services/api-service";
 console.log("Using API URL in TelegramLogin:", apiUrl);
 
@@ -92,6 +158,11 @@ const snackbar = ref({
 });
 const rules = {
   required: (value) => !!value || "Required.",
+  codeLength: (value) => {
+    if (!value) return true; // Let required rule handle empty values
+    const cleanValue = value.toString().replace(/\D/g, ''); // Remove non-digits
+    return cleanValue.length === 5 || "Verification code must be exactly 5 digits";
+  }
 };
 
 // Get current user from store
@@ -322,13 +393,30 @@ async function verifyCode() {
       step.value = "authenticated";
 
       // Emit success event to parent
-      // emit("login-success", data.data.user);
-      router.push({
-        path: "/",
-        query: {
-          authChecked: true
-        }
-      });
+      emit("login-success", data.data.user);
+      
+      // Redirect to groups page instead of home for better UX
+      const currentRoute = router.currentRoute.value;
+      const fromPath = currentRoute.query.from;
+      
+      if (fromPath && fromPath !== '/login') {
+        // User was trying to access a specific page, redirect there
+        router.push({
+          path: fromPath,
+          query: {
+            authChecked: true
+          }
+        });
+      } else {
+        // Default redirect to groups page for authenticated users
+        router.push({
+          path: "/groups",
+          query: {
+            authChecked: true,
+            loginSuccess: true
+          }
+        });
+      }
     } else {
       console.error("Verification API Error:", data);
 
@@ -365,6 +453,15 @@ function showSnackbar(text, color = "info") {
 
   // Also dispatch to the global UI store for app-wide notifications
   store.dispatch("ui/showSnackbar", { text, color });
+}
+
+// Enhanced error handling functions for better UX
+function clearPhoneError() {
+  phoneError.value = "";
+}
+
+function clearCodeError() {
+  codeError.value = "";
 }
 </script>
 

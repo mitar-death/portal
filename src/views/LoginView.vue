@@ -59,7 +59,7 @@ function redirectToHome() {
   const fromPath = currentRoute.query.from;
 
   // Clear any auth flags when successfully navigating
-  if (fromPath) {
+  if (fromPath && fromPath !== '/login') {
     // Navigate to the original path but remove any auth flags to prevent future loops
     router.push({
       path: fromPath,
@@ -70,7 +70,14 @@ function redirectToHome() {
       },
     });
   } else {
-    router.push("/");
+    // Default redirect to groups page for authenticated users instead of home
+    router.push({
+      path: "/groups",
+      query: {
+        authChecked: true,
+        loginSuccess: true
+      }
+    });
   }
 }
 </script>

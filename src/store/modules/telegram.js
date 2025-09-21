@@ -2,6 +2,7 @@
 // Handles Telegram groups and related functionality
 
 import { apiUrl } from '@/services/api-service';
+import { fetchWithAuth } from '@/services/auth-interceptor';
 
 console.log(`Using API URL in telegram.js: ${apiUrl}`);
 export default {
@@ -30,29 +31,30 @@ export default {
     },
 
     actions: {
-        async fetchTelegramGroups({ commit, rootState }) {
-            if (!rootState.auth.token) return Promise.reject('Not authenticated')
+        async fetchTelegramGroups({ commit, rootGetters }) {
+            // Use JWT authentication instead of old token system
+            if (!rootGetters['auth/isAuthenticated']) {
+                return Promise.reject('Not authenticated')
+            }
 
             try {
-                const response = await fetch(`${apiUrl}/telegram/groups`, {
+                // Use fetchWithAuth for proper JWT handling and token refresh
+                const response = await fetchWithAuth(`${apiUrl}/telegram/groups`, {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${rootState.auth.token}`
-                    },
-                    credentials: 'include'
+                        'Content-Type': 'application/json'
+                    }
                 })
 
                 if (!response.ok) {
-                    // If unauthorized, logout
-                    if (response.status === 401) {
-                        this.dispatch('auth/logout')
-                    }
-                    throw new Error('Failed to fetch groups')
+                    throw new Error(`Failed to fetch groups: ${response.status}`)
                 }
 
                 const data = await response.json()
-                commit('SET_TELEGRAM_GROUPS', data.groups)
-                return data.groups
+                // Handle different response structures
+                const groups = data.groups || data.data?.groups || data.data || []
+                commit('SET_TELEGRAM_GROUPS', groups)
+                return groups
             } catch (error) {
                 console.error('Error fetching groups:', error)
                 return Promise.reject(error)
@@ -63,91 +65,89 @@ export default {
             commit('CLEAR_GROUPS')
         },
 
-        async fetchKeywords({ commit, rootState }) {
-            if (!rootState.auth.token) return Promise.reject('Not authenticated')
+        async fetchKeywords({ commit, rootGetters }) {
+            // Use JWT authentication instead of old token system
+            if (!rootGetters['auth/isAuthenticated']) {
+                return Promise.reject('Not authenticated')
+            }
 
             try {
-                const response = await fetch(`${apiUrl}/keywords`, {
+                // Use fetchWithAuth for proper JWT handling and token refresh
+                const response = await fetchWithAuth(`${apiUrl}/keywords`, {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${rootState.auth.token}`
-                    },
-                    credentials: 'include'
+                        'Content-Type': 'application/json'
+                    }
                 })
 
                 if (!response.ok) {
-                    // If unauthorized, logout
-                    if (response.status === 401) {
-                        this.dispatch('auth/logout')
-                    }
-                    throw new Error('Failed to fetch keywords')
+                    throw new Error(`Failed to fetch keywords: ${response.status}`)
                 }
 
                 const data = await response.json()
-                commit('SET_KEYWORDS', data.data.keywords)
-                return data.data.keywords
+                const keywords = data.data?.keywords || data.keywords || []
+                commit('SET_KEYWORDS', keywords)
+                return keywords
             } catch (error) {
                 console.error('Error fetching keywords:', error)
                 return Promise.reject(error)
             }
         },
 
-        async addKeyword({ commit, rootState, dispatch }, keyword) {
-            if (!rootState.auth.token) return Promise.reject('Not authenticated')
+        async addKeyword({ commit, rootGetters }, keyword) {
+            // Use JWT authentication instead of old token system
+            if (!rootGetters['auth/isAuthenticated']) {
+                return Promise.reject('Not authenticated')
+            }
 
             try {
-                const response = await fetch(`${apiUrl}/add/keywords`, {
+                // Use fetchWithAuth for proper JWT handling and token refresh
+                const response = await fetchWithAuth(`${apiUrl}/add/keywords`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${rootState.auth.token}`
+                        'Content-Type': 'application/json'
                     },
-                    credentials: 'include',
                     body: JSON.stringify({ keywords: [keyword] })
                 })
 
                 if (!response.ok) {
-                    // If unauthorized, logout
-                    if (response.status === 401) {
-                        this.dispatch('auth/logout')
-                    }
-                    throw new Error('Failed to add keyword')
+                    throw new Error(`Failed to add keyword: ${response.status}`)
                 }
 
                 const data = await response.json()
-                commit('SET_KEYWORDS', data.data.keywords)
-                return data.data.keywords
+                const keywords = data.data?.keywords || data.keywords || []
+                commit('SET_KEYWORDS', keywords)
+                return keywords
             } catch (error) {
                 console.error('Error adding keyword:', error)
                 return Promise.reject(error)
             }
         },
 
-        async deleteKeyword({ commit, rootState, dispatch }, keyword) {
-            if (!rootState.auth.token) return Promise.reject('Not authenticated')
+        async deleteKeyword({ commit, rootGetters }, keyword) {
+            // Use JWT authentication instead of old token system
+            if (!rootGetters['auth/isAuthenticated']) {
+                return Promise.reject('Not authenticated')
+            }
 
             try {
-                const response = await fetch(`${apiUrl}/delete/keywords`, {
+                // Use fetchWithAuth for proper JWT handling and token refresh
+                const response = await fetchWithAuth(`${apiUrl}/delete/keywords`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${rootState.auth.token}`
+                        'Content-Type': 'application/json'
                     },
-                    credentials: 'include',
                     body: JSON.stringify({ keywords: [keyword] })
                 })
 
                 if (!response.ok) {
-                    // If unauthorized, logout
-                    if (response.status === 401) {
-                        this.dispatch('auth/logout')
-                    }
-                    throw new Error('Failed to delete keyword')
+                    throw new Error(`Failed to delete keyword: ${response.status}`)
                 }
 
                 const data = await response.json()
-                commit('SET_KEYWORDS', data.data.keywords)
-                return data.data.keywords
+                const keywords = data.data?.keywords || data.keywords || []
+                commit('SET_KEYWORDS', keywords)
+                return keywords
             } catch (error) {
                 console.error('Error deleting keyword:', error)
                 return Promise.reject(error)
