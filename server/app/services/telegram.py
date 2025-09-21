@@ -8,198 +8,492 @@ from pathlib import Path
 from server.app.core.logging import logger
 from server.app.core.config import settings
 from teleredis import RedisSession
-from server.app.services.redis_client import init_redis
+from server.app.services.redis_client import init_redis, is_redis_available
+from typing import Dict, Optional
+from threading import RLock
 
 config_session_dir = settings.TELEGRAM_SESSION_FOLDER_DIR
 config_session_name = settings.TELEGRAM_SESSION_NAME
 
-session_dir = Path(os.path.expanduser(config_session_dir))
-session_dir.mkdir(exist_ok=True)
-session_path = str(session_dir / config_session_name)
+# Global session directory
+base_session_dir = Path(os.path.expanduser(config_session_dir))
+base_session_dir.mkdir(exist_ok=True)
 
-# Global client variable
-client: TelegramClient = None
-client_init_lock = asyncio.Lock()
-metadata_file = session_dir / "session_metadata.json"
-
-# Generate and remember session names
-def get_session_name():
+class ClientManager:
     """
-    Generate a random session name if one doesn't exist, 
-    or retrieve the previously generated one.
-    
-    The session name is stored in a JSON file in the session folder
-    for persistence across application restarts.
-    
-    Returns:
-        str: The session name to use
+    Thread-safe manager for user-specific Telegram clients.
+    Handles session isolation and concurrent access for multiple users.
     """
-    # Generate a new random session name
-    chars = string.ascii_lowercase + string.digits
-    random_id = ''.join(random.choice(chars) for _ in range(8))
-    session_name = f"tgportal_session_{random_id}"
     
-    # Check if we already have a stored session name
-    if metadata_file.exists():
+    def __init__(self):
+        self._clients: Dict[int, TelegramClient] = {}
+        self._locks: Dict[int, asyncio.Lock] = {}
+        self._global_lock = RLock()  # For thread safety when modifying dictionaries
+        
+    def _get_user_session_dir(self, user_id: int) -> Path:
+        """Get user-specific session directory."""
+        user_session_dir = base_session_dir / f"user_{user_id}"
+        user_session_dir.mkdir(exist_ok=True)
+        return user_session_dir
+        
+    def _get_user_session_path(self, user_id: int) -> str:
+        """Get user-specific session file path."""
+        user_session_dir = self._get_user_session_dir(user_id)
+        return str(user_session_dir / "user_session")
+        
+    def _get_user_metadata_file(self, user_id: int) -> Path:
+        """Get user-specific metadata file path."""
+        user_session_dir = self._get_user_session_dir(user_id)
+        return user_session_dir / "session_metadata.json"
+        
+    def _get_session_name_for_user(self, user_id: int) -> str:
+        """
+        Generate or retrieve a session name for a specific user.
+        """
+        metadata_file = self._get_user_metadata_file(user_id)
+        
+        # Check if we already have a stored session name for this user
+        if metadata_file.exists():
+            try:
+                with open(metadata_file, "r") as f:
+                    metadata = json.load(f)
+                    if "session_name" in metadata:
+                        logger.info(f"Using existing session name for user {user_id}: {metadata['session_name']}")
+                        return metadata["session_name"]
+            except (json.JSONDecodeError, IOError) as e:
+                logger.warning(f"Error reading session metadata for user {user_id}: {e}")
+        
+        # Generate a new random session name
+        chars = string.ascii_lowercase + string.digits
+        random_id = ''.join(random.choice(chars) for _ in range(8))
+        session_name = f"tgportal_user_{user_id}_{random_id}"
+        
+        # Store the session name for future use
+        try:
+            with open(metadata_file, "w") as f:
+                json.dump({
+                    "session_name": session_name,
+                    "user_id": user_id,
+                    "created_at": asyncio.get_event_loop().time(),
+                    "user_info": {}
+                }, f)
+            logger.info(f"Generated and stored new session name for user {user_id}: {session_name}")
+        except IOError as e:
+            logger.error(f"Failed to save session metadata for user {user_id}: {e}")
+        
+        return session_name
+        
+    async def _get_user_lock(self, user_id: int) -> asyncio.Lock:
+        """Get or create an async lock for a specific user."""
+        with self._global_lock:
+            if user_id not in self._locks:
+                self._locks[user_id] = asyncio.Lock()
+            return self._locks[user_id]
+            
+    async def initialize_user_client(self, user_id: int, force_new_session: bool = False) -> TelegramClient:
+        """
+        Initialize a Telegram client for a specific user.
+        
+        Args:
+            user_id: The user ID for which to create the client
+            force_new_session: If True, creates a new session even if one exists
+            
+        Returns:
+            TelegramClient: The initialized client for this user
+        """
+        user_lock = await self._get_user_lock(user_id)
+        
+        async with user_lock:
+            # Check if client already exists and is connected (unless forcing new session)
+            if (not force_new_session and 
+                user_id in self._clients and 
+                self._clients[user_id] is not None and 
+                self._clients[user_id].is_connected()):
+                return self._clients[user_id]
+                
+            # Disconnect existing client if any
+            if user_id in self._clients and self._clients[user_id] is not None:
+                try:
+                    if self._clients[user_id].is_connected():
+                        await self._clients[user_id].disconnect()
+                except Exception as e:
+                    logger.warning(f"Error disconnecting old client for user {user_id}: {e}")
+                    
+            # Determine session type based on Redis availability
+            use_redis = is_redis_available()
+            
+            try:
+                if use_redis:
+                    logger.info(f"Initializing Telegram client with Redis session for user {user_id}")
+                    redis_connection = init_redis(decode_responses=False)
+                    
+                    if redis_connection is None:
+                        logger.warning(f"Redis connection returned None for user {user_id}, falling back to file-based session")
+                        use_redis = False
+                    else:
+                        # If forcing new session, clear the old Redis session
+                        if force_new_session:
+                            session_name = self._get_session_name_for_user(user_id)
+                            try:
+                                redis_connection.delete(session_name)
+                                logger.info(f"Cleared Redis session for user {user_id}: {session_name}")
+                            except Exception as e:
+                                logger.warning(f"Failed to clear Redis session for user {user_id}: {e}")
+                            
+                            metadata_file = self._get_user_metadata_file(user_id)
+                            if metadata_file.exists():
+                                metadata_file.unlink()
+                            logger.info(f"Forced new session for user {user_id}, cleared previous session metadata")
+                        
+                        # Get (or generate) a session name for this user
+                        session_name = self._get_session_name_for_user(user_id)
+                        redis_session = RedisSession(session_name, redis_connection=redis_connection)
+                        
+                        # Create new client instance
+                        new_client = TelegramClient(redis_session, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
+                        
+                        # Connect the client
+                        await new_client.connect()
+                        logger.info(f"Telegram client initialized with Redis session for user {user_id}: {session_name}")
+                        
+                        # Store the client
+                        with self._global_lock:
+                            self._clients[user_id] = new_client
+                        
+                        # Store user info when available
+                        if await new_client.is_user_authorized():
+                            try:
+                                me = await new_client.get_me()
+                                if me:
+                                    self._update_user_session_metadata(user_id, {
+                                        "telegram_user_id": me.id,
+                                        "username": me.username,
+                                        "phone": me.phone
+                                    })
+                            except Exception as e:
+                                logger.warning(f"Failed to update user info in session metadata for user {user_id}: {e}")
+                
+                if not use_redis:
+                    logger.info(f"Initializing Telegram client with file-based session for user {user_id}")
+                    
+                    user_session_path = self._get_user_session_path(user_id)
+                    
+                    # If forcing new session, clear the old file session
+                    if force_new_session:
+                        if os.path.exists(user_session_path):
+                            os.remove(user_session_path)
+                            logger.info(f"Cleared file session for user {user_id}: {user_session_path}")
+                        
+                        metadata_file = self._get_user_metadata_file(user_id)
+                        if metadata_file.exists():
+                            metadata_file.unlink()
+                        logger.info(f"Forced new session for user {user_id}, cleared previous session metadata")
+                    
+                    # Create new client with file-based session
+                    new_client = TelegramClient(user_session_path, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
+                    await new_client.connect()
+                    logger.info(f"Telegram client initialized with file-based session for user {user_id}: {user_session_path}")
+                    
+                    # Store the client
+                    with self._global_lock:
+                        self._clients[user_id] = new_client
+                    
+                    # Store user info when available
+                    if await new_client.is_user_authorized():
+                        try:
+                            me = await new_client.get_me()
+                            if me:
+                                self._update_user_session_metadata(user_id, {
+                                    "telegram_user_id": me.id,
+                                    "username": me.username,
+                                    "phone": me.phone
+                                })
+                        except Exception as e:
+                            logger.warning(f"Failed to update user info in session metadata for user {user_id}: {e}")
+                
+            except Exception as e:
+                logger.error(f"Failed to initialize Telegram client for user {user_id}: {str(e)}")
+                
+                # Last resort: try file-based session if we haven't already
+                if use_redis:
+                    logger.info(f"Falling back to file-based session as last resort for user {user_id}")
+                    try:
+                        user_session_path = self._get_user_session_path(user_id)
+                        new_client = TelegramClient(user_session_path, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
+                        await new_client.connect()
+                        with self._global_lock:
+                            self._clients[user_id] = new_client
+                        logger.info(f"Successfully fell back to file-based session for user {user_id}")
+                    except Exception as fallback_error:
+                        logger.error(f"Failed to fall back to file-based session for user {user_id}: {fallback_error}")
+                        raise e  # Re-raise original error
+                else:
+                    raise e  # Re-raise if we were already trying file-based
+                
+            return self._clients[user_id]
+            
+    def _update_user_session_metadata(self, user_id: int, user_info=None):
+        """
+        Update the session metadata for a specific user.
+        
+        Args:
+            user_id: The user ID
+            user_info: User information to store
+        """
+        metadata_file = self._get_user_metadata_file(user_id)
+        
+        if not metadata_file.exists():
+            return
+            
         try:
             with open(metadata_file, "r") as f:
                 metadata = json.load(f)
-                if "session_name" in metadata:
-                    logger.info(f"Using existing session name: {metadata['session_name']}")
-                    return metadata["session_name"]
+                
+            if user_info:
+                metadata["user_info"] = user_info
+                
+            metadata["last_used"] = asyncio.get_event_loop().time()
+                
+            with open(metadata_file, "w") as f:
+                json.dump(metadata, f)
+                
+            logger.debug(f"Updated session metadata for user {user_id}")
         except (json.JSONDecodeError, IOError) as e:
-            logger.warning(f"Error reading session metadata: {e}")
-    
-  
-    # Store the session name for future use
-    try:
-        with open(metadata_file, "w") as f:
-            json.dump({
-                "session_name": session_name,
-                "created_at": asyncio.get_event_loop().time(),
-                "user_info": {}  # Can store additional user info once logged in
-            }, f)
-        logger.info(f"Generated and stored new session name: {session_name}")
-    except IOError as e:
-        logger.error(f"Failed to save session metadata: {e}")
-    
-    return session_name
-
-
-async def initialize_client(force_new_session=False):
-    """
-    Initialize the Telegram client with appropriate session storage
-    
-    Args:
-        force_new_session (bool): If True, generates a new session
-                                 regardless of existing session
-    """
-    global client
-
-    # Use a lock to prevent multiple initializations
-    async with client_init_lock:
-        # If client is already initialized and we don't want a new session, return
-        if client is not None and client.is_connected() and not force_new_session:
-            return client
+            logger.warning(f"Error updating session metadata for user {user_id}: {e}")
             
-        try:
-            # Always prefer Redis for consistent auth state
-            logger.info("Initializing Telegram client with Redis session")
-            redis_connection = init_redis(decode_responses=False)
-            
-            # If forcing new session, clear the old metadata first
-            if force_new_session:
-                metadata_file = Path(os.path.expanduser(config_session_dir)) / "session_metadata.json"
-                if metadata_file.exists():
-                    metadata_file.unlink()
-                logger.info("Forced new session, cleared previous session metadata")
-            
-            # Get (or generate) a session name
-            session_name = get_session_name()
-            redis_session = RedisSession(session_name, redis_connection=redis_connection)
-            
-            # Create new client instance
-            new_client = TelegramClient(redis_session, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
-            
-            # Connect the client right away
-            await new_client.connect()
-            logger.info(f"Telegram client initialized with Redis session: {session_name}")
-            
-            # Set the global client variable
-            client = new_client
-            
-            # Store user info when available
-            if await new_client.is_user_authorized():
-                try:
-                    me = await new_client.get_me()
-                    if me:
-                        update_session_metadata({
-                            "user_id": me.id,
-                            "username": me.username,
-                            "phone": me.phone
-                        })
-                except Exception as e:
-                    logger.warning(f"Failed to update user info in session metadata: {e}")
-            
-        except Exception as e:
-            logger.error(f"Failed to initialize Telegram client with Redis: {str(e)}")
-            logger.info("Falling back to file-based session")
-            
-            # Create new client with file-based session
-            new_client = TelegramClient(session_path, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
-            await new_client.connect()
-            
-            # Set the global client variable
-            client = new_client
-            
-        return client
-
-def update_session_metadata(user_info=None):
-    """
-    Update the session metadata with additional information
-    
-    Args:
-        user_info (dict, optional): User information to store
-    """
-    session_dir = Path(os.path.expanduser(settings.TELEGRAM_SESSION_FOLDER_DIR))
-    metadata_file = session_dir / "session_metadata.json"
-    
-    if not metadata_file.exists():
-        return
+    async def get_user_client(self, user_id: int, new_session: bool = False) -> Optional[TelegramClient]:
+        """
+        Get the Telegram client for a specific user.
         
-    try:
-        with open(metadata_file, "r") as f:
-            metadata = json.load(f)
+        Args:
+            user_id: The user ID
+            new_session: If True, creates a new session
             
-        if user_info:
-            metadata["user_info"] = user_info
-            
-        metadata["last_used"] = asyncio.get_event_loop().time()
-            
-        with open(metadata_file, "w") as f:
-            json.dump(metadata, f)
-            
-        logger.debug("Updated session metadata")
-    except (json.JSONDecodeError, IOError) as e:
-        logger.warning(f"Error updating session metadata: {e}")
-
-async def get_client(new_session=False):
-    """
-    Get the Telegram client instance.
-    
-    Args:
-        new_session (bool): If True, creates a new random session
-    
-    Returns:
-        TelegramClient: The initialized Telegram client.
-    """
-    global client
-    
-    # Force new session if requested
-    if new_session:
-        return await initialize_client(force_new_session=True)
-    
-    # If client already exists but disconnected, reconnect
-    if client is not None:
+        Returns:
+            TelegramClient or None: The client for this user
+        """
+        # Force new session if requested
+        if new_session:
+            return await self.initialize_user_client(user_id, force_new_session=True)
+        
+        # Check if client exists
+        with self._global_lock:
+            if user_id not in self._clients or self._clients[user_id] is None:
+                # Initialize the client if it doesn't exist
+                return await self.initialize_user_client(user_id)
+        
+        client = self._clients[user_id]
+        
+        # If client exists but disconnected, reconnect
         if not client.is_connected():
-            logger.info("Client disconnected, reconnecting")
+            logger.info(f"Client disconnected for user {user_id}, reconnecting")
             await client.connect()
             
         # Update last used timestamp
-        update_session_metadata()
+        self._update_user_session_metadata(user_id)
         
         return client
+        
+    async def disconnect_user_client(self, user_id: int) -> bool:
+        """
+        Disconnect and remove the client for a specific user.
+        
+        Args:
+            user_id: The user ID
             
-    # Initialize the client if it doesn't exist
-    return await initialize_client()
+        Returns:
+            bool: True if disconnection was successful
+        """
+        user_lock = await self._get_user_lock(user_id)
+        
+        async with user_lock:
+            try:
+                with self._global_lock:
+                    if user_id in self._clients and self._clients[user_id] is not None:
+                        client = self._clients[user_id]
+                        
+                        if client.is_connected():
+                            await client.disconnect()
+                            logger.info(f"Disconnected Telegram client for user {user_id}")
+                            
+                        # Remove from clients dict
+                        del self._clients[user_id]
+                        
+                        # Remove lock as well
+                        if user_id in self._locks:
+                            del self._locks[user_id]
+                            
+                return True
+                
+            except Exception as e:
+                logger.error(f"Error disconnecting client for user {user_id}: {e}")
+                return False
+                
+    async def cleanup_user_session(self, user_id: int) -> bool:
+        """
+        Clean up all session data for a specific user.
+        
+        Args:
+            user_id: The user ID
+            
+        Returns:
+            bool: True if cleanup was successful
+        """
+        try:
+            # First disconnect the client
+            await self.disconnect_user_client(user_id)
+            
+            # Clean up session files
+            user_session_dir = self._get_user_session_dir(user_id)
+            user_session_path = self._get_user_session_path(user_id)
+            metadata_file = self._get_user_metadata_file(user_id)
+            
+            # Remove session file
+            if os.path.exists(user_session_path):
+                os.remove(user_session_path)
+                logger.info(f"Deleted session file for user {user_id}: {user_session_path}")
+                
+            # Remove metadata file
+            if metadata_file.exists():
+                metadata_file.unlink()
+                logger.info(f"Deleted session metadata for user {user_id}: {metadata_file}")
+                
+            # Clean up Redis session if available
+            try:
+                session_name = f"tgportal_user_{user_id}_*"  # Pattern matching
+                redis_connection = init_redis(decode_responses=False)
+                if redis_connection:
+                    # Get all keys matching the pattern
+                    keys = redis_connection.keys(f"tgportal_user_{user_id}_*")
+                    if keys:
+                        redis_connection.delete(*keys)
+                        logger.info(f"Cleared {len(keys)} Redis session(s) for user {user_id}")
+            except Exception as e:
+                logger.warning(f"Error clearing Redis sessions for user {user_id}: {e}")
+                
+            # Remove empty user directory if it exists
+            try:
+                if user_session_dir.exists() and not any(user_session_dir.iterdir()):
+                    user_session_dir.rmdir()
+                    logger.info(f"Removed empty session directory for user {user_id}")
+            except Exception as e:
+                logger.warning(f"Could not remove session directory for user {user_id}: {e}")
+                
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error cleaning up session for user {user_id}: {e}")
+            return False
+            
+    async def get_all_connected_users(self) -> Dict[int, bool]:
+        """
+        Get the connection status of all users.
+        
+        Returns:
+            Dict[int, bool]: Mapping of user_id to connection status
+        """
+        status = {}
+        with self._global_lock:
+            for user_id, client in self._clients.items():
+                if client:
+                    status[user_id] = client.is_connected()
+                else:
+                    status[user_id] = False
+        return status
+        
+    async def disconnect_all_clients(self):
+        """Disconnect all clients (used for cleanup)."""
+        with self._global_lock:
+            user_ids = list(self._clients.keys())
+            
+        for user_id in user_ids:
+            try:
+                await self.disconnect_user_client(user_id)
+            except Exception as e:
+                logger.error(f"Error disconnecting client for user {user_id}: {e}")
+
+
+# Global client manager instance
+client_manager = ClientManager()
+
+# Legacy compatibility functions - these maintain backward compatibility
+# while internally using the new ClientManager
+
+# For backward compatibility, we need to maintain some global state
+# to know which user is "active" for the legacy functions
+_active_user_id: Optional[int] = None
+_active_user_lock = asyncio.Lock()
+
+async def set_active_user_for_legacy_functions(user_id: int):
+    """
+    Set the active user ID for legacy function compatibility.
+    
+    Args:
+        user_id: The user ID to set as active
+    """
+    global _active_user_id
+    async with _active_user_lock:
+        _active_user_id = user_id
+        logger.info(f"Set active user ID for legacy functions: {user_id}")
+
+async def get_active_user_for_legacy_functions() -> Optional[int]:
+    """Get the currently active user ID for legacy functions."""
+    return _active_user_id
+
+# Legacy function compatibility
+async def initialize_client(force_new_session=False):
+    """
+    Legacy function - initializes client for the active user.
+    
+    Args:
+        force_new_session: If True, creates a new session
+        
+    Returns:
+        TelegramClient: The client for the active user
+    """
+    if _active_user_id is None:
+        raise ValueError("No active user set. Use set_active_user_for_legacy_functions() first.")
+    
+    return await client_manager.initialize_user_client(_active_user_id, force_new_session)
+
+async def get_client(new_session=False):
+    """
+    Legacy function - gets client for the active user.
+    
+    Args:
+        new_session: If True, creates a new session
+        
+    Returns:
+        TelegramClient: The client for the active user
+    """
+    if _active_user_id is None:
+        raise ValueError("No active user set. Use set_active_user_for_legacy_functions() first.")
+    
+    return await client_manager.get_user_client(_active_user_id, new_session)
 
 async def reset_client():
-    """Force reinitialize the client - useful after logout"""
-    global client
+    """Legacy function - resets client for the active user."""
+    if _active_user_id is None:
+        raise ValueError("No active user set. Use set_active_user_for_legacy_functions() first.")
     
-    # Disconnect existing client if any
-    if client and client.is_connected():
-        await client.disconnect()
+    return await client_manager.get_user_client(_active_user_id, new_session=True)
+
+def get_session_name():
+    """Legacy function - gets session name for the active user."""
+    if _active_user_id is None:
+        raise ValueError("No active user set. Use set_active_user_for_legacy_functions() first.")
     
-    client = None
-    return await initialize_client(force_new_session=True)
+    return client_manager._get_session_name_for_user(_active_user_id)
+
+def update_session_metadata(user_info=None):
+    """Legacy function - updates metadata for the active user."""
+    if _active_user_id is None:
+        logger.warning("No active user set for updating session metadata")
+        return
+    
+    client_manager._update_user_session_metadata(_active_user_id, user_info)
+
+# Backward compatibility exports for session paths
+session_dir = base_session_dir  # For backward compatibility
+session_path = str(base_session_dir / config_session_name)  # For backward compatibility 
+metadata_file = base_session_dir / "session_metadata.json"  # For backward compatibility

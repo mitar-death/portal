@@ -1,7 +1,8 @@
-modules = ["python-3.10", "vue-node-20", "nodejs-20", "bash", "web"]
+modules = ["python-3.10", "vue-node-20", "nodejs-20", "bash", "web", "python3"]
 
 [nix]
 channel = "stable-25_05"
+packages = ["libxcrypt", "openssl", "postgresql"]
 
 [agent]
 expertMode = true
@@ -56,8 +57,8 @@ externalPort = 8000
 exposeLocalhost = true
 
 [[ports]]
-localPort = 34173
-externalPort = 3000
+localPort = 8080
+externalPort = 8080
 
 [deployment]
 deploymentTarget = "autoscale"

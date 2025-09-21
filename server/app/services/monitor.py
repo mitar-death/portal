@@ -2,14 +2,16 @@ import asyncio
 import os
 import psutil
 from telethon import events
-from server.app.services.telegram import get_client
+from server.app.services.telegram import client_manager
 from server.app.core.logging import logger
 from server.app.utils.helpers import write_message_to_file
 from server.app.services.messenger_ai import initialize_messenger_ai, get_messenger_ai
 from server.app.utils.db_helpers import get_user_keywords, get_user_selected_groups
 from server.app.services.websocket_manager import websocket_manager
+from server.app.services.redis_client import check_redis_health
 from datetime import datetime
 from collections import deque
+from typing import Dict, Any
 
 
 # Semaphore to limit concurrent operations
@@ -80,7 +82,11 @@ async def start_monitoring(user_id=None):
         await stop_monitoring()
         
     try:
-        client = await get_client()
+        client = await client_manager.get_user_client(active_user_id)
+        
+        if not client:
+            logger.error(f"Could not get Telegram client for user {active_user_id}")
+            return False
         
         # Connect if not already connected
         if not client.is_connected():
@@ -88,7 +94,7 @@ async def start_monitoring(user_id=None):
                 async with API_SEMAPHORE:
                     await asyncio.wait_for(client.connect(), timeout=5)
             except asyncio.TimeoutError:
-                logger.error("Timeout connecting to Telegram")
+                logger.error(f"Timeout connecting to Telegram for user {active_user_id}")
                 return False
                 
         # Check if authorized
@@ -96,10 +102,10 @@ async def start_monitoring(user_id=None):
             async with API_SEMAPHORE:
                 is_authorized = await asyncio.wait_for(client.is_user_authorized(), timeout=5)
             if not is_authorized:
-                logger.info("Telegram client is not authorized")
+                logger.info(f"Telegram client is not authorized for user {active_user_id}")
                 return False
         except (asyncio.TimeoutError, Exception) as e:
-            logger.error(f"Error checking authorization: {e}")
+            logger.error(f"Error checking authorization for user {active_user_id}: {e}")
             return False
             
         # Initialize AI messenger in background
@@ -426,8 +432,12 @@ async def _run_health_check():
     try:
         while True:
             try:
-                # Get the client and check its status
-                client = await get_client()
+                # Get the client and check its status - skip if no active user
+                if not active_user_id:
+                    await asyncio.sleep(30)
+                    continue
+                    
+                client = await client_manager.get_user_client(active_user_id)
                 
                 # Check client connection
                 if client and client.is_connected():
@@ -463,16 +473,21 @@ async def _run_health_check():
                     "active_tasks": len(asyncio.all_tasks()) if hasattr(asyncio, 'all_tasks') else 0
                 }
                 
+                # Check Redis health
+                redis_health = await check_redis_health()
+                
                 # Build health status
                 health_status = {
                     "timestamp": datetime.now().isoformat(),
                     "client": client_status,
                     "ai_messenger": ai_status,
                     "system": system_status,
+                    "redis": redis_health,
                     "monitoring_active": monitoring_active,
                     "active_user_id": active_user_id,
                     "recent_errors": error_tracker.get_recent_errors(5)
                 }
+                
                 
                 # Use broadcast instead of broadcast_health since it doesn't exist
                 await websocket_manager.broadcast({
@@ -502,8 +517,18 @@ async def diagnostic_check():
         dict: Diagnostic information about the system
     """
     try:
-        # Get the client and check its status
-        client = await get_client()
+        # Get the client and check its status - skip if no active user
+        if not active_user_id:
+            return {
+                "timestamp": datetime.now().isoformat(),
+                "client": {"is_connected": False, "is_authorized": False},
+                "monitoring_active": monitoring_active,
+                "active_user_id": active_user_id,
+                "recent_errors": error_tracker.get_recent_errors(10),
+                "error": "No active user set"
+            }
+            
+        client = await client_manager.get_user_client(active_user_id)
         
         # Check client connection
         client_status = {
@@ -567,6 +592,18 @@ async def diagnostic_check():
         # Merge AI diagnostics
         diagnostics.update(ai_diagnostics)
         
+        # Add Redis health check
+        try:
+            redis_health = await check_redis_health()
+            diagnostics["redis"] = redis_health
+        except Exception as e:
+            logger.error(f"Error checking Redis health: {e}")
+            diagnostics["redis"] = {
+                "status": "error",
+                "available": False,
+                "error": str(e)
+            }
+        
         # Add system resource information
         try:
             import psutil
@@ -585,6 +622,93 @@ async def diagnostic_check():
     except Exception as e:
         logger.error(f"Error in diagnostic_check: {e}")
         error_tracker.add_error("diagnostic_check", str(e))
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "error": str(e),
+            "status": "error"
+        }
+
+async def get_system_health() -> Dict[str, Any]:
+    """
+    Get comprehensive system health information.
+    
+    Returns:
+        dict: System health information including resources, services, and status
+    """
+    try:
+        health_info = {
+            "timestamp": datetime.now().isoformat(),
+            "uptime_seconds": None,
+            "process_info": {},
+            "system_resources": {},
+            "active_connections": 0,
+            "background_tasks": 0,
+            "recent_errors": error_tracker.get_recent_errors(10)
+        }
+        
+        # Get process information
+        try:
+            current_process = psutil.Process(os.getpid())
+            with current_process.oneshot():
+                health_info["process_info"] = {
+                    "pid": current_process.pid,
+                    "memory_info_mb": current_process.memory_info().rss / 1024 / 1024,
+                    "cpu_percent": current_process.cpu_percent(),
+                    "num_threads": current_process.num_threads(),
+                    "status": current_process.status(),
+                    "create_time": current_process.create_time()
+                }
+                health_info["uptime_seconds"] = current_process.create_time()
+        except Exception as e:
+            health_info["process_info"] = {"error": str(e)}
+        
+        # Get system resources
+        try:
+            health_info["system_resources"] = {
+                "cpu_percent": psutil.cpu_percent(interval=0.1),
+                "memory": {
+                    "percent": psutil.virtual_memory().percent,
+                    "available_mb": psutil.virtual_memory().available / 1024 / 1024,
+                    "total_mb": psutil.virtual_memory().total / 1024 / 1024
+                },
+                "disk": {
+                    "percent": psutil.disk_usage('/').percent,
+                    "free_mb": psutil.disk_usage('/').free / 1024 / 1024,
+                    "total_mb": psutil.disk_usage('/').total / 1024 / 1024
+                }
+            }
+        except Exception as e:
+            health_info["system_resources"] = {"error": str(e)}
+        
+        # Get active connections from websocket manager
+        try:
+            health_info["active_connections"] = websocket_manager.get_connection_count()
+        except Exception as e:
+            health_info["active_connections"] = 0
+            logger.debug(f"Error getting connection count: {e}")
+        
+        # Get background task count
+        try:
+            if hasattr(asyncio, 'all_tasks'):
+                health_info["background_tasks"] = len(asyncio.all_tasks())
+            else:
+                # Fallback for older Python versions
+                health_info["background_tasks"] = len(asyncio.Task.all_tasks())
+        except Exception as e:
+            health_info["background_tasks"] = 0
+            logger.debug(f"Error getting task count: {e}")
+        
+        # Add monitoring status
+        health_info["monitoring"] = {
+            "active": monitoring_active,
+            "active_user_id": active_user_id
+        }
+        
+        return health_info
+        
+    except Exception as e:
+        logger.error(f"Error getting system health: {e}")
+        error_tracker.add_error("system_health", str(e))
         return {
             "timestamp": datetime.now().isoformat(),
             "error": str(e),

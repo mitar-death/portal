@@ -7,7 +7,8 @@ TGPortal is a Telegram monitoring and automated response application with Vue.js
 - **Frontend**: Vue.js 3 with Vuetify UI framework running on port 5000
 - **Backend**: FastAPI Python application running on port 8000
 - **Database**: PostgreSQL (Replit managed)
-- **Session Storage**: File-based Telegram sessions in `storage/sessions/`
+- **Session Storage**: Redis (preferred) with automatic fallback to file-based Telegram sessions in `storage/sessions/`
+- **Caching**: Redis (optional) with graceful degradation when unavailable
 
 ## Recent Setup Changes (September 21, 2025)
 - ✅ Configured for Replit environment with proper host and port settings
@@ -17,6 +18,12 @@ TGPortal is a Telegram monitoring and automated response application with Vue.js
 - ✅ Made Pusher configuration optional (runs without Pusher credentials)
 - ✅ Both workflows configured and running successfully
 - ✅ Deployment configuration set for autoscale target
+- ✅ **Enhanced Redis connection handling for cloud environments** (September 21, 2025)
+  - Implemented Redis connection retry logic with exponential backoff
+  - Added graceful fallback to file-based sessions when Redis is unavailable
+  - Enhanced startup resilience to prevent Redis failures from crashing the application
+  - Added comprehensive Redis health checks to monitoring system
+  - Updated all services to handle Redis unavailability gracefully
 
 ## Current Configuration
 ### Frontend (Port 5000)
@@ -36,6 +43,9 @@ For full functionality, users need to configure:
 1. **Telegram API Credentials**: `TELEGRAM_API_ID` and `TELEGRAM_API_HASH`
 2. **Google AI API Key**: `GOOGLE_STUDIO_API_KEY` for AI responses
 3. **Pusher Credentials** (optional): For real-time WebSocket features
+4. **Redis Configuration** (optional): `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`, `REDIS_PASSWORD`
+   - Application works without Redis (falls back to file-based sessions)
+   - Redis improves performance and session consistency across restarts
 
 ## Project Structure
 ```

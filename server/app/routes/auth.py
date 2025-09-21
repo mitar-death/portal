@@ -10,7 +10,9 @@ from server.app.controllers.main import (
     verify_code,
 )
 from server.app.controllers.auth import (check_auth_status,
-                                         logout_telegram as telegram_logout_service)
+                                         logout_telegram as telegram_logout_service,
+                                         refresh_access_token,
+                                         logout_user as jwt_logout_service)
 
 auth_routes = APIRouter()
 
@@ -39,3 +41,19 @@ async def logout_user(request: Request):
     Log out the user from Telegram and clear the session.
     """
     return await telegram_logout_service(request)
+
+
+@auth_routes.post('/auth/refresh', tags=['Auth'])
+async def refresh_token_endpoint(request: Request):
+    """
+    Refresh access token using valid refresh token.
+    """
+    return await refresh_access_token(request)
+
+
+@auth_routes.post('/auth/jwt-logout', tags=['Auth'])
+async def jwt_logout_endpoint(request: Request):
+    """
+    Logout user and blacklist JWT tokens.
+    """
+    return await jwt_logout_service(request)

@@ -299,7 +299,8 @@ class ConnectionManager:
             "timestamp": datetime.now().isoformat()
         }
         
-        await self.broadcast(message)
+        # Use broadcast_json since message is a dict, not broadcast which expects a string
+        await self.broadcast_json(message)
 
 # Create a singleton instance
 websocket_manager = ConnectionManager()

@@ -14,6 +14,20 @@ class Settings(BaseSettings):
     API_PREFIX: str = os.getenv("API_PREFIX", "/api")
     ENV: str = os.getenv("ENV", "development")
     PORT: int = int(os.getenv("PORT", 8000))
+    
+    # JWT Configuration
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "jwt-secret-key-change-in-production")
+    JWT_REFRESH_SECRET_KEY: str = os.getenv("JWT_REFRESH_SECRET_KEY", "jwt-refresh-secret-key-change-in-production")
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7  # 7 days
+    JWT_ISSUER: str = "tg-portal"
+    JWT_AUDIENCE: str = "tg-portal-users"
+    
+    # Rate Limiting Settings
+    LOGIN_RATE_LIMIT_MAX_ATTEMPTS: int = 5  # Max attempts per window
+    LOGIN_RATE_LIMIT_WINDOW_MINUTES: int = 15  # Time window in minutes
+    LOGIN_RATE_LIMIT_LOCKOUT_MINUTES: int = 30  # Lockout duration in minutes
 
     # FastAPI server settings
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"

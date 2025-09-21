@@ -23,6 +23,7 @@ from server.app.core.databases import AsyncSessionLocal
 from server.app.models.models import User
 from sqlalchemy import select
 from server.app.core.sentry import init_sentry
+from server.app.core.environment_validator import validate_startup_environment, can_start_application
 
 
 # Set up logging
@@ -45,18 +46,44 @@ async def lifespan(app: FastAPI):
     # Startup: Initialize core components without blocking
     async def initialize_app():
         try:
-            # Initialize client with timeout protection
-            try:
-                client = await asyncio.wait_for(get_client(), timeout=5)
-                if not client.is_connected():
-                    await asyncio.wait_for(client.connect(), timeout=5)
-                logger.info("Telegram client initialized")
-            except asyncio.TimeoutError:
-                logger.warning("Telegram client initialization timed out, will retry in background")
-                client = None
-            except Exception as e:
-                logger.error(f"Error initializing Telegram client: {e}")
-                client = None
+            # Perform environment validation first
+            logger.info("Starting environment validation...")
+            validation_result = await validate_startup_environment()
+            
+            # Store validation result for health endpoint
+            app.state.environment_validation = validation_result
+            
+            # Check if we can start the application
+            if not validation_result["can_start"]:
+                logger.error("❌ Cannot start application due to critical configuration issues")
+                for error in validation_result["errors"]:
+                    logger.error(error)
+                raise Exception("Critical configuration missing - application cannot start")
+            
+            # Log validation status
+            if validation_result["overall_status"] == "degraded":
+                logger.warning("⚠️  Application starting with degraded functionality")
+                for warning in validation_result["warnings"][:5]:  # Limit warnings in startup
+                    logger.warning(warning)
+            else:
+                logger.info("✅ Environment validation passed - all systems operational")
+            # Initialize client with timeout protection (only if Telegram is available)
+            telegram_health = validation_result["services"].get("telegram")
+            client = None
+            if telegram_health and telegram_health.available:
+                try:
+                    client = await asyncio.wait_for(get_client(), timeout=5)
+                    if not client.is_connected():
+                        await asyncio.wait_for(client.connect(), timeout=5)
+                    logger.info("Telegram client initialized successfully")
+                except asyncio.TimeoutError:
+                    logger.warning("Telegram client initialization timed out, will retry in background")
+                    client = None
+                except Exception as e:
+                    logger.error(f"Error initializing Telegram client: {e}")
+                    client = None
+            else:
+                logger.info("Skipping Telegram client initialization - service unavailable")
             
             # Check authorization status if client is available
             if client and client.is_connected():

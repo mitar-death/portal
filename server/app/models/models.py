@@ -48,6 +48,17 @@ class ActiveSession(Base):
     code_requested = Column(Boolean, default=False)
     phone_code_hash = Column(String, nullable=True)  # Store phone code hash for login
     verified = Column(Boolean, default=False)
+    
+    # JWT session management
+    access_token_jti = Column(String, nullable=True, index=True)  # JWT ID for access token
+    refresh_token_jti = Column(String, nullable=True, index=True)  # JWT ID for refresh token
+    access_token_expires_at = Column(DateTime(timezone=True), nullable=True)
+    refresh_token_expires_at = Column(DateTime(timezone=True), nullable=True)
+    is_active = Column(Boolean, default=True)  # Session status
+    last_activity = Column(DateTime(timezone=True), server_default=func.now())  # Last activity timestamp
+    device_info = Column(String, nullable=True)  # Optional device/browser info
+    ip_address = Column(String, nullable=True)  # Client IP address
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     user = relationship("User", back_populates="active_sessions")
@@ -150,3 +161,31 @@ class GroupAIAccount(Base):
     
     group = relationship("Group", back_populates="ai_assignments")
     ai_account = relationship("AIAccount", back_populates="group_assignments")
+
+
+class BlacklistedToken(Base):
+    """Table to track blacklisted JWT tokens for secure logout."""
+    __tablename__ = "blacklisted_tokens"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    jti = Column(String, unique=True, index=True, nullable=False)  # JWT ID
+    token_type = Column(String, nullable=False)  # "access" or "refresh"
+    user_id = Column(BIGINT, ForeignKey("users.id"), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)  # When the token would have expired
+    blacklisted_at = Column(DateTime(timezone=True), server_default=func.now())  # When it was blacklisted
+    reason = Column(String, nullable=True)  # Optional reason for blacklisting (logout, security, etc.)
+    
+    user = relationship("User")
+
+
+class LoginAttempt(Base):
+    """Table to track login attempts for rate limiting."""
+    __tablename__ = "login_attempts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    phone_number = Column(String, index=True, nullable=False)
+    ip_address = Column(String, index=True, nullable=True)
+    success = Column(Boolean, default=False)
+    attempted_at = Column(DateTime(timezone=True), server_default=func.now())
+    user_agent = Column(String, nullable=True)
+    failure_reason = Column(String, nullable=True)  # Invalid code, etc.

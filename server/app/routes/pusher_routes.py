@@ -64,6 +64,11 @@ async def pusher_auth(request: Request, user: User = Depends(get_current_user)):
     try:
         # Check if the channel is for this user
         if channel_name.startswith('private-'):
+            # Check if pusher_client is initialized before using it
+            if pusher_client is None:
+                print("Pusher client is not initialized - cannot authenticate private channels")
+                raise HTTPException(status_code=503, detail="Pusher service not available - private channels not supported")
+            
             # For backward compatibility, handle private channels
             auth = pusher_client.authenticate(
                 channel=channel_name,
@@ -73,6 +78,9 @@ async def pusher_auth(request: Request, user: User = Depends(get_current_user)):
         else:
             # For public channels
             return {"status": "success", "message": "No authentication needed for public channels"}
+    except HTTPException:
+        # Re-raise HTTPExceptions as-is
+        raise
     except Exception as e:
         print(f"Pusher authentication error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Pusher authentication failed: {str(e)}")

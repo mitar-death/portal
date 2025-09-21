@@ -13,6 +13,10 @@ from server.app.utils.controller_helpers import (
     sanitize_log_data,
     standardize_response
 )
+from server.app.core.jwt_utils import create_token_pair, JWTManager
+from datetime import datetime, timezone, timedelta
+from server.app.core.config import settings
+from server.app.core.rate_limiter import login_rate_limiter
 
 
 @safe_db_operation()
@@ -39,6 +43,12 @@ async def request_code(request: Request, db: AsyncSession = None) -> Dict[str, A
             raise HTTPException(status_code=400, detail="Phone number is required")
             
         logger.info(f"Requesting code for phone number: {sanitize_log_data(phone_number)}")
+        
+        # Check rate limiting for code requests
+        is_limited, limit_message = login_rate_limiter.is_rate_limited(phone_number)
+        if is_limited:
+            logger.warning(f"Rate limit exceeded for phone number: {sanitize_log_data(phone_number)}")
+            raise HTTPException(status_code=429, detail=limit_message)
         
         # Get and connect client
         client = await get_client(new_session=True)
@@ -76,6 +86,7 @@ async def request_code(request: Request, db: AsyncSession = None) -> Dict[str, A
         
         await db.commit()
         
+        # Record the code request attempt (not a verification attempt yet)
         # Don't log the full phone_code_hash
         logger.info(f"Code requested successfully")
         
@@ -119,6 +130,12 @@ async def verify_code(phone_number: str, code: str, phone_code_hash: str, db: As
         raise HTTPException(status_code=400, detail="No active login session found")
     
     try:
+        # Check rate limiting for login attempts
+        is_limited, limit_message = login_rate_limiter.is_rate_limited(phone_number)
+        if is_limited:
+            logger.warning(f"Rate limit exceeded for login attempt: {sanitize_log_data(phone_number)}")
+            raise HTTPException(status_code=429, detail=limit_message)
+        
         # After successful sign_in, verify the session was saved
         response = await client.sign_in(phone=phone_number, code=code, phone_code_hash=phone_code_hash)
         logger.info(f"Authentication successful with Telegram {phone_code_hash}")
@@ -167,8 +184,31 @@ async def verify_code(phone_number: str, code: str, phone_code_hash: str, db: As
                 
             await db.commit()
             await db.refresh(user)
-            
-        token = f"token_{response.id}"
+        
+        # Generate JWT token pair
+        tokens = create_token_pair(
+            user_id=user.id,
+            telegram_id=str(response.id)
+        )
+        
+        # Update session with JWT information
+        # Extract JTI from tokens for session tracking
+        access_payload = JWTManager.verify_token(tokens["access_token"], verify_expiry=False)
+        refresh_payload = JWTManager.verify_token(tokens["refresh_token"], "refresh", verify_expiry=False)
+        
+        session.access_token_jti = access_payload["jti"]
+        session.refresh_token_jti = refresh_payload["jti"]
+        session.access_token_expires_at = datetime.fromtimestamp(access_payload["exp"], tz=timezone.utc)
+        session.refresh_token_expires_at = datetime.fromtimestamp(refresh_payload["exp"], tz=timezone.utc)
+        session.last_activity = datetime.now(timezone.utc)
+        session.is_active = True
+        
+        # Set device/IP info if available from request
+        if hasattr(request, 'headers'):
+            session.device_info = request.headers.get('User-Agent', 'Unknown')
+        
+        db.add(session)
+        await db.commit()
             
         user_data = {
             "id": user.id,
@@ -177,6 +217,9 @@ async def verify_code(phone_number: str, code: str, phone_code_hash: str, db: As
             "last_name": user.last_name,
             "phone_number": sanitize_log_data(user.phone_number)
         }
+        
+        # Record successful login attempt for rate limiting
+        login_rate_limiter.record_attempt(phone_number, success=True)
         
         # Set this user as the active user for the monitoring service
         await set_active_user_id(user.id)
@@ -197,11 +240,16 @@ async def verify_code(phone_number: str, code: str, phone_code_hash: str, db: As
             {
                 "action": "login_success",
                 "user": user_data,
-                "token": token
+                "access_token": tokens["access_token"],
+                "refresh_token": tokens["refresh_token"],
+                "token_type": "Bearer",
+                "expires_in": settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60  # seconds
             },
            "Successfully logged in",
         )
     except PhoneCodeInvalidError:
+        # Record failed login attempt for rate limiting
+        login_rate_limiter.record_attempt(phone_number, success=False)
         logger.error("Invalid verification code provided")
         raise HTTPException(status_code=400, detail="Invalid verification code")
     except SessionPasswordNeededError:
@@ -211,11 +259,15 @@ async def verify_code(phone_number: str, code: str, phone_code_hash: str, db: As
         logger.error("Session expired, please request a new code")
         raise HTTPException(status_code=401, detail="Session expired, please request a new code")
     except SignInFailedError:
+        # Record failed login attempt for rate limiting
+        login_rate_limiter.record_attempt(phone_number, success=False)
         logger.error("Sign-in failed, please check your credentials")
         raise HTTPException(status_code=401, detail="Sign-in failed, please check your credentials")
     except HTTPException as e:
         # Re-raise HTTP exceptions without logging them again
         raise e
     except Exception as e:
+        # Record failed login attempt for rate limiting on general exceptions
+        login_rate_limiter.record_attempt(phone_number, success=False)
         raise HTTPException(status_code=500, detail=f"Failed to verify code: {str(e)}")
 

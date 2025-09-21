@@ -26,13 +26,33 @@ def create_async_database_engine() -> AsyncEngine:
     database_url = settings.get_database_url()
     logger.info(f"Creating async database engine with URL: {database_url}")
 
-    # Replace with async-compatible dialect
+    # Replace with async-compatible dialect and handle SSL parameters
     if settings.DB_TYPE == "postgres":
         database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        
+        # Handle SSL mode parameter for asyncpg - convert to connection arguments
+        ssl_args = {}
+        if "sslmode=require" in database_url:
+            database_url = database_url.replace("?sslmode=require", "").replace("&sslmode=require", "")
+            ssl_args["ssl"] = "require"
+        elif "sslmode=" in database_url:
+            # Remove any sslmode parameter as asyncpg handles SSL differently
+            import re
+            database_url = re.sub(r'[?&]sslmode=[^&]*', '', database_url)
+            
         logger.info(f"Using asyncpg for PostgreSQL with URL: {database_url}")
+        
+        # For asyncpg, we handle SSL through connection arguments if needed
+        engine_kwargs = {"pool_pre_ping": True, "echo": False}
+        if ssl_args:
+            engine_kwargs["connect_args"] = ssl_args
+            
+        return create_async_engine(database_url, **engine_kwargs)
+        
     elif settings.DB_TYPE == "mysql":
         database_url = database_url.replace("mysql://", "mysql+aiomysql://", 1)
-
+        return create_async_engine(database_url, pool_pre_ping=True, echo=False)
+        
     return create_async_engine(database_url, pool_pre_ping=True, echo=False)
 
 

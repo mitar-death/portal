@@ -49,33 +49,62 @@ class AuthMiddleware(BaseHTTPMiddleware):
             
         # Check for valid authorization header
         auth_header = request.headers.get("Authorization")
-        # if auth_header is None:
-        #     logger.info("No Authorization header found")
-        #     return Response(status_code=401, content="Unauthorized") 
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header.split(" ")[1]
             if not token or token.strip() == "":
                 logger.info("No token found or empty token")
                 return Response(status_code=401, content="Unauthorized")
-            if token.startswith("token_"):
-                try: 
-                    user_id = int(token.split("token_")[1])
-                    async with AsyncSessionLocal() as session:
-                        result = await session.execute(
-                            select(User).where(User.telegram_id == str(user_id))
-                        )
-                        user = result.scalars().first()
-                        if not user:
-                            return Response(status_code=401, content="Unauthorized")
-                        logger.info(f"Authenticated user: {user.id}")
-                       
-                        # Set the authenticated user in the request
-                        request.scope["user"] = user
-                        request.state.user = user 
-                        await set_active_user_id(user.id)
-                except Exception as e:
-                    logger.error(f"Authentication error: {str(e)}")
+            
+            try:
+                # Import JWT utilities
+                from server.app.core.jwt_utils import verify_token, JWTManager
+                from server.app.core.auth import is_token_blacklisted, update_session_activity
+                
+                # Verify JWT token
+                payload = verify_token(token, "access")
+                
+                # Extract user information
+                user_id = JWTManager.extract_user_id_from_token(payload)
+                jti = payload.get("jti")
+                
+                if not jti:
+                    logger.warning("Token missing JTI")
                     return Response(status_code=401, content="Unauthorized")
+                
+                async with AsyncSessionLocal() as session:
+                    # Check if token is blacklisted
+                    if await is_token_blacklisted(jti, session):
+                        logger.warning("Token is blacklisted")
+                        return Response(status_code=401, content="Unauthorized")
+                    
+                    # Get user from database
+                    result = await session.execute(
+                        select(User).where(User.id == user_id)
+                    )
+                    user = result.scalars().first()
+                    
+                    if not user:
+                        logger.warning(f"User not found: {user_id}")
+                        return Response(status_code=401, content="Unauthorized")
+                    
+                    # Check if user is active
+                    if not user.is_active:
+                        logger.warning(f"User account is inactive: {user_id}")
+                        return Response(status_code=401, content="Unauthorized")
+                    
+                    logger.info(f"Authenticated user: {user.id}")
+                   
+                    # Set the authenticated user in the request
+                    request.scope["user"] = user
+                    request.state.user = user 
+                    await set_active_user_id(user.id)
+                    
+                    # Update session activity
+                    await update_session_activity(session, jti)
+                    
+            except Exception as e:
+                logger.error(f"Authentication error: {str(e)}")
+                return Response(status_code=401, content="Unauthorized")
 
         # Continue with the request
         return await call_next(request)

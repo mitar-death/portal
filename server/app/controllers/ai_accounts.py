@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, List, Any, Optional
 from telethon import TelegramClient
 from teleredis import RedisSession
-from server.app.services.redis_client import init_redis
+from server.app.services.redis_client import init_redis, is_redis_available
 from telethon.errors import SessionPasswordNeededError, PhoneCodeInvalidError
 from server.app.utils.controller_helpers import (
     ensure_user_authenticated,
@@ -579,14 +579,29 @@ async def login_ai_account(request: Request, db: AsyncSession = None) -> Dict[st
                 pass
 
 
-def __init_telegram_client(api_id, api_hash):
+def __init_telegram_client(api_id, api_hash, session_path=None):
     """
+    Initialize a Telegram client with Redis or file-based session fallback.
 
     Args:
         api_id (str): The application ID for the Telegram API.
         api_hash (str): The application hash for the Telegram API.
+        session_path (str, optional): Path for file-based session if Redis unavailable.
     """
-    redis_connection = init_redis(decode_responses=False)
-    redis_session = RedisSession("session_name", redis_connection=redis_connection)
-    client = TelegramClient(redis_session, api_id, api_hash)
+    try:
+        if is_redis_available():
+            redis_connection = init_redis(decode_responses=False)
+            if redis_connection is not None:
+                redis_session = RedisSession("ai_session_name", redis_connection=redis_connection)
+                client = TelegramClient(redis_session, api_id, api_hash)
+                return client
+    except Exception as e:
+        logger.warning(f"Failed to initialize Redis session for AI client: {e}")
+    
+    # Fallback to file-based session
+    if session_path is None:
+        session_path = "ai_default_session"
+    
+    logger.info(f"Using file-based session for AI client: {session_path}")
+    client = TelegramClient(session_path, api_id, api_hash)
     return client
