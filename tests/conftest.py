@@ -4,12 +4,16 @@ Pytest configuration and fixtures for TGPortal backend tests.
 import asyncio
 import os
 import pytest
+import pytest_asyncio
 import tempfile
 from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, pool
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+
+# Set testing mode before importing app
+os.environ["TESTING"] = "true"
 
 from server.app.main import app
 from server.app.core.databases import get_db
@@ -30,7 +34,7 @@ def event_loop():
     loop.close()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def async_engine():
     """Create async test database engine."""
     engine = create_async_engine(
@@ -52,7 +56,7 @@ async def async_engine():
     await engine.dispose()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def async_session(async_engine):
     """Create async test database session."""
     async_session_maker = sessionmaker(
@@ -68,8 +72,8 @@ async def async_session(async_engine):
 @pytest.fixture
 def client(async_session):
     """Create test client with database override."""
-    def override_get_async_session():
-        return async_session
+    async def override_get_async_session():
+        yield async_session
     
     app.dependency_overrides[get_db] = override_get_async_session
     
@@ -79,7 +83,7 @@ def client(async_session):
     app.dependency_overrides.clear()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_user(async_session):
     """Create a test user."""
     user = User(
@@ -95,7 +99,7 @@ async def test_user(async_session):
     return user
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_group(async_session):
     """Create a test group."""
     group = Group(
@@ -111,13 +115,12 @@ async def test_group(async_session):
     return group
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_keyword(async_session, test_user):
     """Create a test keyword."""
     keyword = Keywords(
         user_id=test_user.id,
-        keyword="test",
-        is_active=True
+        keywords=["test"]
     )
     async_session.add(keyword)
     await async_session.commit()
@@ -125,7 +128,7 @@ async def test_keyword(async_session, test_user):
     return keyword
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_ai_account(async_session, test_user):
     """Create a test AI account."""
     ai_account = AIAccount(

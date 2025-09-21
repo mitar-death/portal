@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-here")
     API_PREFIX: str = os.getenv("API_PREFIX", "/api")
     ENV: str = os.getenv("ENV", "development")
+    TESTING: bool = os.getenv("TESTING", "false").lower() == "true"
     PORT: int = int(os.getenv("PORT", 8000))
 
     # JWT Configuration
@@ -63,6 +64,7 @@ class Settings(BaseSettings):
         "TELEGRAM_SESSION_FOLDER_DIR", "storage/sessions"
     )
     TELEGRAM_SESSION_NAME: str = os.getenv("TELEGRAM_SESSION_NAME", "default_session")
+    BASE_SESSION_DIR: str = os.getenv("BASE_SESSION_DIR", "storage/sessions")
 
     # Pusher settings for WebSocket communication
     PUSHER_APP_ID: str = os.getenv("PUSHER_APP_ID", "")

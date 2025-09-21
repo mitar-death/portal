@@ -94,8 +94,8 @@ class TestKeywordsRoutes:
     async def test_bulk_update_keywords_success(self, client, auth_headers):
         """Test successful bulk keyword update."""
         keywords_data = [
-            {"keyword": "keyword1", "is_active": True},
-            {"keyword": "keyword2", "is_active": False}
+            {"keywords": ["keyword1"]},
+            {"keywords": ["keyword2"]}
         ]
         
         response = client.post("/api/keywords/bulk", 
