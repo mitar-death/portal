@@ -222,17 +222,19 @@ class ClientManager:
                         except Exception as e:
                             logger.warning(f"Failed to read session metadata for user {user_id}: {e}")
                     
-                    # If forcing new session, clear everything
+                    # If forcing new session, clear everything EXCEPT transferred session data
                     if force_new_session:
                         user_session_path = self._get_user_session_path(user_id)
                         if os.path.exists(user_session_path):
                             os.remove(user_session_path)
                             logger.info(f"Cleared file session for user {user_id}: {user_session_path}")
                         
-                        if metadata_file.exists():
+                        # Only clear metadata if we don't have a transferred session
+                        if not session_string and metadata_file.exists():
                             metadata_file.unlink()
-                        logger.info(f"Forced new session for user {user_id}, cleared previous session metadata")
-                        session_string = None  # Clear transferred session too
+                            logger.info(f"Forced new session for user {user_id}, cleared previous session metadata")
+                        elif session_string:
+                            logger.info(f"Keeping transferred session string for user {user_id} despite force_new_session=True")
                     
                     # Use StringSession if we have transferred session data
                     if session_string:
